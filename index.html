@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SCT Stream - Cuentas Premium de Streaming</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#7c3aff">
+    <meta name="theme-color" content="#0b0b0b">
     <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
     <meta name="mobile-web-app-capable" content="yes">
@@ -154,10 +154,28 @@
             animation: galeriaFlotar 2.6s ease-in-out infinite, bgMove 3.5s linear infinite;
         }
         #productos .card-borde-animado:hover { animation-play-state: paused; }
-        #productos-grid > div:nth-child(2n) { animation-delay: 0.25s; }
-        #productos-grid > div:nth-child(3n) { animation-delay: 0.5s; }
-        #productos-grid > div:nth-child(4n) { animation-delay: 0.75s; }
-        #productos-grid > div:nth-child(5n) { animation-delay: 1s; }
+        .fila-categoria-scroll > div:nth-child(2n) { animation-delay: 0.25s; }
+        .fila-categoria-scroll > div:nth-child(3n) { animation-delay: 0.5s; }
+        .fila-categoria-scroll > div:nth-child(4n) { animation-delay: 0.75s; }
+        .fila-categoria-scroll > div:nth-child(5n) { animation-delay: 1s; }
+
+        /* ---- Filas de productos deslizables verticalmente por categoría ---- */
+        .fila-categoria-scroll {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 8px;
+            max-height: 215px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scroll-snap-type: y proximity;
+            -webkit-overflow-scrolling: touch;
+            padding: 2px 6px 10px 2px;
+            scrollbar-width: thin;
+        }
+        .fila-categoria-scroll::-webkit-scrollbar { width: 5px; }
+        .fila-categoria-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.35); border-radius: 10px; }
+        .fila-categoria-scroll > div { scroll-snap-align: start; }
+        .fila-categoria-titulo { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; padding: 0 2px; }
 
         /* ---- Modo "oferta relámpago": tarjeta roja/urgente ---- */
         .oferta-relampago {
@@ -472,7 +490,7 @@
             </div>
         </div>
         <div id="categorias-menu" class="flex gap-2 overflow-x-auto pb-2 mb-8 justify-center flex-wrap"></div>
-        <div class="grid grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2" id="productos-grid"></div>
+        <div id="filas-productos" class="space-y-7"></div>
         <p id="sin-resultados-productos" class="hidden text-center text-white/80 py-10">No encontramos productos con esa búsqueda o categoría.</p>
     </section>
 
@@ -952,17 +970,17 @@
 
     <div id="detalle-producto-modal" class="hidden modal-overlay">
         <div class="bg-white rounded-3xl max-w-sm w-full mx-4 overflow-hidden">
-            <img id="detalle-imagen" src="" class="w-full h-40 object-cover">
-            <div class="p-6 text-center">
-                <h3 id="detalle-nombre" class="text-xl font-bold mb-2 text-purple-700"></h3>
-                <p id="detalle-vendedor" class="text-gray-400 text-xs mb-2 flex items-center justify-center gap-1"></p>
-                <p id="detalle-descripcion" class="text-gray-600 text-sm mb-4 text-left whitespace-pre-line"></p>
-                <p id="detalle-precio" class="text-2xl font-bold titulo-color mb-1"></p>
-                <p id="detalle-stock" class="hidden mb-4"></p>
-                <p id="detalle-entrega" class="hidden mb-4 text-orange-600 text-sm font-semibold bg-orange-50 border border-orange-200 rounded-xl px-3 py-2"><i class="fas fa-clock mr-1"></i> Este producto tarda hasta 24 horas en entregarse.</p>
-                <div id="detalle-metodos-pago" class="hidden mb-4"></div>
-                <a id="detalle-whatsapp" href="#" target="_blank" class="block text-center boton-animado text-white py-3 rounded-xl font-semibold shadow mb-2">Comprar por WhatsApp</a>
-                <button onclick="cerrarDetalleProducto()" class="text-gray-400 text-sm">Cerrar</button>
+            <img id="detalle-imagen" src="" class="w-full h-28 object-cover">
+            <div class="p-4 text-center">
+                <h3 id="detalle-nombre" class="text-lg font-bold mb-1 text-purple-700"></h3>
+                <p id="detalle-vendedor" class="text-gray-400 text-[11px] mb-1.5 flex items-center justify-center gap-1"></p>
+                <p id="detalle-descripcion" class="text-gray-600 text-xs mb-3 text-left whitespace-pre-line leading-snug"></p>
+                <p id="detalle-precio" class="text-xl font-bold titulo-color mb-1"></p>
+                <p id="detalle-stock" class="hidden mb-2"></p>
+                <p id="detalle-entrega" class="hidden mb-3 text-orange-600 text-xs font-semibold bg-orange-50 border border-orange-200 rounded-xl px-2.5 py-1.5"><i class="fas fa-clock mr-1"></i> Este producto tarda hasta 24 horas en entregarse.</p>
+                <div id="detalle-metodos-pago" class="hidden mb-3"></div>
+                <a id="detalle-whatsapp" href="#" target="_blank" class="block text-center boton-animado text-white py-2.5 rounded-xl font-semibold shadow mb-2 text-sm">Comprar por WhatsApp</a>
+                <button onclick="cerrarDetalleProducto()" class="text-gray-400 text-xs">Cerrar</button>
             </div>
         </div>
     </div>
@@ -1015,45 +1033,64 @@
         <i class="fab fa-whatsapp"></i>
     </a>
 
-    <button id="btn-instalar-app" onclick="instalarApp()" class="hidden fixed bottom-24 right-5 z-50 items-center gap-2 boton-animado text-white px-4 py-3 rounded-full font-semibold shadow-lg">
-        <i class="fa-solid fa-download"></i> Instalar App
+    <button id="btn-instalar-app" onclick="clicInstalarApp()" class="hidden" style="position:fixed; bottom:90px; right:20px; z-index:50; background:#0b0b0b; color:#fff; border:2px solid #7c3aff; padding:10px 16px; border-radius:9999px; font-weight:700; font-size:13px; display:flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(0,0,0,0.4);">
+        <i class="fas fa-download"></i> Instalar app
     </button>
 
-    <script>
-        // ---- App instalable (PWA) — independiente de Firebase/CDNs ----
-        let promptInstalacionDiferido = null;
+    <div id="instalar-ios-modal" class="hidden modal-overlay">
+        <div class="bg-white rounded-3xl max-w-sm w-full mx-4 p-8 text-center">
+            <i class="fas fa-mobile-screen-button text-4xl text-purple-600 mb-4"></i>
+            <h3 class="text-lg font-bold text-slate-800 mb-3">Instalar SCT Stream en tu iPhone</h3>
+            <div class="text-left text-sm text-gray-600 space-y-2 mb-5">
+                <p>1. Toca el ícono de compartir <i class="fas fa-arrow-up-from-bracket"></i> abajo en Safari.</p>
+                <p>2. Baja y elige <strong>"Añadir a pantalla de inicio"</strong>.</p>
+                <p>3. Toca <strong>"Añadir"</strong> arriba a la derecha.</p>
+            </div>
+            <button onclick="document.getElementById('instalar-ios-modal').classList.add('hidden')" class="boton-animado text-white px-6 py-3 rounded-xl font-semibold w-full">Entendido</button>
+        </div>
+    </div>
 
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch((err) => {
-                    console.warn('No se pudo registrar el service worker:', err);
-                });
-            });
+    <script>
+        let eventoInstalacionApp = null;
+
+        function appYaInstalada() {
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        }
+
+        function esIOS() {
+            return /iphone|ipad|ipod/i.test(navigator.userAgent);
         }
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
-            promptInstalacionDiferido = e;
-            const boton = document.getElementById('btn-instalar-app');
-            boton.classList.remove('hidden');
-            boton.classList.add('flex');
+            eventoInstalacionApp = e;
+            if (!appYaInstalada()) {
+                document.getElementById('btn-instalar-app').classList.remove('hidden');
+            }
         });
 
-        function instalarApp() {
-            const boton = document.getElementById('btn-instalar-app');
-            if (!promptInstalacionDiferido) return;
-            promptInstalacionDiferido.prompt();
-            promptInstalacionDiferido.userChoice.finally(() => {
-                promptInstalacionDiferido = null;
-                boton.classList.add('hidden');
-                boton.classList.remove('flex');
-            });
+        window.addEventListener('appinstalled', () => {
+            document.getElementById('btn-instalar-app').classList.add('hidden');
+            eventoInstalacionApp = null;
+        });
+
+        async function clicInstalarApp() {
+            if (eventoInstalacionApp) {
+                eventoInstalacionApp.prompt();
+                await eventoInstalacionApp.userChoice;
+                eventoInstalacionApp = null;
+                document.getElementById('btn-instalar-app').classList.add('hidden');
+            } else if (esIOS()) {
+                document.getElementById('instalar-ios-modal').classList.remove('hidden');
+            }
         }
 
-        window.addEventListener('appinstalled', () => {
-            const boton = document.getElementById('btn-instalar-app');
-            boton.classList.add('hidden');
-            boton.classList.remove('flex');
+        // En iPhone no existe el evento beforeinstallprompt, así que mostramos
+        // el botón directo (que abre las instrucciones manuales de Safari).
+        document.addEventListener('DOMContentLoaded', () => {
+            if (esIOS() && !appYaInstalada()) {
+                document.getElementById('btn-instalar-app').classList.remove('hidden');
+            }
         });
     </script>
 
@@ -1316,68 +1353,101 @@
             });
         }
 
+        function crearTarjetaProductoCliente(producto) {
+            const card = document.createElement('div');
+            const ofertaActiva = producto.ofertaHasta && producto.ofertaHasta > Date.now();
+            card.className = 'rounded-2xl overflow-hidden card-hover shadow-md cursor-pointer ' + (ofertaActiva ? 'oferta-relampago' : 'card-borde-animado');
+            const numeroContacto = producto.propietarioWhatsapp || WHATSAPP_NUMBER;
+            const tieneStock = producto.stock !== null && producto.stock !== undefined;
+            const agotado = tieneStock && producto.stock <= 0;
+            let etiquetaStock = '';
+            if (tieneStock) {
+                if (agotado) {
+                    etiquetaStock = '<p class="text-red-500 text-[9px] font-semibold mb-1">Agotado</p>';
+                } else if (producto.stock <= 3) {
+                    etiquetaStock = `<p class="text-orange-500 text-[9px] font-semibold mb-1">¡Quedan ${producto.stock}!</p>`;
+                } else {
+                    etiquetaStock = `<p class="text-green-600 text-[9px] mb-1">Quedan ${producto.stock}</p>`;
+                }
+            }
+            const botonComprar = agotado
+                ? `<span class="block text-center bg-gray-300 text-gray-500 py-1 rounded-lg font-semibold text-[10px]">Agotado</span>`
+                : `<a href="https://wa.me/${numeroContacto}?text=${mensajeCompraWhatsapp(producto)}" target="_blank" onclick="registrarClicCompraPorId('${producto.id}')" class="block text-center ${ofertaActiva ? 'bg-white text-red-600' : 'boton-animado text-white'} py-1 rounded-lg font-semibold text-[10px] transition shadow">${ofertaActiva ? '¡Aprovechar!' : 'Comprar'}</a>`;
+            const nombreVendedor = producto.propietarioNombre || 'SCT Stream';
+            const colorVendedor = colorAvatarDesdeNombre(nombreVendedor);
+            const vendedorVerificado = producto.propietario === 'principal' || !!producto.propietarioVerificado;
+            const insigniaVerificado = vendedorVerificado ? '<i class="fas fa-circle-check text-sky-400" title="Vendedor verificado"></i>' : '';
+            const ofertaBadge = ofertaActiva ? `<span class="oferta-badge"><i class="fas fa-bolt"></i> ${formatCuentaRegresiva(producto.ofertaHasta)}</span>` : '';
+            const descuentoActivo = producto.descuentoPorcentaje > 0 && producto.descuentoActivo;
+            const precioFinal = precioFinalProducto(producto);
+            const precioHtml = descuentoActivo
+                ? `<span class="text-[9px] line-through ${ofertaActiva ? 'text-white/60' : 'text-gray-400'}">S/ ${producto.precio}</span>
+                   <span class="text-xs font-bold ${ofertaActiva ? 'text-white' : 'text-emerald-600'}">S/ ${precioFinal}</span>
+                   <span class="bg-emerald-100 text-emerald-700 text-[8px] font-bold px-1 py-0.5 rounded-full">-${producto.descuentoPorcentaje}%</span>`
+                : `<span class="text-xs font-bold ${ofertaActiva ? 'text-white' : 'titulo-color'}">S/ ${producto.precio}</span>`;
+            const etiquetaEntrega = producto.entregaDemorada
+                ? `<p class="${ofertaActiva ? 'text-white/90' : 'text-orange-500'} text-[8px] font-semibold mb-1"><i class="fas fa-clock"></i> Entrega hasta 24h</p>`
+                : '';
+            card.innerHTML = `
+                ${ofertaBadge}
+                <img src="${producto.imagen}" class="w-full h-11 object-cover">
+                <div class="p-1.5">
+                    <h3 class="text-[11px] font-bold mb-0.5 ${ofertaActiva ? 'text-white' : 'text-purple-700'} truncate">${producto.nombre}</h3>
+                    <p class="${ofertaActiva ? 'text-white/70' : 'text-gray-400'} text-[8px] mb-1 flex items-center gap-1 truncate"><span class="inline-block w-1.5 h-1.5 rounded-full" style="background:${colorVendedor}"></span> ${nombreVendedor} ${insigniaVerificado}</p>
+                    <div class="flex items-end gap-1 mb-1 flex-wrap">
+                        ${precioHtml}
+                    </div>
+                    ${etiquetaEntrega}
+                    ${etiquetaStock}
+                    ${botonComprar}
+                </div>
+            `;
+            card.addEventListener('click', (ev) => {
+                activarEfectoLlamas(card);
+                if (ev.target.closest('a')) return;
+                verDetalleProducto(producto.id);
+            });
+            return card;
+        }
+
         function renderProductos() {
             renderCategoriasMenu();
-            const grid = document.getElementById('productos-grid');
-            grid.innerHTML = '';
+            const contenedor = document.getElementById('filas-productos');
+            contenedor.innerHTML = '';
             const listaFiltrada = productosFiltrados();
             const sinResultados = document.getElementById('sin-resultados-productos');
             if (sinResultados) sinResultados.classList.toggle('hidden', listaFiltrada.length > 0);
-            listaFiltrada.forEach(producto => {
-                const card = document.createElement('div');
-                const ofertaActiva = producto.ofertaHasta && producto.ofertaHasta > Date.now();
-                card.className = 'rounded-2xl overflow-hidden card-hover shadow-md cursor-pointer ' + (ofertaActiva ? 'oferta-relampago' : 'card-borde-animado');
-                const numeroContacto = producto.propietarioWhatsapp || WHATSAPP_NUMBER;
-                const tieneStock = producto.stock !== null && producto.stock !== undefined;
-                const agotado = tieneStock && producto.stock <= 0;
-                let etiquetaStock = '';
-                if (tieneStock) {
-                    if (agotado) {
-                        etiquetaStock = '<p class="text-red-500 text-[9px] font-semibold mb-1">Agotado</p>';
-                    } else if (producto.stock <= 3) {
-                        etiquetaStock = `<p class="text-orange-500 text-[9px] font-semibold mb-1">¡Quedan ${producto.stock}!</p>`;
-                    } else {
-                        etiquetaStock = `<p class="text-green-600 text-[9px] mb-1">Quedan ${producto.stock}</p>`;
-                    }
+
+            // Agrupa por categoría, respetando el orden en que aparecen.
+            const categoriasOrden = [];
+            const porCategoria = {};
+            listaFiltrada.forEach(p => {
+                const cat = (p.categoria || 'Otro').trim() || 'Otro';
+                if (!porCategoria[cat]) {
+                    porCategoria[cat] = [];
+                    categoriasOrden.push(cat);
                 }
-                const botonComprar = agotado
-                    ? `<span class="block text-center bg-gray-300 text-gray-500 py-1 rounded-lg font-semibold text-[10px]">Agotado</span>`
-                    : `<a href="https://wa.me/${numeroContacto}?text=${mensajeCompraWhatsapp(producto)}" target="_blank" onclick="registrarClicCompraPorId('${producto.id}')" class="block text-center ${ofertaActiva ? 'bg-white text-red-600' : 'boton-animado text-white'} py-1 rounded-lg font-semibold text-[10px] transition shadow">${ofertaActiva ? '¡Aprovechar!' : 'Comprar'}</a>`;
-                const nombreVendedor = producto.propietarioNombre || 'SCT Stream';
-                const colorVendedor = colorAvatarDesdeNombre(nombreVendedor);
-                const vendedorVerificado = producto.propietario === 'principal' || !!producto.propietarioVerificado;
-                const insigniaVerificado = vendedorVerificado ? '<i class="fas fa-circle-check text-sky-400" title="Vendedor verificado"></i>' : '';
-                const ofertaBadge = ofertaActiva ? `<span class="oferta-badge"><i class="fas fa-bolt"></i> ${formatCuentaRegresiva(producto.ofertaHasta)}</span>` : '';
-                const descuentoActivo = producto.descuentoPorcentaje > 0 && producto.descuentoActivo;
-                const precioFinal = precioFinalProducto(producto);
-                const precioHtml = descuentoActivo
-                    ? `<span class="text-[9px] line-through ${ofertaActiva ? 'text-white/60' : 'text-gray-400'}">S/ ${producto.precio}</span>
-                       <span class="text-xs font-bold ${ofertaActiva ? 'text-white' : 'text-emerald-600'}">S/ ${precioFinal}</span>
-                       <span class="bg-emerald-100 text-emerald-700 text-[8px] font-bold px-1 py-0.5 rounded-full">-${producto.descuentoPorcentaje}%</span>`
-                    : `<span class="text-xs font-bold ${ofertaActiva ? 'text-white' : 'titulo-color'}">S/ ${producto.precio}</span>`;
-                const etiquetaEntrega = producto.entregaDemorada
-                    ? `<p class="${ofertaActiva ? 'text-white/90' : 'text-orange-500'} text-[8px] font-semibold mb-1"><i class="fas fa-clock"></i> Entrega hasta 24h</p>`
-                    : '';
-                card.innerHTML = `
-                    ${ofertaBadge}
-                    <img src="${producto.imagen}" class="w-full h-11 object-cover">
-                    <div class="p-1.5">
-                        <h3 class="text-[11px] font-bold mb-0.5 ${ofertaActiva ? 'text-white' : 'text-purple-700'} truncate">${producto.nombre}</h3>
-                        <p class="${ofertaActiva ? 'text-white/70' : 'text-gray-400'} text-[8px] mb-1 flex items-center gap-1 truncate"><span class="inline-block w-1.5 h-1.5 rounded-full" style="background:${colorVendedor}"></span> ${nombreVendedor} ${insigniaVerificado}</p>
-                        <div class="flex items-end gap-1 mb-1 flex-wrap">
-                            ${precioHtml}
-                        </div>
-                        ${etiquetaEntrega}
-                        ${etiquetaStock}
-                        ${botonComprar}
+                porCategoria[cat].push(p);
+            });
+            categoriasOrden.sort();
+
+            categoriasOrden.forEach(cat => {
+                const seccion = document.createElement('div');
+                const icono = ICONOS_CATEGORIA[cat] || 'fa-tag';
+                seccion.innerHTML = `
+                    <div class="fila-categoria-titulo">
+                        <i class="fas ${icono} text-white/80 text-sm"></i>
+                        <h3 class="text-white font-bold text-base">${cat}</h3>
+                        ${porCategoria[cat].length > 6 ? `<span class="text-white/50 text-xs">${porCategoria[cat].length} · desliza hacia abajo para ver más ↓</span>` : `<span class="text-white/50 text-xs">${porCategoria[cat].length}</span>`}
                     </div>
                 `;
-                card.addEventListener('click', (ev) => {
-                    activarEfectoLlamas(card);
-                    if (ev.target.closest('a')) return;
-                    verDetalleProducto(producto.id);
+                const fila = document.createElement('div');
+                fila.className = 'fila-categoria-scroll';
+                porCategoria[cat].forEach(producto => {
+                    fila.appendChild(crearTarjetaProductoCliente(producto));
                 });
-                grid.appendChild(card);
+                seccion.appendChild(fila);
+                contenedor.appendChild(seccion);
             });
         }
 
@@ -1589,7 +1659,7 @@
             const stockEl = document.getElementById('detalle-stock');
             if (tieneStock) {
                 stockEl.textContent = agotado ? 'Agotado' : `Quedan ${producto.stock} disponibles`;
-                stockEl.className = agotado ? 'text-red-500 text-sm font-semibold mb-2' : 'text-green-600 text-sm mb-2';
+                stockEl.className = agotado ? 'text-red-500 text-xs font-semibold mb-2' : 'text-green-600 text-xs mb-2';
                 stockEl.classList.remove('hidden');
             } else {
                 stockEl.classList.add('hidden');
@@ -3978,6 +4048,16 @@
                 }
             }, 30000);
         };
+
+        // Registra el service worker (necesario para que el navegador
+        // ofrezca "Instalar app" / "Añadir a pantalla de inicio").
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => {
+                    console.warn('No se pudo registrar el service worker:', err);
+                });
+            });
+        }
     </script>
 </body>
 </html>
