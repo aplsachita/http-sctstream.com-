@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SCT Stream - Cuentas Premium de Streaming</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#7c3aff">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="SCT Stream">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -1006,6 +1014,48 @@
     <a href="https://wa.me/51925516886?text=Hola%20me%20interesa%20una%20cuenta" target="_blank" class="whatsapp-float">
         <i class="fab fa-whatsapp"></i>
     </a>
+
+    <button id="btn-instalar-app" onclick="instalarApp()" class="hidden fixed bottom-24 right-5 z-50 items-center gap-2 boton-animado text-white px-4 py-3 rounded-full font-semibold shadow-lg">
+        <i class="fa-solid fa-download"></i> Instalar App
+    </button>
+
+    <script>
+        // ---- App instalable (PWA) — independiente de Firebase/CDNs ----
+        let promptInstalacionDiferido = null;
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch((err) => {
+                    console.warn('No se pudo registrar el service worker:', err);
+                });
+            });
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            promptInstalacionDiferido = e;
+            const boton = document.getElementById('btn-instalar-app');
+            boton.classList.remove('hidden');
+            boton.classList.add('flex');
+        });
+
+        function instalarApp() {
+            const boton = document.getElementById('btn-instalar-app');
+            if (!promptInstalacionDiferido) return;
+            promptInstalacionDiferido.prompt();
+            promptInstalacionDiferido.userChoice.finally(() => {
+                promptInstalacionDiferido = null;
+                boton.classList.add('hidden');
+                boton.classList.remove('flex');
+            });
+        }
+
+        window.addEventListener('appinstalled', () => {
+            const boton = document.getElementById('btn-instalar-app');
+            boton.classList.add('hidden');
+            boton.classList.remove('flex');
+        });
+    </script>
 
     <script>
         const firebaseConfig = {
