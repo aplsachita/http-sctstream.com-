@@ -213,6 +213,13 @@
         /* ---- Tamaño de letra accesible ---- */
         html.texto-grande { font-size: 113%; }
         html.texto-xgrande { font-size: 128%; }
+        /* Evita que los paneles/modales se salgan de la pantalla cuando el
+           texto está agrandado (el ancho máximo, en rem, crece junto con la
+           letra si no se limita también al ancho real de la pantalla). */
+        .max-w-2xl { max-width: min(42rem, 94vw) !important; }
+        .max-w-md { max-width: min(28rem, 94vw) !important; }
+        .max-w-sm { max-width: min(24rem, 94vw) !important; }
+        .max-w-xs { max-width: min(20rem, 94vw) !important; }
 
         /* ---- Temas de temporada (automáticos por fecha) ---- */
         body.tema-navidad .hero-colorful { background: linear-gradient(135deg, #b91c1c, #166534, #b91c1c) !important; background-size: 300% 300%; }
@@ -877,8 +884,8 @@
                     <h4 class="mb-4 text-base admin-section-title">Agregar Nuevo Producto</h4>
                     <div class="admin-card p-5">
                         <div class="grid grid-cols-2 gap-4">
-                            <input id="new-name" type="text" placeholder="Nombre (Netflix, etc)" class="border border-gray-300 rounded-xl px-4 py-3">
-                            <input id="new-price" type="number" placeholder="Precio en soles (S/)" class="border border-gray-300 rounded-xl px-4 py-3">
+                            <input id="new-name" type="text" placeholder="Nombre (Netflix, etc)" class="border border-gray-300 rounded-xl px-4 py-3 min-w-0 w-full">
+                            <input id="new-price" type="number" placeholder="Precio en soles (S/)" class="border border-gray-300 rounded-xl px-4 py-3 min-w-0 w-full">
                         </div>
                         <input id="new-desc" type="text" placeholder="Descripción (ej: 4K • 4 pantallas)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-4">
                         <input id="new-stock" type="number" min="0" placeholder="Stock disponible (déjalo vacío si no quieres controlarlo)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-4">
@@ -2771,6 +2778,23 @@
                 mostrarAviso('Este producto está agotado.');
                 return;
             }
+            const propietarioNuevo = producto.propietario || 'principal';
+            const propietarioActualCarrito = carrito.length > 0 ? carrito[0].propietario : null;
+            if (propietarioActualCarrito && propietarioActualCarrito !== propietarioNuevo) {
+                const nombreActual = carrito[0].propietarioNombre || 'ese vendedor';
+                mostrarConfirmacion(
+                    `Tu carrito tiene productos de ${nombreActual}. Para coordinar el pedido en un solo mensaje, solo se pueden comprar productos de un mismo vendedor a la vez. ¿Vaciar el carrito y agregar este producto?`,
+                    () => {
+                        carrito = [];
+                        agregarProductoAlCarritoInterno(producto);
+                    }
+                );
+                return;
+            }
+            agregarProductoAlCarritoInterno(producto);
+        }
+
+        function agregarProductoAlCarritoInterno(producto) {
             const precio = varianteElegidaActual ? varianteElegidaActual.precio : precioFinalProducto(producto);
             const varianteNombre = varianteElegidaActual ? varianteElegidaActual.nombre : null;
             const existente = carrito.find(i => i.productoId === producto.id && i.varianteNombre === varianteNombre);
