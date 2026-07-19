@@ -1220,7 +1220,8 @@
             <label class="block text-xs font-semibold text-gray-500 mb-1">Nombre</label>
             <input id="editar-nombre-input" type="text" class="border-2 border-gray-300 rounded-xl px-4 py-3 text-left w-full mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Tu nombre">
             <label class="block text-xs font-semibold text-gray-500 mb-1">WhatsApp</label>
-            <input id="editar-whatsapp-input" type="tel" inputmode="numeric" class="border-2 border-gray-300 rounded-xl px-4 py-3 text-left w-full mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Tu número de WhatsApp">
+            <input id="editar-whatsapp-input" type="tel" inputmode="numeric" class="border-2 border-gray-300 rounded-xl px-4 py-3 text-left w-full mb-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Tu número de WhatsApp">
+            <button type="button" onclick="probarMiWhatsapp()" class="text-[11px] text-indigo-500 underline mb-3 block"><i class="fab fa-whatsapp mr-0.5"></i>Probar que este número abre bien en WhatsApp</button>
             <label class="block text-xs font-semibold text-gray-500 mb-1">Biografía corta (opcional)</label>
             <textarea id="editar-bio-input" rows="2" maxlength="140" class="border-2 border-gray-300 rounded-xl px-4 py-3 text-left w-full mb-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Ej: Vendo hace 2 años, especializado en cuentas familiares"></textarea>
             <label class="block text-xs font-semibold text-gray-500 mb-1">Estado (como el de WhatsApp)</label>
@@ -6078,6 +6079,16 @@
             document.getElementById('editar-whatsapp-modal').classList.add('hidden');
         }
 
+        function probarMiWhatsapp() {
+            const valorCrudo = document.getElementById('editar-whatsapp-input').value.trim();
+            if (!valorCrudo) {
+                mostrarAviso('Primero escribe tu número de WhatsApp arriba.');
+                return;
+            }
+            const numero = normalizarWhatsapp(valorCrudo);
+            window.open(`https://wa.me/${numero}?text=${encodeURIComponent('Esta es una prueba: así verían tus clientes tu WhatsApp en SCT Stream ✅')}`, '_blank');
+        }
+
         async function guardarWhatsappPersonal() {
             const nombreCrudo = document.getElementById('editar-nombre-input').value.trim();
             const valorCrudo = document.getElementById('editar-whatsapp-input').value.trim();
@@ -6085,9 +6096,11 @@
             const estadoCrudo = document.getElementById('editar-estado-input').value.trim();
             const errorEl = document.getElementById('editar-whatsapp-error');
             const soloDigitos = valorCrudo.replace(/\D/g, '');
+            let numeroLocal = soloDigitos;
+            if (numeroLocal.startsWith('51') && numeroLocal.length === 11) numeroLocal = numeroLocal.slice(2);
 
-            if (soloDigitos.length < 8) {
-                errorEl.textContent = 'Escribe un número de WhatsApp válido.';
+            if (!/^9\d{8}$/.test(numeroLocal)) {
+                errorEl.textContent = 'Ese número no parece un WhatsApp de Perú válido. Debe tener 9 dígitos y empezar con 9 (ej: 987654321).';
                 errorEl.classList.remove('hidden');
                 return;
             }
