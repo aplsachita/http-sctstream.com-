@@ -222,6 +222,14 @@
         .max-w-sm { max-width: min(24rem, 94vw) !important; }
         .max-w-xs { max-width: min(20rem, 94vw) !important; }
 
+        /* ---- Modo presentación: oculta datos sensibles con un borrón ---- */
+        body.modo-presentacion .dato-sensible {
+            filter: blur(5px);
+            user-select: none;
+            transition: filter .15s ease;
+        }
+        body.modo-presentacion .dato-sensible:active { filter: blur(0); }
+
         /* ---- Temas de temporada (automáticos por fecha) ---- */
         body.tema-navidad .hero-colorful { background: linear-gradient(135deg, #b91c1c, #166534, #b91c1c) !important; background-size: 300% 300%; }
         body.tema-fiestas-patrias .hero-colorful { background: linear-gradient(135deg, #dc2626, #ffffff, #dc2626) !important; background-size: 300% 300%; }
@@ -894,6 +902,10 @@
                             <input type="checkbox" id="new-entrega-demorada" class="w-5 h-5 accent-orange-500">
                             <span class="text-sm text-gray-600"><i class="fas fa-clock text-orange-500 mr-1"></i> Este producto tarda hasta 24 horas en entregarse</span>
                         </label>
+                        <label class="block mt-4 text-xs text-gray-500">
+                            <i class="fas fa-calendar-clock mr-1"></i> Publicar más tarde (opcional, déjalo vacío para publicar ya):
+                            <input type="datetime-local" id="new-publicar-en" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-1 text-gray-700">
+                        </label>
                         <div class="grid grid-cols-2 gap-4 mt-4">
                             <select id="new-categoria" onchange="document.getElementById('new-categoria-otro').classList.toggle('hidden', this.value !== 'Otro')" class="border border-gray-300 rounded-xl px-4 py-3">
                                 <option value="Streaming">Streaming</option>
@@ -965,6 +977,9 @@
                                 <p id="perfil-tienda-link" class="text-[13px] font-semibold text-slate-800 truncate">sctstream.xyz</p>
                                 <p id="perfil-tienda-productos" class="text-[11px] text-gray-400"></p>
                             </div>
+                            <button type="button" onclick="event.preventDefault(); event.stopPropagation(); mostrarQrDesdePerfil();" class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white opacity-80" style="background: var(--admin-accent, #6366f1);" title="Código QR">
+                                <i class="fas fa-qrcode text-xs"></i>
+                            </button>
                             <button type="button" onclick="event.preventDefault(); event.stopPropagation(); compartirDesdePerfil();" class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white" style="background: var(--admin-accent, #6366f1);" title="Compartir">
                                 <i class="fas fa-share-nodes text-xs"></i>
                             </button>
@@ -1032,6 +1047,7 @@
                         <button onclick="descargarBackupCompleto()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-download mr-1"></i> Backup completo</button>
                         <button onclick="optimizarFotosAntiguas()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-compress mr-1"></i> Optimizar fotos antiguas</button>
                     </div>
+                    <div id="aviso-backup-viejo" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-3 text-sm text-amber-700 font-semibold mb-4"><i class="fas fa-clock-rotate-left mr-1"></i> Ya pasó más de una semana desde tu último backup — te conviene descargar uno nuevo por si acaso.</div>
                     <p class="text-xs text-gray-400 mb-4">Cada clic en "Comprar por WhatsApp" queda registrado aquí. Marca "Vendido" cuando el cliente confirme y pague.</p>
                     <div id="pedidos-hoy-resumen" class="hidden mb-4"></div>
                     <div id="ventas-urgentes-container" class="hidden mb-4"></div>
@@ -1092,6 +1108,19 @@
                 </div>
 
                 <div class="admin-tab-pane" data-tab="seguridad">
+                    <div class="admin-card p-4 mb-6">
+                        <h4 class="text-sm font-bold text-slate-800 mb-1"><i class="fas fa-eye-slash mr-1 text-slate-500"></i> Modo presentación</h4>
+                        <p class="text-xs text-gray-400 mb-3">Oculta nombres, correos y WhatsApp con un borrón — útil si le vas a mostrar el panel a alguien más. Mantén presionado un dato borroso para verlo un instante.</p>
+                        <div class="flex items-center justify-between gap-3">
+                            <span id="modo-presentacion-estado" class="text-sm font-semibold text-gray-600">Desactivado</span>
+                            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                <input type="checkbox" id="toggle-modo-presentacion" class="sr-only peer" onchange="toggleModoPresentacion(this.checked)">
+                                <div class="w-11 h-6 bg-gray-300 peer-checked:bg-slate-600 rounded-full transition-colors"></div>
+                                <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="admin-card p-4 mb-6 hidden" id="horario-card">
                         <h4 class="text-sm font-bold text-slate-800 mb-1"><i class="fas fa-clock mr-1 text-indigo-500"></i> Horario de atención</h4>
                         <p class="text-xs text-gray-400 mb-3">Fuera de este horario, los clientes ven un aviso de que responderás más tarde.</p>
@@ -1366,6 +1395,19 @@
             <input id="avisar-stock-telefono" type="tel" inputmode="numeric" placeholder="Tu WhatsApp (ej: 925516886)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mb-3">
             <button onclick="confirmarAvisarStock()" class="boton-animado text-white py-3 rounded-xl font-semibold w-full mb-2">Avisarme</button>
             <button onclick="cerrarAvisarStock()" class="text-gray-400 text-sm">Cancelar</button>
+        </div>
+    </div>
+
+    <div id="toast-seguimiento" class="hidden" style="position:fixed; bottom:70px; left:50%; transform:translateX(-50%); z-index:320; background:#1f2937; color:#fff; padding:10px 14px; border-radius:12px; font-size:11px; display:flex; align-items:center; gap:10px; box-shadow:0 4px 14px rgba(0,0,0,0.3); max-width:90vw;">
+        <span id="toast-seguimiento-link">📦 Guarda tu link para ver el estado de tu pedido</span>
+        <button onclick="copiarLinkSeguimiento()" class="text-indigo-300 font-bold underline shrink-0">Copiar link</button>
+        <button onclick="document.getElementById('toast-seguimiento').classList.add('hidden')" class="text-gray-400 shrink-0">✕</button>
+    </div>
+
+    <div id="seguimiento-modal" class="hidden modal-overlay" onclick="if (event.target === this) cerrarSeguimientoPedido()">
+        <div class="bg-white rounded-3xl max-w-sm w-full mx-4 p-6 text-center">
+            <div id="seguimiento-contenido"></div>
+            <button onclick="cerrarSeguimientoPedido()" class="text-gray-400 text-sm mt-4">Cerrar</button>
         </div>
     </div>
 
@@ -1663,13 +1705,85 @@
                 fechaVencimiento: null,
                 creado: firebase.firestore.FieldValue.serverTimestamp(),
                 vendidoEn: null
-            }).catch(err => console.error('No se pudo registrar el clic de compra:', err));
+            }).then(ref => mostrarLinkSeguimiento(ref.id))
+              .catch(err => console.error('No se pudo registrar el clic de compra:', err));
             if (producto.id) {
                 db.collection('productos').doc(producto.id).update({
                     clicsCompra: firebase.firestore.FieldValue.increment(1)
                 }).catch(err => console.error('No se pudo actualizar el contador de interés:', err));
             }
         }
+
+        function mostrarLinkSeguimiento(pedidoId) {
+            const link = `${window.location.origin}${window.location.pathname}?pedido=${pedidoId}`;
+            localStorage.setItem('sct_ultimo_pedido', pedidoId);
+            const el = document.getElementById('toast-seguimiento');
+            if (!el) return;
+            document.getElementById('toast-seguimiento-link').dataset.link = link;
+            el.classList.remove('hidden');
+            clearTimeout(window._toastSeguimientoTimeout);
+            window._toastSeguimientoTimeout = setTimeout(() => el.classList.add('hidden'), 8000);
+        }
+
+        function copiarLinkSeguimiento() {
+            const link = document.getElementById('toast-seguimiento-link').dataset.link;
+            if (!link) return;
+            navigator.clipboard.writeText(link).then(() => {
+                mostrarAviso('Link copiado. Guárdalo para ver el estado de tu pedido cuando quieras.');
+            }).catch(() => {});
+        }
+
+        async function abrirSeguimientoPedido(pedidoId) {
+            const cont = document.getElementById('seguimiento-contenido');
+            cont.innerHTML = '<p class="text-sm text-gray-400">Buscando tu pedido...</p>';
+            document.getElementById('seguimiento-modal').classList.remove('hidden');
+            try {
+                const doc = await db.collection('pedidos').doc(pedidoId).get();
+                if (!doc.exists) {
+                    cont.innerHTML = '<i class="fas fa-circle-question text-3xl text-gray-300 mb-3 block"></i><p class="text-sm text-gray-500">No encontramos ese pedido. Puede que el link esté mal o ya no exista.</p>';
+                    return;
+                }
+                const p = doc.data();
+                const pasos = [
+                    { texto: 'Pedido recibido', icono: 'fa-circle-check' },
+                    { texto: 'Pago confirmado', icono: 'fa-circle-check' },
+                    { texto: 'Entregado', icono: 'fa-circle-check' }
+                ];
+                let pasoActual = 0;
+                if (p.estado === 'vendido') pasoActual = 1;
+                if (p.entregado) pasoActual = 2;
+                cont.innerHTML = `
+                    <h3 class="text-base font-bold text-slate-800 mb-1">${p.productoNombre}</h3>
+                    <p class="text-sm text-gray-400 mb-4">S/ ${p.precio}</p>
+                    <div class="space-y-3 text-left">
+                        ${pasos.map((paso, i) => `
+                            <div class="flex items-center gap-3">
+                                <i class="fas ${i <= pasoActual ? paso.icono : 'fa-circle'} ${i <= pasoActual ? 'text-emerald-500' : 'text-gray-300'}"></i>
+                                <span class="text-sm ${i <= pasoActual ? 'text-slate-700 font-semibold' : 'text-gray-400'}">${paso.texto}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    ${p.fechaVencimiento ? `<p class="text-xs text-gray-400 mt-4">Vence: ${new Date(p.fechaVencimiento).toLocaleDateString('es-PE')}</p>` : ''}
+                `;
+            } catch (err) {
+                cont.innerHTML = '<p class="text-sm text-red-400">No se pudo cargar tu pedido. Es posible que necesites el link exacto que te compartimos.</p>';
+            }
+        }
+
+        function cerrarSeguimientoPedido() {
+            document.getElementById('seguimiento-modal').classList.add('hidden');
+            const url = new URL(window.location.href);
+            url.searchParams.delete('pedido');
+            window.history.replaceState({}, '', url);
+        }
+
+        // ---- Seguimiento de pedido vía ?pedido=ID ----
+        (function abrirSeguimientoDesdeUrl() {
+            const idPedido = new URLSearchParams(window.location.search).get('pedido');
+            if (idPedido) {
+                document.addEventListener('DOMContentLoaded', () => abrirSeguimientoPedido(idPedido));
+            }
+        })();
 
         // ---- Programa de referidos ----
         (function capturarReferido() {
@@ -1739,8 +1853,11 @@
             if (seccionReferidos) seccionReferidos.classList.toggle('hidden', !programaReferidosActivo);
             const toggleAdmin = document.getElementById('toggle-referidos-activo');
             if (toggleAdmin) toggleAdmin.checked = programaReferidosActivo;
-            if (doc.exists && doc.data().contadorEntregas > 0) {
-                document.getElementById('contador-entregas-numero').textContent = doc.data().contadorEntregas;
+            const contadorManual = (doc.exists && doc.data().contadorEntregas) || 0;
+            const contadorReal = (doc.exists && doc.data().ventasHistoricas) || 0;
+            const contadorFinal = Math.max(contadorManual, contadorReal);
+            if (contadorFinal > 0) {
+                document.getElementById('contador-entregas-numero').textContent = contadorFinal;
                 document.getElementById('contador-entregas-texto').classList.remove('hidden');
             }
         }).catch(err => console.error('Error leyendo configuración principal:', err));
@@ -1862,6 +1979,11 @@
             }
         }
         setInterval(revisarHorarioAtencion, 5 * 60 * 1000);
+        // Revisa cada minuto si algún producto "programado" ya llegó a su hora,
+        // para que aparezca solo sin que el cliente tenga que refrescar.
+        setInterval(() => {
+            if (productos.some(p => p.publicarEn && p.publicarEn > 0)) renderProductos();
+        }, 60 * 1000);
 
         function estadoConexionVendedor(propietarioUid) {
             if (!propietarioUid || propietarioUid === 'principal') return null;
@@ -1962,7 +2084,9 @@
         let vendedorFiltroActivo = new URLSearchParams(window.location.search).get('vendedor');
 
         function productosFiltrados() {
+            const ahora = Date.now();
             return productos.filter(p => {
+                if (p.publicarEn && p.publicarEn > ahora) return false;
                 if (vendedorFiltroActivo && p.propietario !== vendedorFiltroActivo) return false;
                 const categoriaOk = categoriaActiva === 'Todos' || (p.categoria || 'Otro') === categoriaActiva;
                 if (!categoriaOk) return false;
@@ -2645,6 +2769,15 @@
             }
         }
 
+        function mostrarQrDesdePerfil() {
+            const card = document.getElementById('perfil-tienda-card');
+            if (!card || !card.href) return;
+            const nombre = esSuperAdmin ? 'Tu tienda' : 'Tu tienda personal';
+            document.getElementById('qr-producto-titulo').textContent = nombre;
+            document.getElementById('qr-producto-img').src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(card.href)}`;
+            document.getElementById('qr-producto-modal').classList.remove('hidden');
+        }
+
         function compartirDesdePerfil() {
             if (esSuperAdmin) compartirTienda();
             else compartirMiTienda();
@@ -2950,7 +3083,8 @@
                 fechaVencimiento: null,
                 creado: firebase.firestore.FieldValue.serverTimestamp(),
                 vendidoEn: null
-            }).catch(err => console.error('No se pudo registrar el clic de compra:', err));
+            }).then(ref => mostrarLinkSeguimiento(ref.id))
+              .catch(err => console.error('No se pudo registrar el clic de compra:', err));
             if (item.productoId) {
                 db.collection('productos').doc(item.productoId).update({
                     clicsCompra: firebase.firestore.FieldValue.increment(item.cantidad)
@@ -3535,6 +3669,9 @@
                 const badgeDescuento = descuentoActivo ? `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2"><i class="fas fa-tag"></i> -${descuentoPct}% activo</span>` : '';
                 const entregaDemorada = !!producto.entregaDemorada;
                 const badgeEntrega = entregaDemorada ? '<span class="bg-orange-100 text-orange-600 text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2"><i class="fas fa-clock"></i> Hasta 24h</span>' : '';
+                const badgeProgramado = (producto.publicarEn && producto.publicarEn > Date.now())
+                    ? `<span class="bg-violet-100 text-violet-700 text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2"><i class="fas fa-calendar-clock"></i> Se publica ${new Date(producto.publicarEn).toLocaleString('es-PE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>`
+                    : '';
                 const botonEntregaDemorada = entregaDemorada
                     ? `<button onclick="toggleEntregaDemorada('${producto.id}', false)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-clock mr-1"></i>Quitar aviso de 24h</button>`
                     : `<button onclick="toggleEntregaDemorada('${producto.id}', true)" class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-clock mr-1"></i>Avisar entrega hasta 24h</button>`;
@@ -3556,7 +3693,7 @@
                     <div class="flex items-center gap-3 mb-3">
                         <img src="${producto.imagen}" loading="lazy" class="w-14 h-14 rounded-xl object-cover">
                         <div class="flex-1">
-                            <p class="font-medium text-slate-800">${producto.nombre}${badgeStock}${badgeOferta}${badgeDescuento}${badgeEntrega}</p>
+                            <p class="font-medium text-slate-800">${producto.nombre}${badgeStock}${badgeOferta}${badgeDescuento}${badgeEntrega}${badgeProgramado}</p>
                             <p class="text-indigo-600 font-bold">S/ ${producto.precio}</p>
                             ${etiquetaDueno}
                         </div>
@@ -3885,6 +4022,7 @@
         function renderVentas() {
             const cont = document.getElementById('ventas-lista');
             if (!cont) return;
+            revisarAvisoBackup();
             const lista = pedidosFiltrados();
             const interesados = lista.filter(p => p.estado !== 'vendido');
             const confirmadas = lista.filter(p => p.estado === 'vendido');
@@ -3952,7 +4090,7 @@
                     const metodoTxt = p.metodoPago ? `<p class="text-xs text-indigo-500">Pago: ${p.metodoPago}</p>` : '';
                     const referidoTxt = p.referidoPor ? `<p class="text-xs text-pink-500"><i class="fas fa-gift"></i> Referido por ${p.referidoPor}</p>` : '';
                     const nivelCliente = p.clienteTelefono ? nivelDeCliente(comprasPorCliente[p.clienteTelefono] || 1) : null;
-                    const clienteTxt = p.clienteTelefono ? `<p class="text-xs text-gray-400"><i class="fab fa-whatsapp"></i> Cliente: ${p.clienteTelefono} ${nivelCliente ? `<span class="${nivelCliente.clase} text-[9px] px-1.5 py-0.5 rounded-full font-semibold ml-1">${nivelCliente.texto}</span>` : ''}</p>` : '';
+                    const clienteTxt = p.clienteTelefono ? `<p class="text-xs text-gray-400">📱 Cliente: <span class="dato-sensible">${p.clienteTelefono}</span> ${nivelCliente ? `<span class="${nivelCliente.clase} text-[9px] px-1.5 py-0.5 rounded-full font-semibold ml-1">${nivelCliente.texto}</span>` : ''}</p>` : '';
                     const vencimientoTxt = p.fechaVencimiento ? `<p class="text-xs text-gray-400">Vence: ${new Date(p.fechaVencimiento).toLocaleDateString('es-PE')}</p>` : '';
                     const entregadoBadge = p.entregado
                         ? `<span class="bg-sky-100 text-sky-700 text-[10px] px-2 py-0.5 rounded-full font-semibold ml-1">ENTREGADO</span>`
@@ -4154,7 +4292,17 @@
             a.download = `backup_sct_stream_${new Date().toISOString().slice(0, 10)}.json`;
             a.click();
             URL.revokeObjectURL(url);
+            localStorage.setItem('sct_ultimo_backup', String(Date.now()));
+            document.getElementById('aviso-backup-viejo').classList.add('hidden');
             mostrarAviso('Backup descargado. Guárdalo en un lugar seguro.');
+        }
+
+        function revisarAvisoBackup() {
+            const aviso = document.getElementById('aviso-backup-viejo');
+            if (!aviso) return;
+            const ultimo = parseInt(localStorage.getItem('sct_ultimo_backup') || '0', 10);
+            const diasDesdeBackup = ultimo ? (Date.now() - ultimo) / 86400000 : Infinity;
+            aviso.classList.toggle('hidden', diasDesdeBackup < 7);
         }
 
         let pedidoEnConfirmacion = null;
@@ -4191,6 +4339,9 @@
                     fechaVencimiento: extra.fechaVencimiento || null
                 });
                 await descontarStockPorPedido(id);
+                db.collection('configuracion').doc('principal').update({
+                    ventasHistoricas: firebase.firestore.FieldValue.increment(1)
+                }).catch(() => {});
                 mostrarAviso('Venta confirmada. Ya se refleja en tus estadísticas y en el stock del producto.');
             } catch (err) {
                 mostrarAviso('No se pudo confirmar la venta: ' + (err.message || err.code || 'error desconocido'));
@@ -4623,6 +4774,8 @@
             const stockValor = document.getElementById('new-stock').value.trim();
             const stock = stockValor === '' ? null : Math.max(0, parseInt(stockValor, 10));
             const entregaDemorada = document.getElementById('new-entrega-demorada').checked;
+            const publicarEnValor = document.getElementById('new-publicar-en').value;
+            const publicarEn = publicarEnValor ? new Date(publicarEnValor).getTime() : null;
             const categoriaSelect = document.getElementById('new-categoria').value;
             const categoria = categoriaSelect === 'Otro'
                 ? (document.getElementById('new-categoria-otro').value.trim() || 'Otro')
@@ -4657,6 +4810,7 @@
                     descripcion: descripcion,
                     stock: stock,
                     entregaDemorada: entregaDemorada,
+                    publicarEn: publicarEn,
                     imagen: nuevaFotoBase64 || "https://picsum.photos/id/" + (100 + Math.floor(Math.random()*400)) + "/400/300",
                     imagenes: nuevasFotosExtraBase64,
                     variantes: variantes,
@@ -4687,6 +4841,7 @@
             document.getElementById('new-desc').value = '';
             document.getElementById('new-stock').value = '';
             document.getElementById('new-entrega-demorada').checked = false;
+            document.getElementById('new-publicar-en').value = '';
             document.getElementById('new-categoria').value = 'Streaming';
             document.getElementById('new-categoria-otro').value = '';
             document.getElementById('new-categoria-otro').classList.add('hidden');
@@ -5140,6 +5295,14 @@
             cargarEstadoVacaciones();
             document.getElementById('horario-card').classList.toggle('hidden', !esSuperAdmin);
             if (esSuperAdmin) cargarHorarioAtencion();
+            const modoPresActivo = document.body.classList.contains('modo-presentacion');
+            document.getElementById('toggle-modo-presentacion').checked = modoPresActivo;
+            document.getElementById('modo-presentacion-estado').textContent = modoPresActivo ? 'Activado' : 'Desactivado';
+        }
+
+        function toggleModoPresentacion(activo) {
+            document.body.classList.toggle('modo-presentacion', activo);
+            document.getElementById('modo-presentacion-estado').textContent = activo ? 'Activado' : 'Desactivado';
         }
 
         async function cargarHorarioAtencion() {
@@ -5917,15 +6080,15 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
-                                <p class="font-semibold text-slate-800">${adm.nombre || 'Administrador'} <span class="text-[10px] font-mono font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">#${codigoCortoAdmin(adm.id)}</span></p>
+                                <p class="font-semibold text-slate-800"><span class="dato-sensible">${adm.nombre || 'Administrador'}</span> <span class="text-[10px] font-mono font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">#${codigoCortoAdmin(adm.id)}</span></p>
                                 ${adm.verificado ? '<span class="bg-sky-100 text-sky-700 text-[10px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-circle-check"></i> Verificado</span>' : ''}
                                 ${bloqueado ? '<span class="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">BLOQUEADO</span>' : '<span class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-semibold">ACTIVO</span>'}
                                 ${esNuevo ? '<span class="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-semibold">🆕 Nuevo</span>' : ''}
                                 <span class="bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-semibold">${numProductos} producto${numProductos === 1 ? '' : 's'}</span>
                                 <span class="${conectado ? 'badge-en-linea' : 'badge-desconectado'} text-[10px] px-2 py-0.5 rounded-full font-semibold"><span class="estado-punto ${conectado ? 'en-linea' : 'desconectado'}"></span>${conectado ? 'En línea' : 'Desconectado'}</span>
                             </div>
-                            <p class="text-sm text-gray-500 break-all mt-1">Correo: ${adm.correo || 'No especificó'}</p>
-                            <p class="text-sm text-gray-500">WhatsApp: ${adm.whatsapp || 'No especificó'}</p>
+                            <p class="text-sm text-gray-500 break-all mt-1">Correo: <span class="dato-sensible">${adm.correo || 'No especificó'}</span></p>
+                            <p class="text-sm text-gray-500">WhatsApp: <span class="dato-sensible">${adm.whatsapp || 'No especificó'}</span></p>
                             ${fechaIngreso ? `<p class="text-xs text-gray-400 mt-1"><i class="fas fa-calendar-alt"></i> Se unió el ${fechaIngreso}</p>` : ''}
                             <p class="text-xs text-gray-400 mt-0.5"><i class="fas fa-signal"></i> ${conectado ? 'Conectado ahora' : 'Última conexión: ' + formatUltimaConexion(adm.ultimaConexion)}</p>
                             <div class="flex flex-wrap gap-1.5 mt-2">${productosHtml}</div>
