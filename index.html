@@ -23,6 +23,7 @@
     <meta name="apple-mobile-web-app-title" content="SCT Stream">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -1020,6 +1021,7 @@
                         <h4 id="mis-productos-titulo" class="text-base admin-section-title">Tus Productos</h4>
                         <select id="filtro-propietario-select" onchange="filtrarProductosPorPropietario(this.value)" class="hidden border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></select>
                     </div>
+                    <div id="aviso-agotados" class="hidden mb-4"></div>
                     <div id="admin-productos" class="space-y-4"></div>
                 </div>
 
@@ -1028,6 +1030,7 @@
                         <h4 class="text-base admin-section-title"><i class="fas fa-cart-shopping mr-1"></i> Ventas y clics de "Comprar"</h4>
                         <button onclick="exportarVentasCSV()" class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-file-csv mr-1"></i> Exportar a CSV</button>
                         <button onclick="descargarBackupCompleto()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-download mr-1"></i> Backup completo</button>
+                        <button onclick="optimizarFotosAntiguas()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-compress mr-1"></i> Optimizar fotos antiguas</button>
                     </div>
                     <p class="text-xs text-gray-400 mb-4">Cada clic en "Comprar por WhatsApp" queda registrado aquí. Marca "Vendido" cuando el cliente confirme y pague.</p>
                     <div id="pedidos-hoy-resumen" class="hidden mb-4"></div>
@@ -1365,6 +1368,11 @@
         </div>
     </div>
 
+    <div id="toast-deshacer" class="hidden" style="position:fixed; bottom:16px; left:50%; transform:translateX(-50%); z-index:320; background:#1f2937; color:#fff; padding:10px 14px; border-radius:12px; font-size:12px; display:flex; align-items:center; gap:10px; box-shadow:0 4px 14px rgba(0,0,0,0.3); max-width:90vw;">
+        <span id="toast-deshacer-texto"></span>
+        <button onclick="ejecutarDeshacer()" class="text-indigo-300 font-bold underline shrink-0">Deshacer</button>
+    </div>
+
     <div id="banner-sin-conexion" class="hidden" style="position:fixed; top:0; left:0; right:0; z-index:300; background:#dc2626; color:#fff; text-align:center; padding:8px; font-size:13px; font-weight:600;">
         <i class="fas fa-wifi mr-1"></i> Sin conexión — reintentando...
     </div>
@@ -1380,6 +1388,19 @@
                 <button onclick="cerrarVistaRapida()" class="flex-1 text-gray-400 text-xs border border-gray-200 rounded-xl py-2">Cerrar</button>
                 <button id="vr-ver-mas" class="flex-1 boton-animado text-white text-xs rounded-xl py-2 font-semibold">Ver detalle completo</button>
             </div>
+        </div>
+    </div>
+
+    <div id="bienvenida-modal" class="hidden modal-overlay">
+        <div class="bg-white rounded-3xl max-w-xs w-full mx-4 p-6 text-center">
+            <div id="bienvenida-slides"></div>
+            <div class="flex justify-center gap-1.5 my-4">
+                <span id="bienvenida-dot-0" class="w-2 h-2 rounded-full bg-purple-600"></span>
+                <span id="bienvenida-dot-1" class="w-2 h-2 rounded-full bg-gray-200"></span>
+                <span id="bienvenida-dot-2" class="w-2 h-2 rounded-full bg-gray-200"></span>
+            </div>
+            <button id="bienvenida-btn" onclick="avanzarBienvenida()" class="boton-animado text-white py-3 rounded-xl font-semibold w-full mb-2">Siguiente</button>
+            <button onclick="cerrarBienvenida()" class="text-gray-400 text-xs">Saltar</button>
         </div>
     </div>
 
@@ -1766,7 +1787,7 @@
 
         let yaAbrioProductoDesdeUrl = false;
 
-        db.collection('productos').orderBy('creado', 'desc').onSnapshot(snapshot => {
+        db.collection('productos').orderBy('creado', 'desc').limit(300).onSnapshot(snapshot => {
             const idsAnteriores = productosIdsConocidos;
             productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             if (idsAnteriores) {
@@ -2716,6 +2737,13 @@
             }
             const producto = productos.find(p => p.id === productoDetalleActualId);
             if (!producto) return;
+            let avisosEnviados = [];
+            try { avisosEnviados = JSON.parse(localStorage.getItem('sct_avisos_stock_enviados') || '[]'); } catch (err) { avisosEnviados = []; }
+            if (avisosEnviados.includes(producto.id)) {
+                mostrarAviso('Ya dejaste tu aviso para este producto — te escribiremos apenas haya stock, no hace falta repetirlo.');
+                cerrarAvisarStock();
+                return;
+            }
             try {
                 await db.collection('avisosStock').add({
                     productoId: producto.id,
@@ -2725,6 +2753,8 @@
                     creado: firebase.firestore.FieldValue.serverTimestamp(),
                     avisado: false
                 });
+                avisosEnviados.push(producto.id);
+                localStorage.setItem('sct_avisos_stock_enviados', JSON.stringify(avisosEnviados));
                 cerrarAvisarStock();
                 mostrarAviso('Listo, te avisaremos por WhatsApp apenas haya stock.');
             } catch (err) {
@@ -2830,10 +2860,79 @@
             renderCarrito();
         }
 
+        let deshacerCallback = null;
+        let deshacerTimeout = null;
+
+        const BIENVENIDA_SLIDES = [
+            { icono: 'fa-list-check', color: 'text-purple-600 bg-purple-100', titulo: '1. Elige tu producto', texto: 'Busca la plataforma que quieres y revisa el precio y los términos.' },
+            { icono: 'fa-cart-shopping', color: 'text-indigo-600 bg-indigo-100', titulo: '2. Agrégalo al carrito', texto: 'Puedes comprar directo o juntar varios productos del mismo vendedor.' },
+            { icono: 'fa-whatsapp fab', color: 'text-emerald-600 bg-emerald-100', titulo: '3. Coordina por WhatsApp', texto: 'Te contactamos para confirmar el pago y activarte la cuenta.' }
+        ];
+        let bienvenidaIndice = 0;
+
+        function mostrarSlideBienvenida() {
+            const s = BIENVENIDA_SLIDES[bienvenidaIndice];
+            document.getElementById('bienvenida-slides').innerHTML = `
+                <div class="w-16 h-16 rounded-full ${s.color} flex items-center justify-center text-2xl mx-auto mb-4"><i class="fas ${s.icono}"></i></div>
+                <h3 class="text-lg font-bold text-slate-800 mb-2">${s.titulo}</h3>
+                <p class="text-sm text-gray-500">${s.texto}</p>
+            `;
+            for (let i = 0; i < BIENVENIDA_SLIDES.length; i++) {
+                document.getElementById('bienvenida-dot-' + i).className = 'w-2 h-2 rounded-full ' + (i === bienvenidaIndice ? 'bg-purple-600' : 'bg-gray-200');
+            }
+            document.getElementById('bienvenida-btn').textContent = bienvenidaIndice === BIENVENIDA_SLIDES.length - 1 ? '¡Empezar a comprar!' : 'Siguiente';
+        }
+
+        function avanzarBienvenida() {
+            bienvenidaIndice++;
+            if (bienvenidaIndice >= BIENVENIDA_SLIDES.length) {
+                cerrarBienvenida();
+                return;
+            }
+            mostrarSlideBienvenida();
+        }
+
+        function cerrarBienvenida() {
+            document.getElementById('bienvenida-modal').classList.add('hidden');
+            localStorage.setItem('sct_bienvenida_vista', '1');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!localStorage.getItem('sct_bienvenida_vista')) {
+                bienvenidaIndice = 0;
+                mostrarSlideBienvenida();
+                document.getElementById('bienvenida-modal').classList.remove('hidden');
+            }
+        });
+
+        function mostrarDeshacer(texto, callback) {
+            deshacerCallback = callback;
+            document.getElementById('toast-deshacer-texto').textContent = texto;
+            document.getElementById('toast-deshacer').classList.remove('hidden');
+            clearTimeout(deshacerTimeout);
+            deshacerTimeout = setTimeout(() => {
+                document.getElementById('toast-deshacer').classList.add('hidden');
+                deshacerCallback = null;
+            }, 5000);
+        }
+
+        function ejecutarDeshacer() {
+            if (deshacerCallback) deshacerCallback();
+            document.getElementById('toast-deshacer').classList.add('hidden');
+            deshacerCallback = null;
+            clearTimeout(deshacerTimeout);
+        }
+
         function quitarDelCarrito(indice) {
+            const item = carrito[indice];
             carrito.splice(indice, 1);
             guardarCarrito();
             renderCarrito();
+            mostrarDeshacer(`Quitaste "${item.nombre}" del carrito.`, () => {
+                carrito.splice(indice, 0, item);
+                guardarCarrito();
+                renderCarrito();
+            });
         }
 
         function registrarClicCarritoItem(item) {
@@ -2947,7 +3046,8 @@
         }
 
         function toggleFavorito(id) {
-            if (favoritos.includes(id)) {
+            const eraFavorito = favoritos.includes(id);
+            if (eraFavorito) {
                 favoritos = favoritos.filter(f => f !== id);
             } else {
                 favoritos.push(id);
@@ -2955,6 +3055,15 @@
             localStorage.setItem('sct_favoritos', JSON.stringify(favoritos));
             actualizarBadgeFavoritos();
             renderProductos();
+            if (eraFavorito) {
+                const producto = productos.find(p => p.id === id);
+                mostrarDeshacer(`Quitaste "${producto ? producto.nombre : 'el producto'}" de favoritos.`, () => {
+                    if (!favoritos.includes(id)) favoritos.push(id);
+                    localStorage.setItem('sct_favoritos', JSON.stringify(favoritos));
+                    actualizarBadgeFavoritos();
+                    renderProductos();
+                });
+            }
         }
 
         function actualizarBadgeFavoritos() {
@@ -3379,6 +3488,18 @@
             } else {
                 listaAMostrar = productos.filter(p => p.propietario === miUid);
             }
+
+            const avisoAgotados = document.getElementById('aviso-agotados');
+            if (avisoAgotados) {
+                const agotados = listaAMostrar.filter(p => p.stock !== null && p.stock !== undefined && p.stock <= 0);
+                if (agotados.length > 0) {
+                    avisoAgotados.innerHTML = `<div class="bg-red-50 border border-red-200 rounded-2xl p-3 text-sm text-red-700 font-semibold"><i class="fas fa-triangle-exclamation mr-1"></i> ${agotados.length} producto${agotados.length === 1 ? ' está agotado' : 's están agotados'}: ${agotados.map(p => p.nombre).join(', ')}</div>`;
+                    avisoAgotados.classList.remove('hidden');
+                } else {
+                    avisoAgotados.classList.add('hidden');
+                }
+            }
+
             if (esSuperAdmin) {
                 const titulo = document.getElementById('mis-productos-titulo');
                 if (filtroPropietarioId === 'todos') {
@@ -3855,6 +3976,7 @@
                             </div>
                             <div class="flex gap-2">
                                 ${botonEntregado}
+                                <button onclick='descargarComprobantePDF(${JSON.stringify({ nombre: p.productoNombre, precio: p.precio, metodo: p.metodoPago || '', vendedor: p.propietarioNombre || 'SCT Stream', cliente: p.clienteTelefono || '', fecha: fecha })})' class="bg-slate-500 hover:bg-slate-600 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-file-pdf mr-1"></i>PDF</button>
                                 <button onclick="eliminarPedido('${p.id}')" class="text-red-400 hover:text-red-600 text-xs px-2"><i class="fas fa-trash"></i></button>
                             </div>
                         </div>
@@ -3876,6 +3998,53 @@
             } else {
                 urgentesCont.classList.add('hidden');
             }
+        }
+
+        function descargarComprobantePDF(datos) {
+            if (typeof window.jspdf === 'undefined') {
+                mostrarAviso('El generador de PDF todavía está cargando, intenta de nuevo en un segundo.');
+                return;
+            }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: [90, 130] });
+
+            doc.setFillColor(124, 58, 255);
+            doc.rect(0, 0, 90, 20, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(13);
+            doc.text('SCT Stream', 8, 12);
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'normal');
+            doc.text('Comprobante de venta', 8, 17);
+
+            doc.setTextColor(30, 30, 30);
+            let y = 30;
+            const linea = (label, valor) => {
+                if (!valor) return;
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9);
+                doc.text(label, 8, y);
+                doc.setFont('helvetica', 'normal');
+                doc.text(String(valor), 8, y + 5);
+                y += 13;
+            };
+            linea('Producto', datos.nombre);
+            linea('Precio', `S/ ${datos.precio}`);
+            linea('Vendedor', datos.vendedor);
+            if (datos.metodo) linea('Método de pago', datos.metodo);
+            if (datos.cliente) linea('WhatsApp del cliente', datos.cliente);
+            linea('Fecha', datos.fecha);
+
+            doc.setDrawColor(220, 220, 220);
+            doc.line(8, y, 82, y);
+            y += 6;
+            doc.setFontSize(7);
+            doc.setTextColor(140, 140, 140);
+            doc.text('Este comprobante es un resumen interno, no un', 8, y);
+            doc.text('comprobante de pago oficial (boleta/factura).', 8, y + 4);
+
+            doc.save(`comprobante_${(datos.nombre || 'venta').replace(/\s+/g, '_')}.pdf`);
         }
 
         async function marcarPedidoEntregado(id) {
@@ -3922,6 +4091,51 @@
             a.download = `ventas_sct_stream_${new Date().toISOString().slice(0, 10)}.csv`;
             a.click();
             URL.revokeObjectURL(url);
+        }
+
+        function comprimirDataUri(dataUri, maxAncho, calidad) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const escala = Math.min(1, maxAncho / img.width);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width * escala;
+                    canvas.height = img.height * escala;
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    resolve(canvas.toDataURL('image/jpeg', calidad));
+                };
+                img.onerror = reject;
+                img.src = dataUri;
+            });
+        }
+
+        async function optimizarFotosAntiguas() {
+            const miUid = auth.currentUser && auth.currentUser.uid;
+            const misProductos = esSuperAdmin ? productos : productos.filter(p => p.propietario === miUid);
+            const LIMITE = 200 * 1024; // ~200KB en texto base64
+            const candidatos = misProductos.filter(p => p.imagen && p.imagen.startsWith('data:') && p.imagen.length > LIMITE);
+
+            if (candidatos.length === 0) {
+                mostrarAviso('Tus fotos ya están optimizadas — no hay ninguna pesada para reducir.');
+                return;
+            }
+
+            mostrarConfirmacion(`Encontré ${candidatos.length} foto(s) pesada(s). ¿Comprimirlas ahora? No se pierde la foto, solo baja de peso.`, async () => {
+                mostrarAviso(`Optimizando ${candidatos.length} foto(s), espera un momento...`);
+                let hechas = 0;
+                for (const p of candidatos) {
+                    try {
+                        const nueva = await comprimirDataUri(p.imagen, 700, 0.65);
+                        if (nueva.length < p.imagen.length) {
+                            await db.collection('productos').doc(p.id).update({ imagen: nueva });
+                            hechas++;
+                        }
+                    } catch (err) {
+                        console.error('No se pudo optimizar la foto de', p.nombre, err);
+                    }
+                }
+                mostrarAviso(`Listo: se optimizaron ${hechas} de ${candidatos.length} foto(s).`);
+            });
         }
 
         function descargarBackupCompleto() {
