@@ -882,6 +882,19 @@
                         <p class="text-xs text-gray-400 mb-4">Publicados hace más de un mes y sin ningún clic en "Comprar". Candidatos a bajar de precio o quitar.</p>
                         <div id="stats-salud-lista" class="space-y-2"></div>
                     </div>
+                    <div id="stats-comparativa-superadmin" class="hidden mb-8 grid grid-cols-2 gap-3">
+                        <div class="admin-card p-3 text-center">
+                            <p id="stats-comparativa-texto" class="text-sm font-bold"></p>
+                            <p class="text-[10px] text-gray-400">Vs. mes anterior</p>
+                        </div>
+                        <div class="admin-card p-3 text-center">
+                            <p id="stats-racha-texto" class="text-sm font-bold">🔥 0 días</p>
+                            <p class="text-[10px] text-gray-400">Racha de ventas</p>
+                        </div>
+                    </div>
+                    <div id="stats-mejor-horario" class="hidden mb-8">
+                        <div class="admin-card p-3 text-sm text-gray-600"><i class="fas fa-clock text-indigo-500 mr-1"></i> <span id="stats-mejor-horario-texto"></span></div>
+                    </div>
                     <div id="stats-grafica-superadmin" class="hidden mb-8">
                         <h4 class="mb-2 text-base admin-section-title"><i class="fas fa-chart-column mr-1"></i> Ventas de las últimas 8 semanas</h4>
                         <canvas id="grafica-ventas-canvas" width="600" height="180" class="w-full"></canvas>
@@ -1045,6 +1058,8 @@
                         <h4 class="text-base admin-section-title"><i class="fas fa-cart-shopping mr-1"></i> Ventas y clics de "Comprar"</h4>
                         <button onclick="exportarVentasCSV()" class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-file-csv mr-1"></i> Exportar a CSV</button>
                         <button onclick="descargarBackupCompleto()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-download mr-1"></i> Backup completo</button>
+                        <button onclick="exportarClientesCSV()" class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-address-book mr-1"></i> Exportar clientes</button>
+                        <button onclick="generarCatalogoPDF()" class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-book mr-1"></i> Catálogo PDF</button>
                         <button onclick="optimizarFotosAntiguas()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-compress mr-1"></i> Optimizar fotos antiguas</button>
                     </div>
                     <div id="aviso-backup-viejo" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-3 text-sm text-amber-700 font-semibold mb-4"><i class="fas fa-clock-rotate-left mr-1"></i> Ya pasó más de una semana desde tu último backup — te conviene descargar uno nuevo por si acaso.</div>
@@ -1119,6 +1134,20 @@
                                 <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
                             </label>
                         </div>
+                    </div>
+
+                    <div class="admin-card p-4 mb-6 hidden" id="mantenimiento-card">
+                        <h4 class="text-sm font-bold text-slate-800 mb-1"><i class="fas fa-triangle-exclamation mr-1 text-red-500"></i> Modo mantenimiento</h4>
+                        <p class="text-xs text-gray-400 mb-3">Pausa TODA la tienda (todos los vendedores), con un mensaje para tus clientes. Úsalo solo si vas a hacer cambios grandes.</p>
+                        <div class="flex items-center justify-between gap-3 mb-2">
+                            <span id="mantenimiento-estado-texto" class="text-sm font-semibold text-gray-600">Desactivado</span>
+                            <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                <input type="checkbox" id="toggle-mantenimiento" class="sr-only peer" onchange="toggleModoMantenimiento(this.checked)">
+                                <div class="w-11 h-6 bg-gray-300 peer-checked:bg-red-500 rounded-full transition-colors"></div>
+                                <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                            </label>
+                        </div>
+                        <input id="mantenimiento-mensaje" type="text" placeholder="Mensaje para tus clientes (ej: Volvemos en 1 hora)" class="border border-gray-300 rounded-xl px-3 py-2 text-xs w-full" onchange="guardarMensajeMantenimiento()">
                     </div>
 
                     <div class="admin-card p-4 mb-6 hidden" id="horario-card">
@@ -1230,7 +1259,8 @@
             </div>
             <h3 class="text-xl font-bold text-slate-800 mb-2">Crea tu PIN personal</h3>
             <p class="text-gray-500 text-sm mb-4">Úsalo para entrar rápido a tu panel desde este celular.</p>
-            <input id="pin-personal-input" type="password" inputmode="numeric" maxlength="6" class="border-2 border-gray-300 rounded-xl px-4 py-3 text-center text-2xl tracking-widest w-full mb-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="6 dígitos">
+            <input id="pin-personal-input" type="password" inputmode="numeric" maxlength="6" class="border-2 border-gray-300 rounded-xl px-4 py-3 text-center text-2xl tracking-widest w-full mb-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="6 dígitos" oninput="document.getElementById('pin-personal-fuerza').textContent = evaluarFuerzaPin(this.value).texto; document.getElementById('pin-personal-fuerza').className = 'text-xs mb-2 ' + evaluarFuerzaPin(this.value).clase;">
+            <p id="pin-personal-fuerza" class="text-xs mb-2"></p>
             <p id="pin-personal-error" class="hidden text-red-500 text-sm mb-3"></p>
             <button onclick="guardarPinPersonal()" class="admin-btn-primary text-white py-3 rounded-xl font-semibold w-full mb-2">Guardar PIN</button>
             <button onclick="omitirPinPersonal()" class="text-gray-400 text-sm w-full">Ahora no</button>
@@ -1299,7 +1329,8 @@
                 <input id="registro-nombre" type="text" placeholder="Tu nombre" class="border border-gray-300 rounded-xl px-4 py-3 w-full mb-3">
                 <input id="registro-password" type="password" placeholder="Crea una contraseña (mínimo 6 caracteres)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mb-3">
                 <input id="registro-whatsapp" type="tel" inputmode="numeric" placeholder="Tu número de WhatsApp" class="border border-gray-300 rounded-xl px-4 py-3 w-full mb-3">
-                <input id="registro-pin" type="password" inputmode="numeric" maxlength="6" placeholder="Crea tu PIN de acceso rápido (6 dígitos)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mb-3 text-center text-2xl tracking-widest">
+                <input id="registro-pin" type="password" inputmode="numeric" maxlength="6" placeholder="Crea tu PIN de acceso rápido (6 dígitos)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mb-1 text-center text-2xl tracking-widest" oninput="document.getElementById('registro-pin-fuerza').textContent = evaluarFuerzaPin(this.value).texto; document.getElementById('registro-pin-fuerza').className = 'text-xs mb-2 text-center ' + evaluarFuerzaPin(this.value).clase;">
+                <p id="registro-pin-fuerza" class="text-xs mb-2 text-center"></p>
                 <div class="text-left mb-3">
                     <p class="text-sm font-semibold text-gray-600 mb-2">¿Qué métodos de pago aceptas?</p>
                     <div class="grid grid-cols-2 gap-2">
@@ -1416,6 +1447,15 @@
         <button onclick="ejecutarDeshacer()" class="text-indigo-300 font-bold underline shrink-0">Deshacer</button>
     </div>
 
+    <div id="mantenimiento-overlay" class="hidden" style="position:fixed; inset:0; z-index:400; background:linear-gradient(135deg,#7c3aff,#00e5ff); display:flex; align-items:center; justify-content:center; padding:24px; text-align:center;">
+        <div class="bg-white rounded-3xl p-8 max-w-sm">
+            <i class="fas fa-screwdriver-wrench text-4xl text-purple-600 mb-4"></i>
+            <h2 class="text-xl font-bold text-slate-800 mb-2">Estamos mejorando la tienda</h2>
+            <p id="mantenimiento-mensaje-texto" class="text-sm text-gray-500 mb-4">Vuelve en un rato.</p>
+            <a href="https://wa.me/51925516886" target="_blank" class="text-purple-600 text-sm font-semibold underline"><i class="fab fa-whatsapp mr-1"></i>Escríbenos por WhatsApp</a>
+        </div>
+    </div>
+
     <div id="banner-sin-conexion" class="hidden" style="position:fixed; top:0; left:0; right:0; z-index:300; background:#dc2626; color:#fff; text-align:center; padding:8px; font-size:13px; font-weight:600;">
         <i class="fas fa-wifi mr-1"></i> Sin conexión — reintentando...
     </div>
@@ -1464,8 +1504,11 @@
     <div id="favoritos-modal" class="hidden modal-overlay" onclick="if (event.target === this) cerrarFavoritos()">
         <div class="bg-white rounded-3xl max-w-sm w-full mx-4 overflow-hidden flex flex-col" style="max-height: 85vh;">
             <div class="p-4 border-b border-gray-100 flex items-center justify-between shrink-0">
-                <h3 class="text-lg font-bold text-purple-700"><i class="fas fa-heart mr-1.5 text-red-400"></i> Tus favoritos</h3>
-                <button onclick="cerrarFavoritos()" class="text-gray-400 text-xl leading-none">&times;</button>
+                <h3 id="favoritos-titulo" class="text-lg font-bold text-purple-700"><i class="fas fa-heart mr-1.5 text-red-400"></i> Tus favoritos</h3>
+                <div class="flex items-center gap-3">
+                    <button id="favoritos-compartir-btn" onclick="compartirFavoritos()" class="hidden text-purple-500 text-sm" title="Compartir"><i class="fas fa-share-nodes"></i></button>
+                    <button onclick="cerrarFavoritos()" class="text-gray-400 text-xl leading-none">&times;</button>
+                </div>
             </div>
             <div id="favoritos-vacio" class="hidden p-8 text-center text-gray-400 text-sm">
                 <i class="far fa-heart text-3xl mb-2 block"></i>
@@ -1785,6 +1828,13 @@
             }
         })();
 
+        // ---- Favoritos compartidos vía ?favoritos=id1,id2,... ----
+        let favoritosCompartidosIds = null;
+        (function detectarFavoritosCompartidos() {
+            const valor = new URLSearchParams(window.location.search).get('favoritos');
+            if (valor) favoritosCompartidosIds = valor.split(',').filter(Boolean);
+        })();
+
         // ---- Programa de referidos ----
         (function capturarReferido() {
             const params = new URLSearchParams(window.location.search);
@@ -1904,6 +1954,7 @@
         }
 
         let yaAbrioProductoDesdeUrl = false;
+        let yaAbrioFavoritosCompartidos = false;
 
         db.collection('productos').orderBy('creado', 'desc').limit(300).onSnapshot(snapshot => {
             const idsAnteriores = productosIdsConocidos;
@@ -1923,6 +1974,10 @@
                     yaAbrioProductoDesdeUrl = true;
                     verDetalleProducto(idDesdeUrl);
                 }
+            }
+            if (!yaAbrioFavoritosCompartidos && favoritosCompartidosIds) {
+                yaAbrioFavoritosCompartidos = true;
+                mostrarFavoritosCompartidos(favoritosCompartidosIds);
             }
         }, err => console.error('Error leyendo productos:', err));
 
@@ -1961,7 +2016,20 @@
             configuracionPrincipalPublica = doc.exists ? doc.data() : {};
             renderProductos();
             revisarHorarioAtencion();
+            revisarModoMantenimiento();
         }, err => console.error('Error leyendo configuración pública:', err));
+
+        function revisarModoMantenimiento() {
+            const overlay = document.getElementById('mantenimiento-overlay');
+            if (!overlay) return;
+            if (configuracionPrincipalPublica.mantenimientoActivo && !adminDesbloqueado) {
+                document.getElementById('mantenimiento-mensaje-texto').textContent =
+                    configuracionPrincipalPublica.mantenimientoMensaje || 'Estamos haciendo mejoras. Vuelve pronto.';
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
 
         function revisarHorarioAtencion() {
             const aviso = document.getElementById('aviso-horario');
@@ -3213,9 +3281,11 @@
         }
 
         function abrirFavoritos() {
+            document.getElementById('favoritos-titulo').innerHTML = '<i class="fas fa-heart mr-1.5 text-red-400"></i> Tus favoritos';
             const cont = document.getElementById('favoritos-lista');
             const vacioEl = document.getElementById('favoritos-vacio');
             const productosFavoritos = productos.filter(p => favoritos.includes(p.id));
+            document.getElementById('favoritos-compartir-btn').classList.toggle('hidden', productosFavoritos.length === 0);
             if (productosFavoritos.length === 0) {
                 cont.innerHTML = '';
                 vacioEl.classList.remove('hidden');
@@ -3225,6 +3295,35 @@
                 productosFavoritos.forEach(p => cont.appendChild(crearTarjetaProductoCliente(p)));
             }
             document.getElementById('favoritos-modal').classList.remove('hidden');
+        }
+
+        function mostrarFavoritosCompartidos(ids) {
+            const productosCompartidos = productos.filter(p => ids.includes(p.id));
+            document.getElementById('favoritos-titulo').innerHTML = '<i class="fas fa-gift mr-1.5 text-pink-400"></i> Te compartieron esto';
+            document.getElementById('favoritos-compartir-btn').classList.add('hidden');
+            const cont = document.getElementById('favoritos-lista');
+            const vacioEl = document.getElementById('favoritos-vacio');
+            if (productosCompartidos.length === 0) {
+                cont.innerHTML = '';
+                vacioEl.innerHTML = '<i class="fas fa-heart-crack text-3xl mb-2 block"></i>No encontramos esos productos — puede que ya no estén disponibles.';
+                vacioEl.classList.remove('hidden');
+            } else {
+                vacioEl.classList.add('hidden');
+                cont.innerHTML = '';
+                productosCompartidos.forEach(p => cont.appendChild(crearTarjetaProductoCliente(p)));
+            }
+            document.getElementById('favoritos-modal').classList.remove('hidden');
+        }
+
+        function compartirFavoritos() {
+            if (favoritos.length === 0) return;
+            const url = `${window.location.origin}${window.location.pathname}?favoritos=${favoritos.join(',')}`;
+            const texto = `Mira lo que me gustó en SCT Stream 💜\n${url}`;
+            if (navigator.share) {
+                navigator.share({ title: 'Mis favoritos en SCT Stream', text: texto }).catch(() => {});
+            } else {
+                window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, '_blank');
+            }
         }
 
         function cerrarFavoritos() {
@@ -3575,6 +3674,7 @@
             actualizarStatsInteres();
             actualizarStatsSalud();
             dibujarGraficaVentas();
+            actualizarComparativaYRacha();
         }
 
         function poblarFiltroPropietarioSelect() {
@@ -3718,6 +3818,7 @@
                                 <button onclick="toggleDestacarProducto('${producto.id}', ${!producto.destacado})" class="${producto.destacado ? 'bg-amber-500 hover:bg-amber-600' : 'bg-slate-500 hover:bg-slate-600'} text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-star mr-1"></i>${producto.destacado ? 'Quitar destacado' : 'Destacar'}</button>
                                 <button onclick="mostrarQrProducto('${producto.id}', '${producto.nombre.replace(/'/g, "\\'")}')" class="bg-slate-500 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-qrcode mr-1"></i>QR</button>
                                 <button onclick="duplicarProducto('${producto.id}')" class="bg-slate-500 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-copy mr-1"></i>Duplicar</button>
+                                <button onclick="generarImagenProducto('${producto.id}')" class="bg-slate-500 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-image mr-1"></i>Imagen para compartir</button>
                             </div>
                             <div class="flex items-center gap-2 flex-wrap">
                                 <input type="text" id="etiquetas-input-${producto.id}" value="${(producto.etiquetas || []).join(', ')}" placeholder="Etiquetas separadas por coma (ej: Familiar, Renovable)" class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs flex-1 min-w-[200px]">
@@ -4232,6 +4333,134 @@
             URL.revokeObjectURL(url);
         }
 
+        function exportarClientesCSV() {
+            const ventas = pedidosFiltrados().filter(p => p.estado === 'vendido' && p.clienteTelefono);
+            if (ventas.length === 0) {
+                mostrarAviso('Todavía no hay clientes con compras confirmadas para exportar.');
+                return;
+            }
+            const porCliente = {};
+            ventas.forEach(p => {
+                const fecha = p.vendidoEn && p.vendidoEn.toDate ? p.vendidoEn.toDate() : null;
+                if (!porCliente[p.clienteTelefono]) {
+                    porCliente[p.clienteTelefono] = { compras: 0, gastado: 0, ultima: fecha };
+                }
+                porCliente[p.clienteTelefono].compras++;
+                porCliente[p.clienteTelefono].gastado += parseFloat(p.precio) || 0;
+                if (fecha && (!porCliente[p.clienteTelefono].ultima || fecha > porCliente[p.clienteTelefono].ultima)) {
+                    porCliente[p.clienteTelefono].ultima = fecha;
+                }
+            });
+            const filas = [['WhatsApp', 'Compras', 'Total gastado', 'Última compra']];
+            Object.entries(porCliente).forEach(([telefono, datos]) => {
+                filas.push([telefono, datos.compras, datos.gastado.toFixed(2), datos.ultima ? datos.ultima.toLocaleDateString('es-PE') : '']);
+            });
+            const csv = filas.map(fila => fila.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `clientes_sct_stream_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function evaluarFuerzaPin(pin) {
+            if (!pin || pin.length < 4) return { texto: '', clase: '' };
+            const debiles = ['0000', '1111', '2222', '3333', '4444', '5555', '6666', '7777', '8888', '9999',
+                '1234', '4321', '0123', '1230', '123456', '654321', '111111', '000000'];
+            const secuencial = /^(0123|1234|2345|3456|4567|5678|6789|9876|8765|7654|6543|5432|4321|3210)/.test(pin);
+            if (debiles.includes(pin) || secuencial || /^(\d)\1+$/.test(pin)) {
+                return { texto: '⚠️ Ese PIN es muy fácil de adivinar, prueba con otro', clase: 'text-red-500' };
+            }
+            return { texto: '✅ PIN razonable', clase: 'text-emerald-500' };
+        }
+
+        function generarImagenProducto(id) {
+            const producto = productos.find(p => p.id === id);
+            if (!producto) return;
+            const canvas = document.createElement('canvas');
+            canvas.width = 800;
+            canvas.height = 800;
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                ctx.drawImage(img, 0, 0, 800, 500);
+                const grad = ctx.createLinearGradient(0, 400, 0, 800);
+                grad.addColorStop(0, 'rgba(11,11,11,0)');
+                grad.addColorStop(1, 'rgba(11,11,11,0.95)');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 400, 800, 400);
+                ctx.fillStyle = '#7c3aff';
+                ctx.font = 'bold 26px sans-serif';
+                ctx.fillText('SCT Stream', 30, 560);
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 44px sans-serif';
+                ctx.fillText(producto.nombre, 30, 630);
+                ctx.fillStyle = '#d4ff2f';
+                ctx.font = 'bold 56px sans-serif';
+                ctx.fillText(`S/ ${precioFinalProducto(producto)}`, 30, 710);
+                ctx.fillStyle = 'rgba(255,255,255,0.75)';
+                ctx.font = '22px sans-serif';
+                ctx.fillText('Escríbenos por WhatsApp para comprarlo', 30, 755);
+                const enlace = document.createElement('a');
+                enlace.download = `${producto.nombre.replace(/\s+/g, '_')}_sct_stream.png`;
+                enlace.href = canvas.toDataURL('image/png');
+                enlace.click();
+            };
+            img.onerror = () => mostrarAviso('No se pudo generar la imagen (la foto del producto no se pudo cargar).');
+            img.src = producto.imagen;
+        }
+
+        function generarCatalogoPDF() {
+            if (typeof window.jspdf === 'undefined') {
+                mostrarAviso('El generador de PDF todavía está cargando, intenta de nuevo en un segundo.');
+                return;
+            }
+            const miUid = auth.currentUser && auth.currentUser.uid;
+            const misProductos = esSuperAdmin ? productos : productos.filter(p => p.propietario === miUid);
+            if (misProductos.length === 0) {
+                mostrarAviso('No tienes productos para armar el catálogo.');
+                return;
+            }
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            doc.setFillColor(124, 58, 255);
+            doc.rect(0, 0, 210, 25, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            doc.text('Catálogo — SCT Stream', 10, 16);
+
+            let x = 10, y = 35;
+            const anchoTarjeta = 60, altoTarjeta = 70;
+            misProductos.forEach((p, i) => {
+                if (y + altoTarjeta > 285) { doc.addPage(); y = 15; }
+                doc.setDrawColor(230, 230, 230);
+                doc.roundedRect(x, y, anchoTarjeta, altoTarjeta, 2, 2);
+                try {
+                    if (p.imagen && p.imagen.startsWith('data:image')) doc.addImage(p.imagen, 'JPEG', x + 2, y + 2, anchoTarjeta - 4, 30);
+                } catch (err) { /* si la imagen falla, seguimos sin foto */ }
+                doc.setTextColor(30, 30, 30);
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(9);
+                doc.text((p.nombre || '').slice(0, 26), x + 2, y + 38, { maxWidth: anchoTarjeta - 4 });
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(124, 58, 255);
+                doc.setFontSize(11);
+                doc.text(`S/ ${p.precio}`, x + 2, y + 46);
+                doc.setTextColor(140, 140, 140);
+                doc.setFontSize(7);
+                doc.text((p.descripcion || '').slice(0, 50), x + 2, y + 52, { maxWidth: anchoTarjeta - 4 });
+
+                x += anchoTarjeta + 5;
+                if ((i + 1) % 3 === 0) { x = 10; y += altoTarjeta + 5; }
+            });
+
+            doc.save(`catalogo_sct_stream_${new Date().toISOString().slice(0, 10)}.pdf`);
+        }
+
         function comprimirDataUri(dataUri, maxAncho, calidad) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -4403,6 +4632,71 @@
                 conteo[nombre] = (conteo[nombre] || 0) + 1;
             });
             return Object.entries(conteo).sort((a, b) => b[1] - a[1]).slice(0, 6);
+        }
+
+        function actualizarComparativaYRacha() {
+            const confirmadas = pedidos.filter(p => p.estado === 'vendido' && p.vendidoEn && p.vendidoEn.toDate);
+            const comparativaWrap = document.getElementById('stats-comparativa-superadmin');
+            const horarioWrap = document.getElementById('stats-mejor-horario');
+            if (!comparativaWrap) return;
+            if (confirmadas.length === 0) {
+                comparativaWrap.classList.add('hidden');
+                horarioWrap.classList.add('hidden');
+                return;
+            }
+            comparativaWrap.classList.remove('hidden');
+
+            // Comparar mes actual vs anterior (por ingresos)
+            const ahora = new Date();
+            const inicioMesActual = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+            const inicioMesAnterior = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
+            let ingresosActual = 0, ingresosAnterior = 0;
+            confirmadas.forEach(p => {
+                const fecha = p.vendidoEn.toDate();
+                const monto = parseFloat(p.precio) || 0;
+                if (fecha >= inicioMesActual) ingresosActual += monto;
+                else if (fecha >= inicioMesAnterior) ingresosAnterior += monto;
+            });
+            const textoComp = document.getElementById('stats-comparativa-texto');
+            if (ingresosAnterior === 0) {
+                textoComp.innerHTML = ingresosActual > 0 ? `S/ ${ingresosActual.toFixed(0)} este mes` : 'Sin datos aún';
+                textoComp.className = 'text-sm font-bold text-slate-600';
+            } else {
+                const cambio = Math.round(((ingresosActual - ingresosAnterior) / ingresosAnterior) * 100);
+                textoComp.innerHTML = `${cambio >= 0 ? '↑' : '↓'} ${Math.abs(cambio)}%`;
+                textoComp.className = `text-sm font-bold ${cambio >= 0 ? 'text-emerald-600' : 'text-red-500'}`;
+            }
+
+            // Racha de días seguidos con al menos una venta
+            const diasConVenta = new Set(confirmadas.map(p => p.vendidoEn.toDate().toDateString()));
+            let racha = 0;
+            let cursor = new Date();
+            while (diasConVenta.has(cursor.toDateString())) {
+                racha++;
+                cursor.setDate(cursor.getDate() - 1);
+            }
+            document.getElementById('stats-racha-texto').textContent = `🔥 ${racha} día${racha === 1 ? '' : 's'}`;
+
+            // Mejor día/horario para vender
+            const conteoDias = [0, 0, 0, 0, 0, 0, 0];
+            const conteoHoras = {};
+            confirmadas.forEach(p => {
+                const fecha = p.vendidoEn.toDate();
+                conteoDias[fecha.getDay()]++;
+                const bloque = Math.floor(fecha.getHours() / 4) * 4;
+                conteoHoras[bloque] = (conteoHoras[bloque] || 0) + 1;
+            });
+            const nombresDias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+            const mejorDiaIdx = conteoDias.indexOf(Math.max(...conteoDias));
+            const mejorBloque = Object.entries(conteoHoras).sort((a, b) => b[1] - a[1])[0];
+            if (Math.max(...conteoDias) > 0 && mejorBloque) {
+                const horaIni = parseInt(mejorBloque[0], 10);
+                document.getElementById('stats-mejor-horario-texto').textContent =
+                    `Tus mejores ventas suelen caer los ${nombresDias[mejorDiaIdx]}, entre las ${horaIni}:00 y las ${horaIni + 4}:00.`;
+                horarioWrap.classList.remove('hidden');
+            } else {
+                horarioWrap.classList.add('hidden');
+            }
         }
 
         function dibujarGraficaVentas() {
@@ -5295,6 +5589,8 @@
             cargarEstadoVacaciones();
             document.getElementById('horario-card').classList.toggle('hidden', !esSuperAdmin);
             if (esSuperAdmin) cargarHorarioAtencion();
+            document.getElementById('mantenimiento-card').classList.toggle('hidden', !esSuperAdmin);
+            if (esSuperAdmin) cargarEstadoMantenimiento();
             const modoPresActivo = document.body.classList.contains('modo-presentacion');
             document.getElementById('toggle-modo-presentacion').checked = modoPresActivo;
             document.getElementById('modo-presentacion-estado').textContent = modoPresActivo ? 'Activado' : 'Desactivado';
@@ -5303,6 +5599,38 @@
         function toggleModoPresentacion(activo) {
             document.body.classList.toggle('modo-presentacion', activo);
             document.getElementById('modo-presentacion-estado').textContent = activo ? 'Activado' : 'Desactivado';
+        }
+
+        async function cargarEstadoMantenimiento() {
+            try {
+                const doc = await db.collection('configuracion').doc('principal').get();
+                const activo = !!(doc.exists && doc.data().mantenimientoActivo);
+                const mensaje = (doc.exists && doc.data().mantenimientoMensaje) || '';
+                document.getElementById('toggle-mantenimiento').checked = activo;
+                document.getElementById('mantenimiento-estado-texto').textContent = activo ? 'Activado' : 'Desactivado';
+                document.getElementById('mantenimiento-mensaje').value = mensaje;
+            } catch (err) {
+                console.error('Error leyendo modo mantenimiento:', err);
+            }
+        }
+
+        async function toggleModoMantenimiento(activo) {
+            document.getElementById('mantenimiento-estado-texto').textContent = activo ? 'Activado' : 'Desactivado';
+            try {
+                await db.collection('configuracion').doc('principal').set({ mantenimientoActivo: activo }, { merge: true });
+                mostrarAviso(activo ? 'Modo mantenimiento activado: nadie podrá comprar hasta que lo apagues.' : 'Modo mantenimiento desactivado.');
+            } catch (err) {
+                mostrarAviso('No se pudo actualizar: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
+        async function guardarMensajeMantenimiento() {
+            const mensaje = document.getElementById('mantenimiento-mensaje').value.trim();
+            try {
+                await db.collection('configuracion').doc('principal').set({ mantenimientoMensaje: mensaje }, { merge: true });
+            } catch (err) {
+                console.error('No se pudo guardar el mensaje de mantenimiento:', err);
+            }
         }
 
         async function cargarHorarioAtencion() {
