@@ -1136,20 +1136,6 @@
                         </div>
                     </div>
 
-                    <div class="admin-card p-4 mb-6 hidden" id="mantenimiento-card">
-                        <h4 class="text-sm font-bold text-slate-800 mb-1"><i class="fas fa-triangle-exclamation mr-1 text-red-500"></i> Modo mantenimiento</h4>
-                        <p class="text-xs text-gray-400 mb-3">Pausa TODA la tienda (todos los vendedores), con un mensaje para tus clientes. Úsalo solo si vas a hacer cambios grandes.</p>
-                        <div class="flex items-center justify-between gap-3 mb-2">
-                            <span id="mantenimiento-estado-texto" class="text-sm font-semibold text-gray-600">Desactivado</span>
-                            <label class="relative inline-flex items-center cursor-pointer shrink-0">
-                                <input type="checkbox" id="toggle-mantenimiento" class="sr-only peer" onchange="toggleModoMantenimiento(this.checked)">
-                                <div class="w-11 h-6 bg-gray-300 peer-checked:bg-red-500 rounded-full transition-colors"></div>
-                                <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
-                            </label>
-                        </div>
-                        <input id="mantenimiento-mensaje" type="text" placeholder="Mensaje para tus clientes (ej: Volvemos en 1 hora)" class="border border-gray-300 rounded-xl px-3 py-2 text-xs w-full" onchange="guardarMensajeMantenimiento()">
-                    </div>
-
                     <div class="admin-card p-4 mb-6 hidden" id="horario-card">
                         <h4 class="text-sm font-bold text-slate-800 mb-1"><i class="fas fa-clock mr-1 text-indigo-500"></i> Horario de atención</h4>
                         <p class="text-xs text-gray-400 mb-3">Fuera de este horario, los clientes ven un aviso de que responderás más tarde.</p>
@@ -1445,15 +1431,6 @@
     <div id="toast-deshacer" class="hidden" style="position:fixed; bottom:16px; left:50%; transform:translateX(-50%); z-index:320; background:#1f2937; color:#fff; padding:10px 14px; border-radius:12px; font-size:12px; display:flex; align-items:center; gap:10px; box-shadow:0 4px 14px rgba(0,0,0,0.3); max-width:90vw;">
         <span id="toast-deshacer-texto"></span>
         <button onclick="ejecutarDeshacer()" class="text-indigo-300 font-bold underline shrink-0">Deshacer</button>
-    </div>
-
-    <div id="mantenimiento-overlay" class="hidden" style="position:fixed; inset:0; z-index:150; background:linear-gradient(135deg,#7c3aff,#00e5ff); display:flex; align-items:center; justify-content:center; padding:24px; text-align:center;">
-        <div class="bg-white rounded-3xl p-8 max-w-sm">
-            <i class="fas fa-screwdriver-wrench text-4xl text-purple-600 mb-4"></i>
-            <h2 class="text-xl font-bold text-slate-800 mb-2">Estamos mejorando la tienda</h2>
-            <p id="mantenimiento-mensaje-texto" class="text-sm text-gray-500 mb-4">Vuelve en un rato.</p>
-            <a href="https://wa.me/51925516886" target="_blank" class="text-purple-600 text-sm font-semibold underline"><i class="fab fa-whatsapp mr-1"></i>Escríbenos por WhatsApp</a>
-        </div>
     </div>
 
     <div id="banner-sin-conexion" class="hidden" style="position:fixed; top:0; left:0; right:0; z-index:300; background:#dc2626; color:#fff; text-align:center; padding:8px; font-size:13px; font-weight:600;">
@@ -2016,20 +1993,7 @@
             configuracionPrincipalPublica = doc.exists ? doc.data() : {};
             renderProductos();
             revisarHorarioAtencion();
-            revisarModoMantenimiento();
         }, err => console.error('Error leyendo configuración pública:', err));
-
-        function revisarModoMantenimiento() {
-            const overlay = document.getElementById('mantenimiento-overlay');
-            if (!overlay) return;
-            if (configuracionPrincipalPublica.mantenimientoActivo && !adminDesbloqueado) {
-                document.getElementById('mantenimiento-mensaje-texto').textContent =
-                    configuracionPrincipalPublica.mantenimientoMensaje || 'Estamos haciendo mejoras. Vuelve pronto.';
-                overlay.classList.remove('hidden');
-            } else {
-                overlay.classList.add('hidden');
-            }
-        }
 
         function revisarHorarioAtencion() {
             const aviso = document.getElementById('aviso-horario');
@@ -5348,7 +5312,6 @@
         function abrirPanelAdmin() {
             const modal = document.getElementById('admin-modal');
             modal.classList.remove('hidden');
-            revisarModoMantenimiento();
             document.getElementById('solicitudes-container').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('admins-activos-container').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('resumen-superadmin').classList.toggle('hidden', !esSuperAdmin);
@@ -5590,8 +5553,6 @@
             cargarEstadoVacaciones();
             document.getElementById('horario-card').classList.toggle('hidden', !esSuperAdmin);
             if (esSuperAdmin) cargarHorarioAtencion();
-            document.getElementById('mantenimiento-card').classList.toggle('hidden', !esSuperAdmin);
-            if (esSuperAdmin) cargarEstadoMantenimiento();
             const modoPresActivo = document.body.classList.contains('modo-presentacion');
             document.getElementById('toggle-modo-presentacion').checked = modoPresActivo;
             document.getElementById('modo-presentacion-estado').textContent = modoPresActivo ? 'Activado' : 'Desactivado';
@@ -5600,38 +5561,6 @@
         function toggleModoPresentacion(activo) {
             document.body.classList.toggle('modo-presentacion', activo);
             document.getElementById('modo-presentacion-estado').textContent = activo ? 'Activado' : 'Desactivado';
-        }
-
-        async function cargarEstadoMantenimiento() {
-            try {
-                const doc = await db.collection('configuracion').doc('principal').get();
-                const activo = !!(doc.exists && doc.data().mantenimientoActivo);
-                const mensaje = (doc.exists && doc.data().mantenimientoMensaje) || '';
-                document.getElementById('toggle-mantenimiento').checked = activo;
-                document.getElementById('mantenimiento-estado-texto').textContent = activo ? 'Activado' : 'Desactivado';
-                document.getElementById('mantenimiento-mensaje').value = mensaje;
-            } catch (err) {
-                console.error('Error leyendo modo mantenimiento:', err);
-            }
-        }
-
-        async function toggleModoMantenimiento(activo) {
-            document.getElementById('mantenimiento-estado-texto').textContent = activo ? 'Activado' : 'Desactivado';
-            try {
-                await db.collection('configuracion').doc('principal').set({ mantenimientoActivo: activo }, { merge: true });
-                mostrarAviso(activo ? 'Modo mantenimiento activado: nadie podrá comprar hasta que lo apagues.' : 'Modo mantenimiento desactivado.');
-            } catch (err) {
-                mostrarAviso('No se pudo actualizar: ' + (err.message || err.code || 'error desconocido'));
-            }
-        }
-
-        async function guardarMensajeMantenimiento() {
-            const mensaje = document.getElementById('mantenimiento-mensaje').value.trim();
-            try {
-                await db.collection('configuracion').doc('principal').set({ mantenimientoMensaje: mensaje }, { merge: true });
-            } catch (err) {
-                console.error('No se pudo guardar el mensaje de mantenimiento:', err);
-            }
         }
 
         async function cargarHorarioAtencion() {
