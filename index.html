@@ -810,7 +810,7 @@
                         <button onclick="cerrarSesion()" class="text-sm text-gray-500 hover:text-red-500 flex items-center gap-1">
                             <i class="fas fa-sign-out-alt"></i> Salir
                         </button>
-                        <button onclick="toggleAdmin()" class="text-3xl text-gray-400 hover:text-gray-600">×</button>
+                        <button onclick="toggleAdmin()" class="text-3xl text-gray-400 hover:text-gray-600" aria-label="Cerrar panel de administración">×</button>
                     </div>
                 </div>
 
@@ -959,11 +959,11 @@
                     <div id="perfil-admin-card" class="admin-card p-5 mb-6">
                         <div class="flex items-center gap-4">
                             <div id="perfil-admin-avatar-wrap" class="relative shrink-0">
-                                <div id="perfil-admin-avatar" class="w-14 h-14 rounded-full text-white flex items-center justify-center font-bold text-lg bg-indigo-600 overflow-hidden">A</div>
-                                <span id="perfil-admin-punto" class="hidden perfil-admin-punto-conexion"></span>
+                                <div id="perfil-admin-avatar" role="img" aria-label="Foto de perfil" class="w-14 h-14 rounded-full text-white flex items-center justify-center font-bold text-lg bg-indigo-600 overflow-hidden">A</div>
+                                <span id="perfil-admin-punto" class="hidden perfil-admin-punto-conexion" aria-hidden="true"></span>
                                 <label id="perfil-admin-foto-btn" class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white text-slate-500 flex items-center justify-center text-[9px] shadow cursor-pointer border border-gray-200 hover:text-indigo-600" title="Cambiar foto de perfil">
-                                    <i class="fas fa-camera"></i>
-                                    <input type="file" accept="image/*" class="hidden" onchange="subirFotoPerfil(event)">
+                                    <i class="fas fa-camera" aria-hidden="true"></i>
+                                    <input type="file" accept="image/*" class="hidden" onchange="subirFotoPerfil(event)" aria-label="Subir nueva foto de perfil">
                                 </label>
                             </div>
                             <div class="flex-1 min-w-0">
@@ -990,10 +990,10 @@
                                 <p id="perfil-tienda-link" class="text-[13px] font-semibold text-slate-800 truncate">sctstream.xyz</p>
                                 <p id="perfil-tienda-productos" class="text-[11px] text-gray-400"></p>
                             </div>
-                            <button type="button" onclick="event.preventDefault(); event.stopPropagation(); mostrarQrDesdePerfil();" class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white opacity-80" style="background: var(--admin-accent, #6366f1);" title="Código QR">
+                            <button type="button" onclick="event.preventDefault(); event.stopPropagation(); mostrarQrDesdePerfil();" class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white opacity-80" style="background: var(--admin-accent, #6366f1);" title="Código QR" aria-label="Ver código QR de tu tienda">
                                 <i class="fas fa-qrcode text-xs"></i>
                             </button>
-                            <button type="button" onclick="event.preventDefault(); event.stopPropagation(); compartirDesdePerfil();" class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white" style="background: var(--admin-accent, #6366f1);" title="Compartir">
+                            <button type="button" onclick="event.preventDefault(); event.stopPropagation(); compartirDesdePerfil();" class="shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-white" style="background: var(--admin-accent, #6366f1);" title="Compartir" aria-label="Compartir tu tienda">
                                 <i class="fas fa-share-nodes text-xs"></i>
                             </button>
                         </a>
@@ -1065,6 +1065,10 @@
                     <div id="aviso-backup-viejo" class="hidden bg-amber-50 border border-amber-200 rounded-2xl p-3 text-sm text-amber-700 font-semibold mb-4"><i class="fas fa-clock-rotate-left mr-1"></i> Ya pasó más de una semana desde tu último backup — te conviene descargar uno nuevo por si acaso.</div>
                     <p class="text-xs text-gray-400 mb-4">Cada clic en "Comprar por WhatsApp" queda registrado aquí. Marca "Vendido" cuando el cliente confirme y pague.</p>
                     <div id="pedidos-hoy-resumen" class="hidden mb-4"></div>
+                    <div class="flex gap-2 mb-4">
+                        <input id="buscar-cliente-input" type="tel" inputmode="numeric" placeholder="Buscar cliente por WhatsApp..." class="border border-gray-300 rounded-xl px-4 py-2.5 text-sm flex-1" onkeydown="if(event.key==='Enter') buscarPerfilCliente()">
+                        <button onclick="buscarPerfilCliente()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 rounded-xl text-sm font-semibold"><i class="fas fa-magnifying-glass"></i></button>
+                    </div>
                     <div id="ventas-urgentes-container" class="hidden mb-4"></div>
                     <div id="avisos-stock-container" class="hidden mb-4"></div>
                     <div id="ventas-lista"></div>
@@ -1415,11 +1419,32 @@
         </div>
     </div>
 
+    <div id="toast-seguimiento" class="hidden" style="position:fixed; bottom:70px; left:50%; transform:translateX(-50%); z-index:320; background:#1f2937; color:#fff; padding:10px 14px; border-radius:12px; font-size:11px; display:flex; align-items:center; gap:10px; box-shadow:0 4px 14px rgba(0,0,0,0.3); max-width:90vw;">
+        <span id="toast-seguimiento-link">📦 Guarda tu link para ver el estado de tu pedido</span>
+        <button onclick="copiarLinkSeguimiento()" class="text-indigo-300 font-bold underline shrink-0">Copiar link</button>
+        <button onclick="document.getElementById('toast-seguimiento').classList.add('hidden')" class="text-gray-400 shrink-0">✕</button>
+    </div>
+
+    <div id="cliente-perfil-modal" class="hidden modal-overlay" onclick="if (event.target === this) cerrarPerfilCliente()">
+        <div class="bg-white rounded-3xl max-w-sm w-full mx-4 max-h-[85vh] overflow-y-auto p-5">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-base font-bold text-slate-800"><i class="fas fa-address-card mr-1.5 text-indigo-500"></i> Perfil del cliente</h3>
+                <button onclick="cerrarPerfilCliente()" class="text-gray-400 text-xl leading-none" aria-label="Cerrar perfil de cliente">&times;</button>
+            </div>
+            <div id="cliente-perfil-contenido"></div>
+        </div>
+    </div>
+
     <div id="seguimiento-modal" class="hidden modal-overlay" onclick="if (event.target === this) cerrarSeguimientoPedido()">
         <div class="bg-white rounded-3xl max-w-sm w-full mx-4 p-6 text-center">
             <div id="seguimiento-contenido"></div>
             <button onclick="cerrarSeguimientoPedido()" class="text-gray-400 text-sm mt-4">Cerrar</button>
         </div>
+    </div>
+
+    <div id="toast-deshacer" class="hidden" style="position:fixed; bottom:16px; left:50%; transform:translateX(-50%); z-index:320; background:#1f2937; color:#fff; padding:10px 14px; border-radius:12px; font-size:12px; display:flex; align-items:center; gap:10px; box-shadow:0 4px 14px rgba(0,0,0,0.3); max-width:90vw;">
+        <span id="toast-deshacer-texto"></span>
+        <button onclick="ejecutarDeshacer()" class="text-indigo-300 font-bold underline shrink-0">Deshacer</button>
     </div>
 
     <div id="banner-sin-conexion" class="hidden" style="position:fixed; top:0; left:0; right:0; z-index:300; background:#dc2626; color:#fff; text-align:center; padding:8px; font-size:13px; font-weight:600;">
@@ -1455,7 +1480,7 @@
 
     <div id="zoom-foto-modal" class="hidden modal-overlay" style="z-index:350; background:rgba(0,0,0,0.92);" onclick="cerrarZoomFoto()">
         <img id="zoom-foto-img" src="" style="max-width:94vw; max-height:88vh; object-fit:contain; border-radius:8px;">
-        <button onclick="cerrarZoomFoto()" style="position:fixed; top:16px; right:16px; width:38px; height:38px; border-radius:9999px; background:rgba(255,255,255,0.15); color:#fff; font-size:18px;">&times;</button>
+        <button onclick="cerrarZoomFoto()" aria-label="Cerrar foto ampliada" style="position:fixed; top:16px; right:16px; width:38px; height:38px; border-radius:9999px; background:rgba(255,255,255,0.15); color:#fff; font-size:18px;">&times;</button>
     </div>
 
     <div id="qr-producto-modal" class="hidden modal-overlay" onclick="if (event.target === this) document.getElementById('qr-producto-modal').classList.add('hidden')">
@@ -1473,7 +1498,7 @@
                 <h3 id="favoritos-titulo" class="text-lg font-bold text-purple-700"><i class="fas fa-heart mr-1.5 text-red-400"></i> Tus favoritos</h3>
                 <div class="flex items-center gap-3">
                     <button id="favoritos-compartir-btn" onclick="compartirFavoritos()" class="hidden text-purple-500 text-sm" title="Compartir"><i class="fas fa-share-nodes"></i></button>
-                    <button onclick="cerrarFavoritos()" class="text-gray-400 text-xl leading-none">&times;</button>
+                    <button onclick="cerrarFavoritos()" class="text-gray-400 text-xl leading-none" aria-label="Cerrar favoritos">&times;</button>
                 </div>
             </div>
             <div id="favoritos-vacio" class="hidden p-8 text-center text-gray-400 text-sm">
@@ -1488,7 +1513,7 @@
         <div class="bg-white rounded-3xl max-w-sm w-full mx-4 overflow-hidden flex flex-col" style="max-height: 85vh;">
             <div class="p-4 border-b border-gray-100 flex items-center justify-between shrink-0">
                 <h3 class="text-lg font-bold text-purple-700"><i class="fas fa-cart-shopping mr-1.5"></i> Tu carrito</h3>
-                <button onclick="cerrarCarrito()" class="text-gray-400 text-xl leading-none">&times;</button>
+                <button onclick="cerrarCarrito()" class="text-gray-400 text-xl leading-none" aria-label="Cerrar carrito">&times;</button>
             </div>
             <div id="carrito-vacio" class="hidden p-8 text-center text-gray-400 text-sm">
                 <i class="fas fa-cart-shopping text-3xl mb-2 block"></i>
@@ -1666,6 +1691,14 @@
             let limpio = (numero || '').replace(/\D/g, '');
             if (limpio.length === 9) limpio = '51' + limpio;
             return limpio || WHATSAPP_NUMBER;
+        }
+
+        // Valida que sea un celular peruano real: 9 dígitos, empieza con 9
+        // (con o sin el código de país 51 adelante).
+        function esWhatsappPeruValido(numero) {
+            let limpio = (numero || '').replace(/\D/g, '');
+            if (limpio.startsWith('51') && limpio.length === 11) limpio = limpio.slice(2);
+            return /^9\d{8}$/.test(limpio);
         }
 
         let metodoPagoElegido = null;
@@ -2885,11 +2918,12 @@
         }
 
         async function confirmarAvisarStock() {
-            const telefono = document.getElementById('avisar-stock-telefono').value.replace(/\D/g, '');
-            if (telefono.length < 8) {
-                mostrarAviso('Escribe un número de WhatsApp válido.');
+            const telefonoInput = document.getElementById('avisar-stock-telefono').value;
+            if (!esWhatsappPeruValido(telefonoInput)) {
+                mostrarAviso('Escribe un WhatsApp peruano válido: 9 dígitos, empezando con 9 (ej: 987654321).');
                 return;
             }
+            const telefono = telefonoInput.replace(/\D/g, '');
             const producto = productos.find(p => p.id === productoDetalleActualId);
             if (!producto) return;
             let avisosEnviados = [];
@@ -3061,13 +3095,19 @@
         });
 
         function mostrarDeshacer(texto, callback) {
-            // El toast de "Deshacer" fue eliminado a pedido; las acciones (quitar del
-            // carrito/favoritos) ahora ocurren directamente, sin opción de deshacer.
-            deshacerCallback = null;
+            deshacerCallback = callback;
+            document.getElementById('toast-deshacer-texto').textContent = texto;
+            document.getElementById('toast-deshacer').classList.remove('hidden');
+            clearTimeout(deshacerTimeout);
+            deshacerTimeout = setTimeout(() => {
+                document.getElementById('toast-deshacer').classList.add('hidden');
+                deshacerCallback = null;
+            }, 5000);
         }
 
         function ejecutarDeshacer() {
             if (deshacerCallback) deshacerCallback();
+            document.getElementById('toast-deshacer').classList.add('hidden');
             deshacerCallback = null;
             clearTimeout(deshacerTimeout);
         }
@@ -4067,6 +4107,73 @@
             return { texto: '🆕 Nuevo', clase: 'bg-gray-100 text-gray-600' };
         }
 
+        function buscarPerfilCliente() {
+            const valor = document.getElementById('buscar-cliente-input').value.replace(/\D/g, '');
+            if (valor.length < 6) {
+                mostrarAviso('Escribe al menos los últimos dígitos del WhatsApp del cliente.');
+                return;
+            }
+            mostrarPerfilCliente(valor);
+        }
+
+        function mostrarPerfilCliente(telefonoBuscado) {
+            const todasLasCompras = pedidosFiltrados().filter(p =>
+                p.clienteTelefono && p.clienteTelefono.replace(/\D/g, '').includes(telefonoBuscado.replace(/\D/g, ''))
+            );
+            const cont = document.getElementById('cliente-perfil-contenido');
+            if (todasLasCompras.length === 0) {
+                cont.innerHTML = `<p class="text-sm text-gray-400 text-center py-6"><i class="fas fa-user-slash text-2xl block mb-2"></i>No encontramos pedidos de ese número.</p>`;
+                document.getElementById('cliente-perfil-modal').classList.remove('hidden');
+                return;
+            }
+            // Ordena de más reciente a más antiguo.
+            todasLasCompras.sort((a, b) => {
+                const fa = a.creado && a.creado.toDate ? a.creado.toDate().getTime() : 0;
+                const fb = b.creado && b.creado.toDate ? b.creado.toDate().getTime() : 0;
+                return fb - fa;
+            });
+            const telefono = todasLasCompras[0].clienteTelefono;
+            const confirmadas = todasLasCompras.filter(p => p.estado === 'vendido');
+            const totalGastado = confirmadas.reduce((s, p) => s + (parseFloat(p.precio) || 0), 0);
+            const nivel = nivelDeCliente(confirmadas.length);
+
+            cont.innerHTML = `
+                <div class="text-center mb-4">
+                    <div class="w-14 h-14 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl font-bold mx-auto mb-2"><i class="fas fa-user"></i></div>
+                    <p class="font-bold text-slate-800 dato-sensible">${telefono}</p>
+                    <span class="${nivel.clase} text-[11px] px-2 py-0.5 rounded-full font-semibold">${nivel.texto}</span>
+                    <a href="https://wa.me/${telefono.replace(/\D/g, '')}" target="_blank" class="block mt-2 text-emerald-600 text-xs font-semibold"><i class="fab fa-whatsapp mr-1"></i>Escribirle</a>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-4">
+                    <div class="bg-gray-50 rounded-xl p-3 text-center">
+                        <p class="text-lg font-bold text-slate-800">${confirmadas.length}</p>
+                        <p class="text-[10px] text-gray-400">Compras confirmadas</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-3 text-center">
+                        <p class="text-lg font-bold text-emerald-600">S/ ${totalGastado.toFixed(2).replace(/\.00$/, '')}</p>
+                        <p class="text-[10px] text-gray-400">Total gastado</p>
+                    </div>
+                </div>
+                <h4 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Historial completo</h4>
+                <div class="space-y-2">
+                    ${todasLasCompras.map(p => {
+                        const fecha = p.creado && p.creado.toDate ? p.creado.toDate().toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+                        const estadoTxt = p.estado === 'vendido' ? '<span class="text-emerald-600 font-semibold">Vendido</span>' : '<span class="text-amber-500 font-semibold">Interesado</span>';
+                        return `
+                        <div class="border border-gray-100 rounded-xl p-2.5 text-xs">
+                            <p class="font-semibold text-slate-700">${p.productoNombre || 'Producto'}</p>
+                            <p class="text-gray-400">S/ ${p.precio} · ${fecha} · ${estadoTxt}</p>
+                        </div>`;
+                    }).join('')}
+                </div>
+            `;
+            document.getElementById('cliente-perfil-modal').classList.remove('hidden');
+        }
+
+        function cerrarPerfilCliente() {
+            document.getElementById('cliente-perfil-modal').classList.add('hidden');
+        }
+
         function renderVentas() {
             const cont = document.getElementById('ventas-lista');
             if (!cont) return;
@@ -4138,7 +4245,7 @@
                     const metodoTxt = p.metodoPago ? `<p class="text-xs text-indigo-500">Pago: ${p.metodoPago}</p>` : '';
                     const referidoTxt = p.referidoPor ? `<p class="text-xs text-pink-500"><i class="fas fa-gift"></i> Referido por ${p.referidoPor}</p>` : '';
                     const nivelCliente = p.clienteTelefono ? nivelDeCliente(comprasPorCliente[p.clienteTelefono] || 1) : null;
-                    const clienteTxt = p.clienteTelefono ? `<p class="text-xs text-gray-400">📱 Cliente: <span class="dato-sensible">${p.clienteTelefono}</span> ${nivelCliente ? `<span class="${nivelCliente.clase} text-[9px] px-1.5 py-0.5 rounded-full font-semibold ml-1">${nivelCliente.texto}</span>` : ''}</p>` : '';
+                    const clienteTxt = p.clienteTelefono ? `<p class="text-xs text-gray-400">📱 Cliente: <button type="button" onclick="mostrarPerfilCliente('${p.clienteTelefono.replace(/'/g, "\\'")}')" class="dato-sensible underline">${p.clienteTelefono}</button> ${nivelCliente ? `<span class="${nivelCliente.clase} text-[9px] px-1.5 py-0.5 rounded-full font-semibold ml-1">${nivelCliente.texto}</span>` : ''}</p>` : '';
                     const vencimientoTxt = p.fechaVencimiento ? `<p class="text-xs text-gray-400">Vence: ${new Date(p.fechaVencimiento).toLocaleDateString('es-PE')}</p>` : '';
                     const entregadoBadge = p.entregado
                         ? `<span class="bg-sky-100 text-sky-700 text-[10px] px-2 py-0.5 rounded-full font-semibold ml-1">ENTREGADO</span>`
@@ -4498,7 +4605,12 @@
         async function confirmarVentaConDatos() {
             if (!pedidoEnConfirmacion) return;
             const id = pedidoEnConfirmacion;
-            const clienteTelefono = document.getElementById('venta-cliente-telefono').value.replace(/\D/g, '') || null;
+            const telefonoInput = document.getElementById('venta-cliente-telefono').value;
+            if (telefonoInput.trim() && !esWhatsappPeruValido(telefonoInput)) {
+                mostrarAviso('Ese WhatsApp no parece válido (debe tener 9 dígitos y empezar con 9). Corrígelo o déjalo vacío.');
+                return;
+            }
+            const clienteTelefono = telefonoInput.replace(/\D/g, '') || null;
             const diasValor = document.getElementById('venta-dias-vencimiento').value;
             const fechaVencimiento = diasValor ? Date.now() + parseInt(diasValor, 10) * 86400000 : null;
             await marcarPedidoVendido(id, { clienteTelefono, fechaVencimiento });
@@ -6007,9 +6119,8 @@
                 errorEl.classList.remove('hidden');
                 return;
             }
-            const soloDigitosWhatsapp = whatsappCrudo.replace(/\D/g, '');
-            if (soloDigitosWhatsapp.length < 8) {
-                errorEl.textContent = 'Escribe un número de WhatsApp válido.';
+            if (!esWhatsappPeruValido(whatsappCrudo)) {
+                errorEl.textContent = 'Escribe un WhatsApp peruano válido: 9 dígitos, empezando con 9 (ej: 987654321).';
                 errorEl.classList.remove('hidden');
                 return;
             }
@@ -6962,6 +7073,30 @@
             if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
                 e.preventDefault();
                 toggleAdmin();
+            }
+        });
+
+        // Escape cierra el modal visible con más prioridad (así el admin
+        // no depende de encontrar la "X" con el dedo o el mouse).
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            const modalesEnOrden = [
+                ['zoom-foto-modal', cerrarZoomFoto],
+                ['vista-rapida-modal', cerrarVistaRapida],
+                ['qr-producto-modal', () => document.getElementById('qr-producto-modal').classList.add('hidden')],
+                ['seguimiento-modal', cerrarSeguimientoPedido],
+                ['favoritos-modal', cerrarFavoritos],
+                ['carrito-modal', cerrarCarrito],
+                ['detalle-producto-modal', cerrarDetalleProducto],
+                ['pin-modal', cerrarPin],
+                ['admin-modal', toggleAdmin]
+            ];
+            for (const [id, cerrar] of modalesEnOrden) {
+                const el = document.getElementById(id);
+                if (el && !el.classList.contains('hidden')) {
+                    cerrar();
+                    return;
+                }
             }
         });
 
