@@ -1447,12 +1447,13 @@
         <button onclick="ejecutarDeshacer()" class="text-indigo-300 font-bold underline shrink-0">Deshacer</button>
     </div>
 
-    <div id="mantenimiento-overlay" class="hidden" style="position:fixed; inset:0; z-index:400; background:linear-gradient(135deg,#7c3aff,#00e5ff); display:flex; align-items:center; justify-content:center; padding:24px; text-align:center;">
+    <div id="mantenimiento-overlay" class="hidden" style="position:fixed; inset:0; z-index:150; background:linear-gradient(135deg,#7c3aff,#00e5ff); display:flex; align-items:center; justify-content:center; padding:24px; text-align:center;">
         <div class="bg-white rounded-3xl p-8 max-w-sm">
             <i class="fas fa-screwdriver-wrench text-4xl text-purple-600 mb-4"></i>
             <h2 class="text-xl font-bold text-slate-800 mb-2">Estamos mejorando la tienda</h2>
             <p id="mantenimiento-mensaje-texto" class="text-sm text-gray-500 mb-4">Vuelve en un rato.</p>
             <a href="https://wa.me/51925516886" target="_blank" class="text-purple-600 text-sm font-semibold underline"><i class="fab fa-whatsapp mr-1"></i>Escríbenos por WhatsApp</a>
+            <button onclick="toggleAdmin()" class="block mx-auto mt-5 text-gray-300 text-xs">·</button>
         </div>
     </div>
 
@@ -5348,6 +5349,7 @@
         function abrirPanelAdmin() {
             const modal = document.getElementById('admin-modal');
             modal.classList.remove('hidden');
+            revisarModoMantenimiento();
             document.getElementById('solicitudes-container').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('admins-activos-container').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('resumen-superadmin').classList.toggle('hidden', !esSuperAdmin);
