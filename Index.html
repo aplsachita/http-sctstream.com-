@@ -1798,11 +1798,7 @@
         }
 
         function copiarLinkSeguimiento() {
-            const link = document.getElementById('toast-seguimiento-link').dataset.link;
-            if (!link) return;
-            navigator.clipboard.writeText(link).then(() => {
-                mostrarAviso('Link copiado. Guárdalo para ver el estado de tu pedido cuando quieras.');
-            }).catch(() => {});
+            // (función en desuso: el botón "Copiar link" fue eliminado)
         }
 
         async function abrirSeguimientoPedido(pedidoId) {
