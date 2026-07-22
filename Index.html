@@ -1460,12 +1460,6 @@
         </div>
     </div>
 
-    <div id="toast-seguimiento" class="hidden" style="position:fixed; bottom:70px; left:50%; transform:translateX(-50%); z-index:320; background:#1f2937; color:#fff; padding:10px 14px; border-radius:12px; font-size:11px; display:flex; align-items:center; gap:10px; box-shadow:0 4px 14px rgba(0,0,0,0.3); max-width:90vw;">
-        <span id="toast-seguimiento-link">📦 Guarda tu link para ver el estado de tu pedido</span>
-        <button onclick="copiarLinkSeguimiento()" class="text-indigo-300 font-bold underline shrink-0">Copiar link</button>
-        <button onclick="document.getElementById('toast-seguimiento').classList.add('hidden')" class="text-gray-400 shrink-0">✕</button>
-    </div>
-
     <div id="cliente-perfil-modal" class="hidden modal-overlay" onclick="if (event.target === this) cerrarPerfilCliente()">
         <div class="bg-white rounded-3xl max-w-sm w-full mx-4 max-h-[85vh] overflow-y-auto p-5">
             <div class="flex items-center justify-between mb-3">
@@ -1481,11 +1475,6 @@
             <div id="seguimiento-contenido"></div>
             <button onclick="cerrarSeguimientoPedido()" class="text-gray-400 text-sm mt-4">Cerrar</button>
         </div>
-    </div>
-
-    <div id="toast-deshacer" class="hidden" style="position:fixed; bottom:16px; left:50%; transform:translateX(-50%); z-index:320; background:#1f2937; color:#fff; padding:10px 14px; border-radius:12px; font-size:12px; display:flex; align-items:center; gap:10px; box-shadow:0 4px 14px rgba(0,0,0,0.3); max-width:90vw;">
-        <span id="toast-deshacer-texto"></span>
-        <button onclick="ejecutarDeshacer()" class="text-indigo-300 font-bold underline shrink-0">Deshacer</button>
     </div>
 
     <div id="banner-sin-conexion" class="hidden" style="position:fixed; top:0; left:0; right:0; z-index:300; background:#dc2626; color:#fff; text-align:center; padding:8px; font-size:13px; font-weight:600;">
@@ -2225,33 +2214,61 @@
             renderProductos();
         }
 
-        // Efecto 3D activo en todas las categorías de producto
+        // Efecto 3D activo solo en Ropa y Zapatillas
         function tieneEfecto3D(categoria) {
-            return true;
+            return categoria === 'Ropa' || categoria === 'Zapatillas';
         }
 
-        // Engancha el tilt 3D (sigue al mouse/dedo) a un elemento con clase .foto-3d o .tarjeta-3d-interior
-        function activarTilt3D(el, intensidad = 22) {
+        // Tilt 3D "en reposo/hover": usado en los fondos (hero, galería, footer) — sigue el cursor sin necesidad de tocar/clickear.
+        function activarTilt3D(el, intensidad = 4) {
             if (!el || el.dataset.tilt3dListo) return;
             el.dataset.tilt3dListo = '1';
-            const activarClase = el.classList.contains('foto-3d') ? 'foto-3d-activa'
-                : el.classList.contains('fondo-3d') ? 'fondo-3d-activo'
-                : 'tarjeta-3d-activa';
             const mover = (clientX, clientY) => {
                 const rect = el.getBoundingClientRect();
                 const x = (clientX - rect.left) / rect.width - 0.5;
                 const y = (clientY - rect.top) / rect.height - 0.5;
-                el.style.transform = `rotateY(${x * intensidad}deg) rotateX(${-y * intensidad}deg) scale(1.04)`;
-                el.classList.add(activarClase);
+                el.style.transform = `rotateY(${x * intensidad}deg) rotateX(${-y * intensidad}deg)`;
+                el.classList.add('fondo-3d-activo');
             };
             const soltar = () => {
                 el.style.transform = '';
-                el.classList.remove(activarClase);
+                el.classList.remove('fondo-3d-activo');
             };
             el.addEventListener('mousemove', (e) => mover(e.clientX, e.clientY));
             el.addEventListener('mouseleave', soltar);
+        }
+
+        // Tilt 3D "de arrastre": usado en fotos y tarjetas de producto — solo gira mientras el dedo/mouse
+        // está presionado y deslizándose sobre la imagen (touch o click sostenido), en celular y PC.
+        function activarTiltDrag3D(el, intensidad = 24) {
+            if (!el || el.dataset.tiltDragListo) return;
+            el.dataset.tiltDragListo = '1';
+            const activarClase = el.classList.contains('foto-3d') ? 'foto-3d-activa' : 'tarjeta-3d-activa';
+            let arrastrando = false;
+            const mover = (clientX, clientY) => {
+                const rect = el.getBoundingClientRect();
+                const x = (clientX - rect.left) / rect.width - 0.5;
+                const y = (clientY - rect.top) / rect.height - 0.5;
+                el.style.transform = `rotateY(${x * intensidad}deg) rotateX(${-y * intensidad}deg) scale(1.05)`;
+                el.classList.add(activarClase);
+            };
+            const soltar = () => {
+                arrastrando = false;
+                el.style.transform = '';
+                el.classList.remove(activarClase);
+            };
+            // Mouse (PC): mantener presionado y arrastrar
+            el.addEventListener('mousedown', (e) => { arrastrando = true; mover(e.clientX, e.clientY); });
+            el.addEventListener('mousemove', (e) => { if (arrastrando) mover(e.clientX, e.clientY); });
+            el.addEventListener('mouseup', soltar);
+            el.addEventListener('mouseleave', soltar);
+            // Táctil (celular): deslizar el dedo sobre la imagen
+            el.addEventListener('touchstart', (e) => {
+                arrastrando = true;
+                if (e.touches[0]) mover(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
             el.addEventListener('touchmove', (e) => {
-                if (!e.touches[0]) return;
+                if (!arrastrando || !e.touches[0]) return;
                 mover(e.touches[0].clientX, e.touches[0].clientY);
             }, { passive: true });
             el.addEventListener('touchend', soltar);
@@ -2338,8 +2355,8 @@
                 verDetalleProducto(producto.id);
             });
             if (efecto3D) {
-                activarTilt3D(card.querySelector('.foto-3d'));
-                activarTilt3D(card.querySelector('.tarjeta-3d-interior'), 10);
+                activarTiltDrag3D(card.querySelector('.foto-3d'));
+                activarTiltDrag3D(card.querySelector('.tarjeta-3d-interior'), 10);
             }
             return card;
         }
@@ -2500,7 +2517,7 @@
                 if (ev.target.closest('a')) return;
                 verDetalleProducto(producto.id);
             });
-            if (efecto3D) activarTilt3D(div.querySelector('.foto-3d'));
+            if (efecto3D) activarTiltDrag3D(div.querySelector('.foto-3d'));
             return div;
         }
 
@@ -2720,7 +2737,7 @@
                 ? `<div class="contenedor-foto-3d" style="display:inline-block;"><img src="${src}" loading="lazy" onclick="abrirZoomFoto('${src}')" class="foto-3d" style="cursor: zoom-in;"></div>`
                 : `<img src="${src}" loading="lazy" onclick="abrirZoomFoto('${src}')" style="cursor: zoom-in;">`
             ).join('');
-            if (efecto3DDetalle) carrusel.querySelectorAll('.foto-3d').forEach(img => activarTilt3D(img));
+            if (efecto3DDetalle) carrusel.querySelectorAll('.foto-3d').forEach(img => activarTiltDrag3D(img));
             const dots = document.getElementById('detalle-carrusel-dots');
             if (fotos.length > 1) {
                 dots.innerHTML = fotos.map((_, i) => `<span class="${i === 0 ? 'activo' : ''}"></span>`).join('');
@@ -3190,18 +3207,21 @@
 
         function mostrarDeshacer(texto, callback) {
             deshacerCallback = callback;
+            const toast = document.getElementById('toast-deshacer');
+            if (!toast) return;
             document.getElementById('toast-deshacer-texto').textContent = texto;
-            document.getElementById('toast-deshacer').classList.remove('hidden');
+            toast.classList.remove('hidden');
             clearTimeout(deshacerTimeout);
             deshacerTimeout = setTimeout(() => {
-                document.getElementById('toast-deshacer').classList.add('hidden');
+                toast.classList.add('hidden');
                 deshacerCallback = null;
             }, 5000);
         }
 
         function ejecutarDeshacer() {
             if (deshacerCallback) deshacerCallback();
-            document.getElementById('toast-deshacer').classList.add('hidden');
+            const toast = document.getElementById('toast-deshacer');
+            if (toast) toast.classList.add('hidden');
             deshacerCallback = null;
             clearTimeout(deshacerTimeout);
         }
@@ -5295,7 +5315,7 @@
             if (tieneEfecto3D(producto.categoria)) {
                 vrImagen.classList.add('foto-3d');
                 if (vrContenedor) vrContenedor.classList.add('contenedor-foto-3d');
-                activarTilt3D(vrImagen);
+                activarTiltDrag3D(vrImagen);
             } else {
                 vrImagen.classList.remove('foto-3d');
                 if (vrContenedor) vrContenedor.classList.remove('contenedor-foto-3d');
