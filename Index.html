@@ -43,14 +43,14 @@
            Magenta, violeta, cian y lima en loop rápido + textura de
            líneas de escaneo (guiño a una señal de TV/streaming).
            ============================================================ */
-        body { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0, #ff9fd0) !important; background-size: 300% 300% !important; animation: bgMove 60s linear infinite !important; perspective: 1800px; }
-        .hero-colorful { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0, #ff9fd0); background-size: 300% 300%; animation: bgMove 8s linear infinite; }
-        @keyframes bgMove { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
-        .titulo-color { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0, #ff9fd0); background-size: 300% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: bgMove 3.5s linear infinite; }
-        .boton-animado { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0, #ff9fd0); background-size: 300% auto; animation: bgMove 3.5s linear infinite; }
-        .boton-animado-morado { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0, #ff9fd0); background-size: 300% auto; animation: bgMove 3.5s linear infinite; }
-        .card-borde-animado { position: relative; border: 3px solid transparent; background-image: linear-gradient(white, white), linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0, #ff9fd0); background-origin: border-box; background-clip: padding-box, border-box; background-size: 100% 100%, 300% auto; overflow: hidden; }
-        .card-borde-animado:hover { animation: bgMove 2s linear infinite; }
+        body { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0) !important; perspective: 1800px; }
+        .hero-colorful { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0); }
+        .titulo-color { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .boton-animado { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0); transition: filter 0.2s ease; }
+        .boton-animado:hover { filter: brightness(1.08); }
+        .boton-animado-morado { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0); transition: filter 0.2s ease; }
+        .boton-animado-morado:hover { filter: brightness(1.08); }
+        .card-borde-animado { position: relative; border: 3px solid transparent; background-image: linear-gradient(white, white), linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0); background-origin: border-box; background-clip: padding-box, border-box; overflow: hidden; }
         .card-borde-animado::after {
             content: '';
             position: absolute; inset: 0;
@@ -61,96 +61,73 @@
             mix-blend-mode: overlay;
         }
         @keyframes senalScan { 0% { background-position-y: 0; } 100% { background-position-y: 120px; } }
-        .footer-animado { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0, #ff9fd0); background-size: 300% auto; animation: bgMove 4s linear infinite; }
+        .footer-animado { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0); }
         .galeria-item { position: relative; }
         .galeria-delete { position: absolute; top: 8px; right: 8px; background: rgba(220, 38, 38, 0.9); color: white; width: 32px; height: 32px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; font-size: 14px; opacity: 0; transition: opacity 0.2s; }
         .galeria-item:hover .galeria-delete { opacity: 1; }
 
         /* ============================================================
-           EFECTO 3D — fotos y tarjetas de Ropa y Zapatillas
-           Combina: giro 360° automático en reposo, inclinación (tilt)
-           al pasar el dedo/mouse, y sombra de profundidad marcada.
+           TARJETA 3D VOLTEABLE — se gira solo al hacer click/tap,
+           mostrando los detalles y el botón de WhatsApp atrás.
+           Aplica a todas las tarjetas de producto del catálogo.
            ============================================================ */
-        .contenedor-foto-3d { perspective: 900px; }
-        .foto-3d {
+        .tarjeta-3d { perspective: 1200px; }
+        .tarjeta-3d-interior {
+            position: relative;
+            width: 100%;
+            transition: transform 0.6s cubic-bezier(.25,.8,.25,1);
             transform-style: preserve-3d;
-            transition: transform 0.2s cubic-bezier(.25,.8,.25,1), box-shadow 0.2s ease;
-            animation: giroFoto3D 6s ease-in-out infinite;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.35), 0 4px 6px -4px rgba(0,0,0,0.3), 0 22px 30px -12px rgba(184,164,255,0.45);
-            will-change: transform;
+            cursor: pointer;
         }
-        .foto-3d.foto-3d-activa { animation-play-state: paused; box-shadow: 0 18px 26px -6px rgba(0,0,0,0.4), 0 8px 10px -6px rgba(0,0,0,0.3), 0 30px 40px -10px rgba(139,233,245,0.5); }
-        @keyframes giroFoto3D {
-            0%, 100% { transform: rotateY(0deg) rotateX(0deg); }
-            25% { transform: rotateY(14deg) rotateX(-3deg); }
-            50% { transform: rotateY(0deg) rotateX(3deg); }
-            75% { transform: rotateY(-14deg) rotateX(-3deg); }
+        .tarjeta-3d-interior.girada { transform: rotateY(180deg); }
+        .tarjeta-3d-frente, .tarjeta-3d-reverso {
+            position: absolute; inset: 0;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            border-radius: 1rem;
+            display: flex;
+            flex-direction: column;
         }
-        .tarjeta-3d { perspective: 900px; }
-        .tarjeta-3d-interior { transform-style: preserve-3d; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-        .tarjeta-3d-interior.tarjeta-3d-activa { box-shadow: 0 25px 35px -8px rgba(0,0,0,0.45), 0 30px 45px -15px rgba(234,255,176,0.4); }
+        .tarjeta-3d-frente { position: relative; background: white; border-radius: 1rem; overflow: hidden; }
+        .tarjeta-3d-reverso {
+            transform: rotateY(180deg);
+            background: #111827;
+            color: white;
+            padding: 0.6rem;
+            justify-content: space-between;
+            overflow: hidden;
+        }
 
-        /* Fondos con efecto 3D: hero, galería y footer */
+        /* Fondos con efecto 3D: hero, galería y footer — solo al pasar el cursor, sin animación infinita */
         .fondo-3d {
             transition: transform 0.4s cubic-bezier(.25,.8,.25,1), box-shadow 0.4s ease;
-            animation: giroFondo3D 11s ease-in-out infinite;
             box-shadow: 0 30px 55px -20px rgba(0,0,0,0.35);
-            will-change: transform;
         }
-        .fondo-3d.fondo-3d-activo { animation-play-state: paused; box-shadow: 0 40px 65px -18px rgba(0,0,0,0.4); }
-        @keyframes giroFondo3D {
-            0%, 100% { transform: rotateY(0deg) rotateX(0deg); }
-            25% { transform: rotateY(2.5deg) rotateX(-1deg); }
-            50% { transform: rotateY(0deg) rotateX(1deg); }
-            75% { transform: rotateY(-2.5deg) rotateX(-1deg); }
-        }
+        .fondo-3d.fondo-3d-activo { box-shadow: 0 40px 65px -18px rgba(0,0,0,0.4); }
 
         /* ---- Galería de Productos: señal holográfica rápida ---- */
         #galeria {
             position: relative;
-            background: linear-gradient(115deg, #1a0b3d, #ff9fd0, #b8a4ff, #8be9f5, #1a0b3d);
-            background-size: 400% 400%;
-            animation: galeriaFondoMove 5s ease infinite;
+            background: linear-gradient(115deg, #1a0b3d, #ff9fd0, #b8a4ff, #8be9f5);
             overflow: hidden;
         }
-        #galeria::before {
-            content: '';
-            position: absolute; inset: 0;
-            background: radial-gradient(circle at 20% 20%, rgba(234,255,176,0.22), transparent 45%),
-                        radial-gradient(circle at 80% 70%, rgba(139,233,245,0.25), transparent 45%);
-            animation: galeriaBrilloMove 3s ease-in-out infinite alternate;
-            pointer-events: none;
-        }
-        @keyframes galeriaFondoMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-        @keyframes galeriaBrilloMove { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(-4%,4%) scale(1.1); } }
 
-        .galeria-item {
-            border-radius: 1.25rem;
-            animation: galeriaFlotar 2.4s ease-in-out infinite;
-            transition: transform 0.3s ease;
-        }
-        .galeria-item:hover { transform: translateY(-6px) scale(1.05); animation-play-state: paused; }
-        .galeria-item:nth-child(2n) { animation-delay: 0.3s; }
-        .galeria-item:nth-child(3n) { animation-delay: 0.6s; }
-        .galeria-item:nth-child(4n) { animation-delay: 0.9s; }
-        @keyframes galeriaFlotar { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .galeria-item { position: relative; border-radius: 1.25rem; transition: transform 0.25s ease; }
+        .galeria-item:hover { transform: translateY(-4px); }
 
         .galeria-borde-brillante {
             position: relative;
             padding: 4px;
-            background: linear-gradient(115deg, #ff9fd0, #eaffb0, #8be9f5, #b8a4ff, #ff9fd0);
-            background-size: 300% 300%;
-            animation: bgMove 3s linear infinite;
-            box-shadow: 0 8px 20px rgba(184,164,255,0.35);
+            border-radius: 1rem;
+            background: linear-gradient(115deg, #ff9fd0, #eaffb0, #8be9f5, #b8a4ff);
+            box-shadow: 0 8px 20px rgba(184,164,255,0.25);
         }
         .galeria-borde-brillante img { border-radius: 0.9rem; }
 
         /* ---- Nuestras Plataformas: señal holográfica rápida ---- */
         #productos {
             position: relative;
-            background: linear-gradient(115deg, #8be9f5, #b8a4ff, #ff9fd0, #eaffb0, #8be9f5);
-            background-size: 400% 400%;
-            animation: galeriaFondoMove 6s ease infinite;
+            background: linear-gradient(115deg, #1a0b3d, #b8a4ff, #8be9f5, #eaffb0);
             border-radius: 2rem;
             overflow: hidden;
         }
@@ -159,7 +136,6 @@
             position: absolute; inset: 0;
             background: radial-gradient(circle at 15% 25%, rgba(255,255,255,0.22), transparent 45%),
                         radial-gradient(circle at 85% 75%, rgba(255,255,255,0.2), transparent 45%);
-            animation: galeriaBrilloMove 3.5s ease-in-out infinite alternate;
             pointer-events: none;
         }
         #productos > * { position: relative; z-index: 1; }
@@ -684,7 +660,7 @@
                 </button>
                 <button onclick="toggleAdmin()" class="bg-white text-pink-600 w-8 h-8 md:w-auto md:px-5 md:py-2 rounded-full font-semibold hover:bg-yellow-100 transition flex items-center justify-center md:gap-2 shadow-md text-xs md:text-base">
                     <i class="fas fa-cog"></i>
-                    <span class="hidden md:inline">Administrar</span>
+                    <span class="hidden md:inline">RFL</span>
                 </button>
             </div>
         </div>
@@ -828,7 +804,7 @@
                             <i class="fas fa-shield-halved"></i>
                         </div>
                         <div>
-                            <h3 class="text-2xl admin-heading leading-tight">Panel de Administración</h3>
+                            <h3 class="text-2xl admin-heading leading-tight">Panel RFL</h3>
                             <p id="panel-subtitulo" class="text-xs text-gray-400">Gestiona tu tienda y tus productos</p>
                         </div>
                     </div>
@@ -849,7 +825,7 @@
                         <button onclick="cerrarSesion()" class="text-sm text-gray-500 hover:text-red-500 flex items-center gap-1">
                             <i class="fas fa-sign-out-alt"></i> Salir
                         </button>
-                        <button onclick="toggleAdmin()" class="text-3xl text-gray-400 hover:text-gray-600" aria-label="Cerrar panel de administración">×</button>
+                        <button onclick="toggleAdmin()" class="text-3xl text-gray-400 hover:text-gray-600" aria-label="Cerrar panel RFL">×</button>
                     </div>
                 </div>
 
@@ -885,6 +861,11 @@
                             <div class="admin-stat-icon bg-amber-100 text-amber-600 mx-auto mb-2"><i class="fas fa-clock"></i></div>
                             <p id="resumen-total-pendientes" class="text-2xl font-bold text-slate-800">0</p>
                             <p class="text-[11px] text-gray-500">Solicitudes pendientes</p>
+                        </div>
+                        <div class="admin-card p-4 text-center cursor-pointer" onclick="filtrarProductosPorPropietario && document.getElementById('admins-activos-lista')?.scrollIntoView({behavior:'smooth'})">
+                            <div class="admin-stat-icon bg-red-100 text-red-600 mx-auto mb-2"><i class="fas fa-crown"></i></div>
+                            <p id="resumen-suscripciones-alerta" class="text-2xl font-bold text-slate-800">0</p>
+                            <p class="text-[11px] text-gray-500">Suscripciones vencidas o por vencer</p>
                         </div>
                         <div class="admin-card p-4 text-center">
                             <div class="admin-stat-icon bg-teal-100 text-teal-600 mx-auto mb-2"><i class="fas fa-cart-shopping"></i></div>
@@ -959,7 +940,7 @@
                             <input type="datetime-local" id="new-publicar-en" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-1 text-gray-700">
                         </label>
                         <div class="grid grid-cols-2 gap-4 mt-4">
-                            <select id="new-categoria" onchange="document.getElementById('new-categoria-otro').classList.toggle('hidden', this.value !== 'Otro')" class="border border-gray-300 rounded-xl px-4 py-3">
+                            <select id="new-categoria" onchange="document.getElementById('new-categoria-otro').classList.toggle('hidden', this.value !== 'Otro'); document.getElementById('new-animacion3d-row').classList.toggle('hidden', this.value !== 'Ropa' && this.value !== 'Zapatillas');" class="border border-gray-300 rounded-xl px-4 py-3">
                                 <option value="Streaming">Streaming</option>
                                 <option value="Ropa">Ropa</option>
                                 <option value="Zapatillas">Zapatillas</option>
@@ -970,6 +951,10 @@
                             </select>
                             <input id="new-categoria-otro" type="text" placeholder="Nombre de la categoría" class="hidden border border-gray-300 rounded-xl px-4 py-3">
                         </div>
+                        <label id="new-animacion3d-row" class="hidden mt-4 flex items-center gap-3 border border-gray-200 rounded-xl px-4 py-3 cursor-pointer">
+                            <input type="checkbox" id="new-animacion3d" checked class="w-5 h-5 accent-indigo-600">
+                            <span class="text-sm text-gray-600"><i class="fas fa-cube text-indigo-600 mr-1"></i> Mostrar animación 3D en la foto de este producto</span>
+                        </label>
                         <label class="mt-4 flex items-center gap-3 border border-dashed border-gray-300 rounded-xl px-4 py-3 cursor-pointer hover:bg-gray-100">
                             <i class="fas fa-image text-indigo-600"></i>
                             <span id="new-photo-label" class="text-gray-500">Subir foto del producto (opcional)</span>
@@ -1379,6 +1364,16 @@
                         </label>
                     </div>
                 </div>
+                <div class="text-left mb-3 border border-indigo-200 bg-indigo-50 rounded-xl p-4">
+                    <p class="text-sm font-semibold text-indigo-700 mb-1"><i class="fas fa-crown mr-1"></i> Suscripción de administrador: S/ 10 al mes</p>
+                    <p class="text-xs text-gray-600 mb-2">Yapea o Plinea S/ 10 al <b>${YAPE_NUMERO_MOSTRAR}</b> y sube la captura de tu pago aquí abajo. Tu cuenta se activa cuando el dueño de la tienda confirme el pago.</p>
+                    <label class="flex items-center gap-3 border border-dashed border-indigo-300 rounded-xl px-4 py-3 cursor-pointer hover:bg-indigo-100 bg-white">
+                        <i class="fas fa-receipt text-indigo-600"></i>
+                        <span id="registro-comprobante-label" class="text-gray-500 text-sm">Subir captura de pago (Yape/Plin)</span>
+                        <input type="file" id="registro-comprobante" accept="image/*" class="hidden" onchange="previewComprobantePago(event)">
+                    </label>
+                    <img id="registro-comprobante-preview" class="hidden mt-2 h-24 rounded-xl object-cover mx-auto">
+                </div>
                 <p id="registro-error" class="hidden text-red-500 text-sm mb-3"></p>
                 <button onclick="crearCuentaAdmin()" class="boton-animado-morado text-white py-3 rounded-xl font-semibold w-full mb-2">Crear cuenta</button>
                 <button onclick="cerrarCuentaModal()" class="text-gray-400 text-sm w-full">Cancelar</button>
@@ -1441,6 +1436,10 @@
                 </div>
             </div>
             <div class="p-4 pt-2 border-t border-gray-100 shrink-0 bg-white">
+                <label class="flex items-center gap-2 mb-2 text-xs text-gray-600 cursor-pointer">
+                    <input type="checkbox" id="detalle-es-provincia" onchange="guardarClienteProvincia(this.checked); actualizarBotonesDetalleProducto();" class="w-4 h-4 accent-indigo-600">
+                    <i class="fas fa-map-location-dot text-indigo-500"></i> Soy de provincia (fuera de Lima)
+                </label>
                 <button id="detalle-avisar-stock" onclick="abrirAvisarStock()" class="hidden block w-full text-center bg-amber-100 text-amber-700 py-2.5 rounded-xl font-semibold mb-2 text-sm"><i class="fas fa-bell mr-1"></i> Avísame cuando haya stock</button>
                 <button id="detalle-agregar-carrito" onclick="agregarAlCarritoDesdeDetalle()" class="block w-full text-center bg-purple-100 text-purple-700 py-2.5 rounded-xl font-semibold mb-2 text-sm"><i class="fas fa-cart-plus mr-1"></i> Agregar al carrito</button>
                 <a id="detalle-whatsapp" href="#" target="_blank" class="block text-center boton-animado text-white py-2.5 rounded-xl font-semibold shadow mb-2 text-sm">Comprar por WhatsApp</a>
@@ -1555,6 +1554,10 @@
                     <span class="text-sm font-semibold text-gray-600">Total</span>
                     <span id="carrito-total" class="text-xl font-bold titulo-color">S/ 0</span>
                 </div>
+                <label class="flex items-center gap-2 mb-3 text-xs text-gray-600 cursor-pointer">
+                    <input type="checkbox" id="carrito-es-provincia" onchange="guardarClienteProvincia(this.checked); renderCarrito();" class="w-4 h-4 accent-indigo-600">
+                    <i class="fas fa-map-location-dot text-indigo-500"></i> Soy de provincia (fuera de Lima)
+                </label>
                 <div id="carrito-grupos-whatsapp" class="space-y-2"></div>
                 <p id="carrito-aviso-vendedores" class="hidden text-[11px] text-gray-400 mt-2 text-center">Tus productos son de distintos vendedores, así que se envía un mensaje de WhatsApp por cada uno.</p>
                 <button onclick="descargarResumenCarrito()" class="w-full mt-2 text-xs text-gray-400 underline"><i class="fas fa-download mr-1"></i> Descargar resumen de tu pedido</button>
@@ -1689,6 +1692,9 @@
         const storage = firebase.storage();
 
         const WHATSAPP_NUMBER = "51925516886";
+        const YAPE_NUMERO_MOSTRAR = "925 516 886"; // Yape/Plin del súper admin, para la suscripción de nuevos admins
+        const SUSCRIPCION_ADMIN_MONTO = 10;
+        const SUSCRIPCION_ADMIN_DIAS = 30;
         const TASA_CAMBIO_USD_APROX = 3.75; // referencial, para mostrar precio aprox. en dólares
 
         db.collection('configuracion').doc('superadmin_foto').get().then(doc => {
@@ -1741,6 +1747,26 @@
             return producto.precio;
         }
 
+        // "Soy de provincia" — el cliente lo marca en el producto y/o en el carrito; se guarda
+        // localmente y se agrega al mensaje de WhatsApp para que el vendedor sepa a dónde enviar.
+        let clienteEsProvincia = localStorage.getItem('sct_cliente_provincia') === '1';
+        function guardarClienteProvincia(valor) {
+            clienteEsProvincia = !!valor;
+            localStorage.setItem('sct_cliente_provincia', clienteEsProvincia ? '1' : '0');
+            const chkDetalle = document.getElementById('detalle-es-provincia');
+            const chkCarrito = document.getElementById('carrito-es-provincia');
+            if (chkDetalle) chkDetalle.checked = clienteEsProvincia;
+            if (chkCarrito) chkCarrito.checked = clienteEsProvincia;
+        }
+
+        function actualizarBotonesDetalleProducto() {
+            const producto = productos.find(p => p.id === productoDetalleActualId);
+            if (!producto) return;
+            const numeroContacto = producto.propietarioWhatsapp || WHATSAPP_NUMBER;
+            const agotado = producto.stock !== null && producto.stock !== undefined && producto.stock <= 0;
+            actualizarPrecioYBotonDetalle(producto, agotado, numeroContacto);
+        }
+
         function mensajeCompraWhatsapp(producto, metodoElegido, varianteElegida) {
             const precio = varianteElegida ? varianteElegida.precio : precioFinalProducto(producto);
             let msg = varianteElegida
@@ -1760,6 +1786,9 @@
             if (producto.entregaDemorada) {
                 msg += `\n(Sé que este producto puede tardar hasta 24 horas en entregarse)`;
             }
+            if (clienteEsProvincia) {
+                msg += `\n📍 Soy de provincia (fuera de Lima), avísame cómo hacemos el envío.`;
+            }
             return encodeURIComponent(msg);
         }
 
@@ -1772,6 +1801,7 @@
                 propietarioNombre: producto.propietarioNombre || 'Tienda principal',
                 metodoPago: metodoPago || null,
                 estado: 'interesado',
+                esProvincia: clienteEsProvincia,
                 referidoPor: sessionStorage.getItem('sct_ref') || null,
                 clienteTelefono: null,
                 fechaVencimiento: null,
@@ -1937,8 +1967,8 @@
             }
         }).catch(err => console.error('Error leyendo configuración principal:', err));
 
-        function comprimirImagen(file, maxAncho = 700, calidad = 0.7) {
-            const LIMITE_BYTES = 350 * 1024; // ~350KB, para no acercarnos al límite de Firestore
+        function comprimirImagen(file, maxAncho = 600, calidad = 0.62) {
+            const LIMITE_BYTES = 220 * 1024; // ~220KB, para que las fotos carguen rápido incluso con datos móviles lentos
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
@@ -2210,9 +2240,11 @@
             renderProductos();
         }
 
-        // Efecto 3D activo solo en Ropa y Zapatillas
-        function tieneEfecto3D(categoria) {
-            return categoria === 'Ropa' || categoria === 'Zapatillas';
+        // Tarjeta 3D volteable: aplica a TODAS las categorías, salvo que el admin dueño la haya desactivado
+        // (por defecto activada; cada admin lo controla en sus propios productos con el checkbox del formulario)
+        function tieneEfecto3D(producto) {
+            if (!producto) return false;
+            return producto.animacion3D !== false;
         }
 
         // Tilt 3D "en reposo/hover": usado en los fondos (hero, galería, footer) — sigue el cursor sin necesidad de tocar/clickear.
@@ -2234,40 +2266,15 @@
             el.addEventListener('mouseleave', soltar);
         }
 
-        // Tilt 3D "de arrastre": usado en fotos y tarjetas de producto — solo gira mientras el dedo/mouse
-        // está presionado y deslizándose sobre la imagen (touch o click sostenido), en celular y PC.
-        function activarTiltDrag3D(el, intensidad = 24) {
-            if (!el || el.dataset.tiltDragListo) return;
-            el.dataset.tiltDragListo = '1';
-            const activarClase = el.classList.contains('foto-3d') ? 'foto-3d-activa' : 'tarjeta-3d-activa';
-            let arrastrando = false;
-            const mover = (clientX, clientY) => {
-                const rect = el.getBoundingClientRect();
-                const x = (clientX - rect.left) / rect.width - 0.5;
-                const y = (clientY - rect.top) / rect.height - 0.5;
-                el.style.transform = `rotateY(${x * intensidad}deg) rotateX(${-y * intensidad}deg) scale(1.05)`;
-                el.classList.add(activarClase);
-            };
-            const soltar = () => {
-                arrastrando = false;
-                el.style.transform = '';
-                el.classList.remove(activarClase);
-            };
-            // Mouse (PC): mantener presionado y arrastrar
-            el.addEventListener('mousedown', (e) => { arrastrando = true; mover(e.clientX, e.clientY); });
-            el.addEventListener('mousemove', (e) => { if (arrastrando) mover(e.clientX, e.clientY); });
-            el.addEventListener('mouseup', soltar);
-            el.addEventListener('mouseleave', soltar);
-            // Táctil (celular): deslizar el dedo sobre la imagen
-            el.addEventListener('touchstart', (e) => {
-                arrastrando = true;
-                if (e.touches[0]) mover(e.touches[0].clientX, e.touches[0].clientY);
-            }, { passive: true });
-            el.addEventListener('touchmove', (e) => {
-                if (!arrastrando || !e.touches[0]) return;
-                mover(e.touches[0].clientX, e.touches[0].clientY);
-            }, { passive: true });
-            el.addEventListener('touchend', soltar);
+        // Voltea una tarjeta de producto al tocarla/clickearla, mostrando los detalles y el botón de
+        // WhatsApp atrás. Si había otra tarjeta volteada, la cierra primero (solo una abierta a la vez).
+        function toggleTarjeta3D(el, ev) {
+            if (ev) ev.stopPropagation();
+            const yaEstabaGirada = el.classList.contains('girada');
+            document.querySelectorAll('.tarjeta-3d-interior.girada').forEach(otra => {
+                if (otra !== el) otra.classList.remove('girada');
+            });
+            el.classList.toggle('girada', !yaEstabaGirada);
         }
 
         // Activa el tilt 3D en los fondos animados (hero, galería, footer) apenas carga la página
@@ -2278,7 +2285,7 @@
         function crearTarjetaProductoCliente(producto) {
             const card = document.createElement('div');
             const ofertaActiva = producto.ofertaHasta && producto.ofertaHasta > Date.now();
-            const efecto3D = tieneEfecto3D(producto.categoria);
+            const efecto3D = tieneEfecto3D(producto);
             card.className = 'rounded-2xl overflow-hidden card-hover shadow-md cursor-pointer ' + (efecto3D ? 'tarjeta-3d' : '') + ' ' + (ofertaActiva ? 'oferta-relampago' : 'card-borde-animado');
             const numeroContacto = producto.propietarioWhatsapp || WHATSAPP_NUMBER;
             const tieneStock = producto.stock !== null && producto.stock !== undefined;
@@ -2324,36 +2331,58 @@
             const esTopVenta = idsProductosTopVentas.has(producto.id);
             const insigniasExtra = (esNuevo ? '<span class="bg-sky-500 text-white text-[6px] font-bold px-1 py-0.5 rounded-full mr-0.5">NUEVO</span>' : '') +
                 (esTopVenta ? '<span class="bg-amber-400 text-amber-900 text-[6px] font-bold px-1 py-0.5 rounded-full"><i class="fas fa-fire"></i> TOP</span>' : '');
-            card.innerHTML = `
+            const contenidoFrente = `
                 ${ofertaBadge}
-                <div class="${efecto3D ? 'tarjeta-3d-interior rounded-2xl' : ''}">
-                    <div class="relative ${efecto3D ? 'contenedor-foto-3d' : ''}">
-                        <img src="${producto.imagen}" loading="lazy" class="w-full h-11 object-cover ${efecto3D ? 'foto-3d rounded-t-2xl' : ''}">
-                        ${insigniasExtra ? `<div class="absolute top-1 left-1 flex gap-0.5">${insigniasExtra}</div>` : ''}
-                        <button onclick="event.stopPropagation(); toggleFavorito('${producto.id}')" class="btn-favorito absolute top-1 right-1 w-5 h-5 rounded-full bg-black/40 text-white flex items-center justify-center text-[9px]"><i class="${esFavorito(producto.id) ? 'fas' : 'far'} fa-heart"></i></button>
-                        <button onclick="event.stopPropagation(); abrirVistaRapida('${producto.id}')" class="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-black/40 text-white flex items-center justify-center text-[9px]"><i class="fas fa-eye"></i></button>
+                <div class="relative">
+                    <img src="${producto.imagen}" loading="lazy" decoding="async" class="w-full h-11 object-cover rounded-t-2xl">
+                    ${insigniasExtra ? `<div class="absolute top-1 left-1 flex gap-0.5">${insigniasExtra}</div>` : ''}
+                    <button onclick="event.stopPropagation(); toggleFavorito('${producto.id}')" class="btn-favorito absolute top-1 right-1 w-5 h-5 rounded-full bg-black/40 text-white flex items-center justify-center text-[9px]"><i class="${esFavorito(producto.id) ? 'fas' : 'far'} fa-heart"></i></button>
+                    <button onclick="event.stopPropagation(); abrirVistaRapida('${producto.id}')" class="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-black/40 text-white flex items-center justify-center text-[9px]"><i class="fas fa-eye"></i></button>
+                </div>
+                <div class="p-1.5">
+                    <h3 class="text-[11px] font-bold mb-0.5 ${ofertaActiva ? 'text-white' : 'text-purple-700'} truncate">${producto.nombre}</h3>
+                    <p class="${ofertaActiva ? 'text-white/70' : 'text-gray-400'} text-[8px] mb-1 flex items-center gap-1 truncate"><span class="inline-block w-1.5 h-1.5 rounded-full" style="background:${colorVendedor}"></span> ${nombreVendedor} ${insigniaVerificado}</p>
+                    <div class="flex items-end gap-1 mb-1 flex-wrap">
+                        ${precioHtml}
                     </div>
-                    <div class="p-1.5">
-                        <h3 class="text-[11px] font-bold mb-0.5 ${ofertaActiva ? 'text-white' : 'text-purple-700'} truncate">${producto.nombre}</h3>
-                        <p class="${ofertaActiva ? 'text-white/70' : 'text-gray-400'} text-[8px] mb-1 flex items-center gap-1 truncate"><span class="inline-block w-1.5 h-1.5 rounded-full" style="background:${colorVendedor}"></span> ${nombreVendedor} ${insigniaVerificado}</p>
-                        <div class="flex items-end gap-1 mb-1 flex-wrap">
-                            ${precioHtml}
-                        </div>
-                        ${etiquetaEntrega}
-                        ${etiquetaStock}
-                        ${botonComprarFinal}
-                    </div>
+                    ${etiquetaEntrega}
+                    ${etiquetaStock}
+                    ${botonComprarFinal}
+                    ${efecto3D ? '<p class="text-center text-[7px] text-gray-400 mt-1"><i class="fas fa-arrows-rotate"></i> Toca para ver detalles</p>' : ''}
                 </div>
             `;
+            if (efecto3D) {
+                const contenidoReverso = `
+                    <div>
+                        <h4 class="text-xs font-bold mb-1.5">${producto.nombre}</h4>
+                        <ul class="text-[9px] space-y-1 text-gray-200">
+                            <li><i class="fas fa-layer-group text-indigo-300"></i> Categoría: ${producto.categoria || 'General'}</li>
+                            ${producto.entregaDemorada ? `<li><i class="fas fa-clock text-orange-300"></i> Entrega hasta 24h</li>` : `<li><i class="fas fa-bolt text-emerald-300"></i> Entrega rápida</li>`}
+                            <li><i class="fas fa-shield-halved text-sky-300"></i> ${nombreVendedor} ${vendedorVerificado ? '(verificado)' : ''}</li>
+                            ${tieneStock ? `<li><i class="fas fa-box text-amber-300"></i> ${agotado ? 'Agotado' : `Quedan ${producto.stock}`}</li>` : ''}
+                        </ul>
+                    </div>
+                    <div class="flex flex-col gap-1.5 mt-2">
+                        ${agotado
+                            ? `<span class="block text-center bg-gray-600 text-gray-300 py-1.5 rounded-lg font-semibold text-[10px]">Agotado</span>`
+                            : `<a href="https://wa.me/${numeroContacto}?text=${mensajeCompraWhatsapp(producto)}" target="_blank" onclick="event.stopPropagation(); registrarClicCompraPorId('${producto.id}')" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-white py-1.5 rounded-lg font-semibold text-[10px]"><i class="fab fa-whatsapp"></i> Comprar ahora</a>`}
+                        <button onclick="event.stopPropagation(); verDetalleProducto('${producto.id}')" class="text-[9px] text-gray-300 underline">Ver detalle completo</button>
+                    </div>
+                `;
+                card.innerHTML = `
+                    <div class="tarjeta-3d-interior" onclick="toggleTarjeta3D(this, event)">
+                        <div class="tarjeta-3d-frente">${contenidoFrente}</div>
+                        <div class="tarjeta-3d-reverso">${contenidoReverso}</div>
+                    </div>
+                `;
+            } else {
+                card.innerHTML = contenidoFrente;
+            }
             card.addEventListener('click', (ev) => {
                 activarEfectoLlamas(card);
-                if (ev.target.closest('a')) return;
+                if (ev.target.closest('a') || ev.target.closest('.tarjeta-3d-interior')) return;
                 verDetalleProducto(producto.id);
             });
-            if (efecto3D) {
-                activarTiltDrag3D(card.querySelector('.foto-3d'));
-                activarTiltDrag3D(card.querySelector('.tarjeta-3d-interior'), 10);
-            }
             return card;
         }
 
@@ -2482,7 +2511,6 @@
 
         function crearFilaListaProducto(producto) {
             const div = document.createElement('div');
-            const efecto3D = tieneEfecto3D(producto.categoria);
             div.className = 'producto-fila-lista cursor-pointer';
             const numeroContacto = producto.propietarioWhatsapp || WHATSAPP_NUMBER;
             const tieneStock = producto.stock !== null && producto.stock !== undefined;
@@ -2497,9 +2525,7 @@
                     ? `<span class="text-[10px] line-through text-gray-400">S/${producto.precioAnterior}</span> <span class="text-sm font-bold text-emerald-600">S/${producto.precio}</span>`
                     : `<span class="text-sm font-bold titulo-color">S/${producto.precio}</span>`;
             div.innerHTML = `
-                <div class="${efecto3D ? 'contenedor-foto-3d' : ''}">
-                    <img src="${producto.imagen}" loading="lazy" class="${efecto3D ? 'foto-3d rounded-lg' : ''}">
-                </div>
+                <img src="${producto.imagen}" loading="lazy" decoding="async" class="rounded-lg">
                 <div class="flex-1 min-w-0">
                     <p class="text-xs font-bold text-purple-700 truncate">${producto.nombre}</p>
                     <p class="text-[10px] text-gray-400 truncate">${producto.propietarioNombre || 'SCT Stream'}</p>
@@ -2513,7 +2539,6 @@
                 if (ev.target.closest('a')) return;
                 verDetalleProducto(producto.id);
             });
-            if (efecto3D) activarTiltDrag3D(div.querySelector('.foto-3d'));
             return div;
         }
 
@@ -2721,6 +2746,8 @@
             productoDetalleActualId = id;
             metodoPagoElegido = null;
             varianteElegidaActual = null;
+            const chkProvincia = document.getElementById('detalle-es-provincia');
+            if (chkProvincia) chkProvincia.checked = clienteEsProvincia;
             const numeroContacto = producto.propietarioWhatsapp || WHATSAPP_NUMBER;
             const tieneStock = producto.stock !== null && producto.stock !== undefined;
             const agotado = tieneStock && producto.stock <= 0;
@@ -2728,12 +2755,7 @@
             // Carrusel de fotos (principal + adicionales, si tiene)
             const carrusel = document.getElementById('detalle-carrusel');
             const fotos = [producto.imagen, ...(producto.imagenes || [])].filter(Boolean);
-            const efecto3DDetalle = tieneEfecto3D(producto.categoria);
-            carrusel.innerHTML = fotos.map(src => efecto3DDetalle
-                ? `<div class="contenedor-foto-3d" style="display:inline-block;"><img src="${src}" loading="lazy" onclick="abrirZoomFoto('${src}')" class="foto-3d" style="cursor: zoom-in;"></div>`
-                : `<img src="${src}" loading="lazy" onclick="abrirZoomFoto('${src}')" style="cursor: zoom-in;">`
-            ).join('');
-            if (efecto3DDetalle) carrusel.querySelectorAll('.foto-3d').forEach(img => activarTiltDrag3D(img));
+            carrusel.innerHTML = fotos.map(src => `<img src="${src}" loading="lazy" decoding="async" onclick="abrirZoomFoto('${src}')" style="cursor: zoom-in;">`).join('');
             const dots = document.getElementById('detalle-carrusel-dots');
             if (fotos.length > 1) {
                 dots.innerHTML = fotos.map((_, i) => `<span class="${i === 0 ? 'activo' : ''}"></span>`).join('');
@@ -2829,7 +2851,7 @@
             if (relacionados.length > 0) {
                 relacionadosEl.innerHTML = relacionados.map(r => `
                     <div onclick="verDetalleProducto('${r.id}')" class="shrink-0 w-20 cursor-pointer">
-                        <img src="${r.imagen}" loading="lazy" class="w-20 h-14 object-cover rounded-lg mb-1">
+                        <img src="${r.imagen}" loading="lazy" decoding="async" class="w-20 h-14 object-cover rounded-lg mb-1">
                         <p class="text-[10px] text-gray-600 truncate">${r.nombre}</p>
                         <p class="text-[10px] font-bold titulo-color">S/ ${r.precio}</p>
                     </div>
@@ -3243,6 +3265,7 @@
                 propietarioNombre: item.propietarioNombre,
                 metodoPago: null,
                 estado: 'interesado',
+                esProvincia: clienteEsProvincia,
                 referidoPor: sessionStorage.getItem('sct_ref') || null,
                 clienteTelefono: null,
                 fechaVencimiento: null,
@@ -3275,6 +3298,8 @@
             const lista = document.getElementById('carrito-lista');
             const vacioEl = document.getElementById('carrito-vacio');
             const resumenEl = document.getElementById('carrito-resumen');
+            const chkProvinciaCarrito = document.getElementById('carrito-es-provincia');
+            if (chkProvinciaCarrito) chkProvinciaCarrito.checked = clienteEsProvincia;
 
             if (carrito.length === 0) {
                 lista.innerHTML = '';
@@ -3290,7 +3315,7 @@
                 const conDescuento = precioUnit < item.precio;
                 return `
                 <div class="flex items-center gap-3">
-                    <img src="${item.imagen}" class="w-14 h-14 rounded-xl object-cover shrink-0">
+                    <img src="${item.imagen}" loading="lazy" decoding="async" class="w-14 h-14 rounded-xl object-cover shrink-0">
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-semibold text-slate-800 truncate">${item.nombre}${item.varianteNombre ? ` <span class="text-gray-400 font-normal">(${item.varianteNombre})</span>` : ''}</p>
                         <p class="text-xs text-gray-400">S/ ${precioUnit} c/u ${conDescuento ? '<span class="text-emerald-600 font-semibold">(precio por cantidad)</span>' : ''} · ${item.propietarioNombre}</p>
@@ -3329,6 +3354,9 @@
                     msg += `• ${i.nombre}${i.varianteNombre ? ` (${i.varianteNombre})` : ''} x${i.cantidad} — S/ ${(precioUnitarioCarrito(i) * i.cantidad).toFixed(2).replace(/\.00$/, '')}\n`;
                 });
                 msg += `\nTotal: S/ ${subtotal.toFixed(2).replace(/\.00$/, '')}`;
+                if (clienteEsProvincia) {
+                    msg += `\n📍 Soy de provincia (fuera de Lima), avísame cómo hacemos el envío.`;
+                }
                 const href = `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
                 return `
                     <a href="${href}" target="_blank" onclick="checkoutCarritoVendedor('${propietario}')" class="block text-center boton-animado text-white py-2.5 rounded-xl font-semibold shadow text-sm">
@@ -3509,7 +3537,7 @@
                 const botonEliminar = (adminDesbloqueado && esSuperAdmin)
                     ? `<button class="galeria-delete" onclick="eliminarFoto('${foto.id}')" title="Eliminar foto"><i class="fas fa-times"></i></button>`
                     : '';
-                div.innerHTML = `<div class="w-full h-full overflow-hidden rounded-2xl relative"><img src="${foto.imagen}" loading="lazy" class="w-full h-full object-cover hover:scale-110 transition">${botonEliminar}</div>`;
+                div.innerHTML = `<div class="w-full h-full overflow-hidden rounded-2xl relative"><img src="${foto.imagen}" loading="lazy" decoding="async" class="w-full h-full object-cover hover:scale-110 transition">${botonEliminar}</div>`;
                 grid.appendChild(div);
             });
         }
@@ -3757,6 +3785,12 @@
             if (totalAdmins) totalAdmins.textContent = adminsActivos.length;
             if (totalProductos) totalProductos.textContent = productos.length;
             if (totalPendientes) totalPendientes.textContent = solicitudesPendientes.length;
+            const resumenSuscripcionesEl = document.getElementById('resumen-suscripciones-alerta');
+            if (resumenSuscripcionesEl) {
+                const tresDiasMs = 3 * 24 * 60 * 60 * 1000;
+                const alerta = adminsActivos.filter(a => a.suscripcionVenceEl && a.suscripcionVenceEl < (Date.now() + tresDiasMs)).length;
+                resumenSuscripcionesEl.textContent = alerta;
+            }
             const { totalVentas, ingresos, productoTop, productoTopCantidad, clientesRecurrentes } = calcularStatsVentas(pedidos);
             const totalVentasEl = document.getElementById('resumen-total-ventas');
             const totalIngresosEl = document.getElementById('resumen-total-ingresos');
@@ -3886,9 +3920,14 @@
                 const selectCategoria = `<select id="categoria-input-${producto.id}" onchange="guardarCategoriaProducto('${producto.id}', this.value)" class="border border-gray-300 rounded-lg px-2 py-1.5 text-xs">
                     ${opcionesCategoria.map(c => `<option value="${c}" ${c === categoriaProducto ? 'selected' : ''}>${c}</option>`).join('')}
                 </select>`;
+                const botonAnimacion3D = (categoriaProducto === 'Ropa' || categoriaProducto === 'Zapatillas')
+                    ? (producto.animacion3D !== false
+                        ? `<button onclick="toggleAnimacion3DProducto('${producto.id}', false)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-cube mr-1"></i>Quitar animación 3D</button>`
+                        : `<button onclick="toggleAnimacion3DProducto('${producto.id}', true)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-cube mr-1"></i>Activar animación 3D</button>`)
+                    : '';
                 div.innerHTML = `
                     <div class="flex items-center gap-3 mb-3">
-                        <img src="${producto.imagen}" loading="lazy" class="w-14 h-14 rounded-xl object-cover">
+                        <img src="${producto.imagen}" loading="lazy" decoding="async" class="w-14 h-14 rounded-xl object-cover">
                         <div class="flex-1">
                             <p class="font-medium text-slate-800">${producto.nombre}${badgeStock}${badgeOferta}${badgeDescuento}${badgeEntrega}${badgeProgramado}</p>
                             <p class="text-indigo-600 font-bold">S/ ${producto.precio}</p>
@@ -3925,6 +3964,7 @@
                             <div class="flex items-center gap-2 flex-wrap border-t border-gray-100 pt-2">
                                 <span class="text-xs text-gray-400"><i class="fas fa-layer-group mr-1"></i>Categoría:</span>
                                 ${selectCategoria}
+                                ${botonAnimacion3D}
                             </div>
                             <div class="flex items-center gap-2 flex-wrap border-t border-gray-100 pt-2">
                                 ${filaSuperAdminDescuento}
@@ -3949,6 +3989,22 @@
                 mostrarAviso(`Categoría actualizada a "${categoria}".`);
             } catch (err) {
                 mostrarAviso('No se pudo actualizar la categoría: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
+        // Cada admin decide la animación 3D solo en sus propios productos; el súper admin puede en cualquiera.
+        async function toggleAnimacion3DProducto(id, activar) {
+            const producto = productos.find(p => p.id === id);
+            const miUid = auth.currentUser && auth.currentUser.uid;
+            if (!esSuperAdmin && (!producto || producto.propietario !== miUid)) {
+                mostrarAviso('Solo puedes cambiar la animación 3D de tus propios productos.');
+                return;
+            }
+            try {
+                await db.collection('productos').doc(id).update({ animacion3D: activar });
+                mostrarAviso(activar ? 'Animación 3D activada.' : 'Animación 3D desactivada.');
+            } catch (err) {
+                mostrarAviso('No se pudo actualizar la animación 3D: ' + (err.message || err.code || 'error desconocido'));
             }
         }
 
@@ -4472,10 +4528,11 @@
                     const duenoTxt = esSuperAdmin ? `<p class="text-xs text-gray-400">${p.propietarioNombre || 'Tienda principal'}</p>` : '';
                     const metodoTxt = p.metodoPago ? `<p class="text-xs text-indigo-500">Pago: ${p.metodoPago}</p>` : '';
                     const referidoTxt = p.referidoPor ? `<p class="text-xs text-pink-500"><i class="fas fa-gift"></i> Referido por ${p.referidoPor}</p>` : '';
+                    const provinciaBadge = p.esProvincia ? `<span class="bg-indigo-100 text-indigo-700 text-[10px] font-semibold px-2 py-0.5 rounded-full ml-1"><i class="fas fa-map-location-dot"></i> Provincia</span>` : '';
                     return `
                         <div class="border border-amber-200 bg-amber-50 rounded-2xl p-4 mb-2 flex items-center justify-between gap-3 flex-wrap">
                             <div>
-                                <p class="font-medium text-slate-800">${p.productoNombre}</p>
+                                <p class="font-medium text-slate-800">${p.productoNombre}${provinciaBadge}</p>
                                 <p class="text-indigo-600 font-bold text-sm">S/ ${p.precio}</p>
                                 ${duenoTxt}
                                 ${metodoTxt}
@@ -4514,10 +4571,11 @@
                     const botonEntregado = !p.entregado
                         ? `<button onclick="marcarPedidoEntregado('${p.id}')" class="bg-sky-500 hover:bg-sky-600 text-white px-3 py-2 rounded-xl text-xs font-semibold">Marcar entregado</button>`
                         : '';
+                    const provinciaBadgeConfirmada = p.esProvincia ? `<span class="bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-semibold ml-1"><i class="fas fa-map-location-dot"></i> Provincia</span>` : '';
                     return `
                         <div class="border ${esUrgente ? 'border-red-300 bg-red-50' : 'border-emerald-200 bg-emerald-50'} rounded-2xl p-4 mb-2 flex items-center justify-between gap-3 flex-wrap">
                             <div>
-                                <p class="font-medium text-slate-800">${p.productoNombre} <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-semibold ml-1">VENDIDO</span>${entregadoBadge}${urgenteBadge}</p>
+                                <p class="font-medium text-slate-800">${p.productoNombre} <span class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-semibold ml-1">VENDIDO</span>${entregadoBadge}${urgenteBadge}${provinciaBadgeConfirmada}</p>
                                 <p class="text-indigo-600 font-bold text-sm">S/ ${p.precio}</p>
                                 ${duenoTxt}
                                 ${metodoTxt}
@@ -5286,6 +5344,21 @@
             }
         }
 
+        let comprobantePagoBase64 = null;
+        async function previewComprobantePago(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                comprobantePagoBase64 = await comprimirImagen(file, 500, 0.6);
+                const img = document.getElementById('registro-comprobante-preview');
+                img.src = comprobantePagoBase64;
+                img.classList.remove('hidden');
+                document.getElementById('registro-comprobante-label').textContent = file.name;
+            } catch (err) {
+                mostrarAviso('No se pudo procesar la captura de pago.');
+            }
+        }
+
         let nuevasFotosExtraBase64 = [];
 
         async function previewFotosExtra(e) {
@@ -5307,15 +5380,6 @@
             if (!producto) return;
             const vrImagen = document.getElementById('vr-imagen');
             vrImagen.src = producto.imagen;
-            const vrContenedor = vrImagen.parentElement;
-            if (tieneEfecto3D(producto.categoria)) {
-                vrImagen.classList.add('foto-3d');
-                if (vrContenedor) vrContenedor.classList.add('contenedor-foto-3d');
-                activarTiltDrag3D(vrImagen);
-            } else {
-                vrImagen.classList.remove('foto-3d');
-                if (vrContenedor) vrContenedor.classList.remove('contenedor-foto-3d');
-            }
             document.getElementById('vr-nombre').textContent = producto.nombre;
             document.getElementById('vr-vendedor').textContent = `Vendido por: ${producto.propietarioNombre || 'SCT Stream'}`;
             document.getElementById('vr-precio').textContent = `S/ ${precioFinalProducto(producto)}`;
@@ -5401,6 +5465,7 @@
             const categoria = categoriaSelect === 'Otro'
                 ? (document.getElementById('new-categoria-otro').value.trim() || 'Otro')
                 : categoriaSelect;
+            const animacion3D = document.getElementById('new-animacion3d').checked;
             if (!nombre || !precio) {
                 mostrarAviso("Por favor completa nombre y precio.");
                 return;
@@ -5437,6 +5502,7 @@
                     variantes: variantes,
                     clicsCompra: 0,
                     categoria: categoria,
+                    animacion3D: animacion3D,
                     propietario: propietario,
                     propietarioNombre: propietarioNombre,
                     propietarioWhatsapp: propietarioWhatsapp,
@@ -5466,6 +5532,8 @@
             document.getElementById('new-categoria').value = 'Streaming';
             document.getElementById('new-categoria-otro').value = '';
             document.getElementById('new-categoria-otro').classList.add('hidden');
+            document.getElementById('new-animacion3d').checked = true;
+            document.getElementById('new-animacion3d-row').classList.add('hidden');
             document.getElementById('new-photo').value = '';
             document.getElementById('new-photo-preview').classList.add('hidden');
             document.getElementById('new-photo-label').textContent = 'Subir foto del producto (opcional)';
@@ -6293,7 +6361,17 @@
             if (auth.currentUser && !esSuperAdmin) {
                 try {
                     const doc = await db.collection('administradores').doc(auth.currentUser.uid).get();
-                    if (doc.exists && doc.data().aprobado && !doc.data().bloqueado) {
+                    const datosDoc = doc.data() || {};
+                    const suscripcionVencida = datosDoc.suscripcionVenceEl && datosDoc.suscripcionVenceEl < Date.now();
+                    if (doc.exists && datosDoc.aprobado && !datosDoc.bloqueado && suscripcionVencida) {
+                        mostrarAviso(`Tu suscripción de admin venció. Yapea/Plinea S/ ${datosDoc.suscripcionMonto || SUSCRIPCION_ADMIN_MONTO} al ${YAPE_NUMERO_MOSTRAR} y avisa por WhatsApp al dueño de la tienda para reactivarla.`);
+                        return;
+                    } else if (doc.exists && datosDoc.aprobado && !datosDoc.bloqueado) {
+                        const porVencer = datosDoc.suscripcionVenceEl && datosDoc.suscripcionVenceEl < (Date.now() + 3 * 24 * 60 * 60 * 1000);
+                        if (porVencer) {
+                            const dias = Math.max(0, Math.ceil((datosDoc.suscripcionVenceEl - Date.now()) / (24 * 60 * 60 * 1000)));
+                            mostrarAviso(`Tu suscripción de admin vence en ${dias} día${dias === 1 ? '' : 's'}. Yapea/Plinea S/ ${datosDoc.suscripcionMonto || SUSCRIPCION_ADMIN_MONTO} al ${YAPE_NUMERO_MOSTRAR} y avísale al dueño de la tienda para renovarla.`);
+                        }
                         miNombreAdmin = doc.data().nombre;
                         miWhatsappAdmin = doc.data().whatsapp;
                         miBioAdmin = doc.data().bio;
@@ -6339,6 +6417,9 @@
                 const el = document.getElementById(`registro-pago-${id}`);
                 if (el) el.checked = false;
             });
+            comprobantePagoBase64 = null;
+            document.getElementById('registro-comprobante-preview').classList.add('hidden');
+            document.getElementById('registro-comprobante-label').textContent = 'Subir captura de pago (Yape/Plin)';
             document.getElementById('cuenta-modal').classList.remove('hidden');
         }
 
@@ -6403,6 +6484,11 @@
                 errorEl.classList.remove('hidden');
                 return;
             }
+            if (!comprobantePagoBase64) {
+                errorEl.textContent = `Sube la captura de tu pago de S/ ${SUSCRIPCION_ADMIN_MONTO} por Yape/Plin para poder crear tu cuenta.`;
+                errorEl.classList.remove('hidden');
+                return;
+            }
 
             try {
                 const cred = await auth.createUserWithEmailAndPassword(correo, password);
@@ -6412,6 +6498,9 @@
                     nombre: nombreCrudo,
                     whatsapp: whatsappCrudo,
                     metodosPago: metodosPago,
+                    comprobantePago: comprobantePagoBase64,
+                    suscripcionMonto: SUSCRIPCION_ADMIN_MONTO,
+                    suscripcionVenceEl: null,
                     aprobado: false,
                     creado: firebase.firestore.FieldValue.serverTimestamp()
                 });
@@ -6609,6 +6698,9 @@
             }
             solicitudesPendientes.forEach(sol => {
                 const metodosTxt = (sol.metodosPago && sol.metodosPago.length > 0) ? sol.metodosPago.join(', ') : 'No especificó';
+                const comprobanteTxt = sol.comprobantePago
+                    ? `<button type="button" onclick="abrirZoomFoto('${sol.comprobantePago}')" class="mt-2 flex items-center gap-2 text-xs font-semibold text-indigo-600 underline"><i class="fas fa-receipt"></i> Ver captura del pago de S/ ${sol.suscripcionMonto || SUSCRIPCION_ADMIN_MONTO}</button>`
+                    : `<p class="mt-2 text-xs text-red-500"><i class="fas fa-triangle-exclamation"></i> No subió captura de pago</p>`;
                 const div = document.createElement('div');
                 div.className = 'admin-card border-l-4 border-l-amber-400 p-4';
                 div.innerHTML = `
@@ -6616,6 +6708,7 @@
                     <p class="text-sm text-gray-500 break-all">Correo: ${sol.correo || 'No especificó'}</p>
                     <p class="text-sm text-gray-500">WhatsApp: ${sol.whatsapp || 'No especificó'}</p>
                     <p class="text-sm text-gray-500">Métodos de pago: ${metodosTxt}</p>
+                    ${comprobanteTxt}
                     <div class="flex gap-3 mt-3">
                         <button onclick="aprobarSolicitud('${sol.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-semibold">Aprobar</button>
                         <button onclick="rechazarSolicitud('${sol.id}')" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl text-sm font-semibold">Rechazar</button>
@@ -6627,8 +6720,9 @@
 
         async function aprobarSolicitud(id) {
             try {
-                await db.collection('administradores').doc(id).update({ aprobado: true });
-                mostrarAviso('Administrador aprobado. Ya puede entrar a su panel.');
+                const venceEl = Date.now() + SUSCRIPCION_ADMIN_DIAS * 24 * 60 * 60 * 1000;
+                await db.collection('administradores').doc(id).update({ aprobado: true, suscripcionVenceEl: venceEl });
+                mostrarAviso('Administrador aprobado. Su suscripción queda activa por 30 días.');
             } catch (err) {
                 mostrarAviso('No se pudo aprobar: ' + (err.message || err.code || 'error desconocido'));
             }
@@ -6688,6 +6782,15 @@
                 const esNuevo = diasDesdeIngreso <= 7;
                 const conectado = esAdminConectado(adm);
                 const nombresProductos = nombresProductosDe(adm.id);
+                const suscripcionVencida = adm.suscripcionVenceEl && adm.suscripcionVenceEl < Date.now();
+                const suscripcionPorVencer = adm.suscripcionVenceEl && !suscripcionVencida && adm.suscripcionVenceEl < (Date.now() + 3 * 24 * 60 * 60 * 1000);
+                const badgeSuscripcion = adm.suscripcionVenceEl
+                    ? (suscripcionVencida
+                        ? `<span class="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-crown"></i> Suscripción vencida</span>`
+                        : suscripcionPorVencer
+                            ? `<span class="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-crown"></i> Vence pronto: ${new Date(adm.suscripcionVenceEl).toLocaleDateString('es-PE')}</span>`
+                            : `<span class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-crown"></i> Suscripción hasta ${new Date(adm.suscripcionVenceEl).toLocaleDateString('es-PE')}</span>`)
+                    : '';
                 const productosHtml = nombresProductos.length > 0
                     ? nombresProductos.map(n => `<span class="producto-pill">${n}</span>`).join('')
                     : `<span class="text-xs text-gray-400 italic">Todavía no publicó productos</span>`;
@@ -6706,6 +6809,7 @@
                                 ${esNuevo ? '<span class="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-semibold">🆕 Nuevo</span>' : ''}
                                 <span class="bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-semibold">${numProductos} producto${numProductos === 1 ? '' : 's'}</span>
                                 <span class="${conectado ? 'badge-en-linea' : 'badge-desconectado'} text-[10px] px-2 py-0.5 rounded-full font-semibold"><span class="estado-punto ${conectado ? 'en-linea' : 'desconectado'}"></span>${conectado ? 'En línea' : 'Desconectado'}</span>
+                                ${badgeSuscripcion}
                             </div>
                             <p class="text-sm text-gray-500 break-all mt-1">Correo: <span class="dato-sensible">${adm.correo || 'No especificó'}</span></p>
                             <p class="text-sm text-gray-500">WhatsApp: <span class="dato-sensible">${adm.whatsapp || 'No especificó'}</span></p>
@@ -6720,11 +6824,26 @@
                         <button onclick="toggleBloqueoAdmin('${adm.id}', ${bloqueado})" class="${bloqueado ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-500 hover:bg-amber-600'} text-white px-3 py-2 rounded-xl text-xs font-semibold">${bloqueado ? 'Desbloquear' : 'Bloquear'}</button>
                         ${conectado ? `<button onclick="revocarSesionAdmin('${adm.id}', '${(adm.nombre || 'Administrador').replace(/'/g, "\\'")}')" class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-right-from-bracket mr-1"></i>Cerrar su sesión</button>` : ''}
                         <button onclick="reiniciarPinAdmin('${adm.id}')" class="bg-slate-500 hover:bg-slate-600 text-white px-3 py-2 rounded-xl text-xs font-semibold">Reiniciar PIN</button>
+                        <button onclick="renovarSuscripcionAdmin('${adm.id}')" class="${suscripcionVencida ? 'bg-red-500 hover:bg-red-600' : 'bg-emerald-600 hover:bg-emerald-700'} text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-crown mr-1"></i>Registrar pago (+30 días)</button>
+                        ${(suscripcionVencida || suscripcionPorVencer) && adm.whatsapp ? `<a href="https://wa.me/${adm.whatsapp}?text=${encodeURIComponent(`Hola ${adm.nombre || ''}! Tu suscripción de admin en SCT Stream ${suscripcionVencida ? 'ya venció' : 'vence pronto'}. Yapea/Plinea S/ ${adm.suscripcionMonto || SUSCRIPCION_ADMIN_MONTO} al ${YAPE_NUMERO_MOSTRAR} y me avisas para renovarla 🙌`)}" target="_blank" class="bg-sky-500 hover:bg-sky-600 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fab fa-whatsapp mr-1"></i>Recordar pago</a>` : ''}
                         <button onclick="eliminarAdministrador('${adm.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-xl text-xs font-semibold">Eliminar</button>
                     </div>
                 `;
                 cont.appendChild(div);
             });
+        }
+
+        async function renovarSuscripcionAdmin(id) {
+            if (!esSuperAdmin) return;
+            const admin = adminsActivos.find(a => a.id === id);
+            const baseFecha = (admin && admin.suscripcionVenceEl && admin.suscripcionVenceEl > Date.now()) ? admin.suscripcionVenceEl : Date.now();
+            const nuevaFecha = baseFecha + SUSCRIPCION_ADMIN_DIAS * 24 * 60 * 60 * 1000;
+            try {
+                await db.collection('administradores').doc(id).update({ suscripcionVenceEl: nuevaFecha });
+                mostrarAviso(`Pago registrado. Suscripción activa hasta el ${new Date(nuevaFecha).toLocaleDateString('es-PE')}.`);
+            } catch (err) {
+                mostrarAviso('No se pudo registrar el pago: ' + (err.message || err.code || 'error desconocido'));
+            }
         }
 
         async function toggleVerificacionAdmin(id, verificadoActual) {
