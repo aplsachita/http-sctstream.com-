@@ -2270,10 +2270,19 @@
         // WhatsApp atrás. Si había otra tarjeta volteada, la cierra primero (solo una abierta a la vez).
         function toggleTarjeta3D(el, ev) {
             if (ev) ev.stopPropagation();
-            const yaEstabaGirada = el.classList.contains('girada');
+            // El hover en PC deja un transform "en línea" (rotateY leve). Hay que limpiarlo
+            // antes de voltear, porque un estilo en línea pesa más que la clase 'girada'
+            // y bloquearía el giro de 180° impidiendo ver el reverso.
+            el.style.transform = '';
+            el.style.transition = '';
             document.querySelectorAll('.tarjeta-3d-interior.girada').forEach(otra => {
-                if (otra !== el) otra.classList.remove('girada');
+                if (otra !== el) {
+                    otra.classList.remove('girada');
+                    otra.style.transform = '';
+                    otra.style.transition = '';
+                }
             });
+            const yaEstabaGirada = el.classList.contains('girada');
             el.classList.toggle('girada', !yaEstabaGirada);
         }
 
