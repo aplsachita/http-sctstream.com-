@@ -2277,6 +2277,27 @@
             el.classList.toggle('girada', !yaEstabaGirada);
         }
 
+        // En PC (mouse), inclina la tarjeta hacia la izquierda o derecha en 3D según de qué lado
+        // está el cursor. Solo mientras no esté volteada (el click para voltear sigue funcionando
+        // igual). En celular no aplica, porque no hay "hover" al tocar con el dedo.
+        function activarInclinacionTarjeta(el, intensidad = 12) {
+            if (!el || el.dataset.inclinacionLista) return;
+            el.dataset.inclinacionLista = '1';
+            el.addEventListener('mousemove', (e) => {
+                if (el.classList.contains('girada')) return;
+                const rect = el.getBoundingClientRect();
+                const x = (e.clientX - rect.left) / rect.width - 0.5;
+                el.style.transition = 'transform 0.15s ease';
+                el.style.transform = `rotateY(${x * intensidad}deg)`;
+            });
+            el.addEventListener('mouseleave', () => {
+                if (el.classList.contains('girada')) return;
+                el.style.transition = 'transform 0.15s ease';
+                el.style.transform = '';
+                setTimeout(() => { if (!el.classList.contains('girada')) el.style.transition = ''; }, 160);
+            });
+        }
+
         // Activa el tilt 3D en los fondos animados (hero, galería, footer) apenas carga la página
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.fondo-3d').forEach(el => activarTilt3D(el, 4));
@@ -2375,6 +2396,7 @@
                         <div class="tarjeta-3d-reverso">${contenidoReverso}</div>
                     </div>
                 `;
+                activarInclinacionTarjeta(card.querySelector('.tarjeta-3d-interior'));
             } else {
                 card.innerHTML = contenidoFrente;
             }
