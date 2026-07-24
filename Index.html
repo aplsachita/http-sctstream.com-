@@ -965,6 +965,13 @@
                             <input type="checkbox" id="new-animacion3d" checked class="w-5 h-5 accent-indigo-600">
                             <span class="text-sm text-gray-600"><i class="fas fa-cube text-indigo-600 mr-1"></i> Mostrar animación 3D en la foto de este producto</span>
                         </label>
+                        <label class="mt-4 flex items-center gap-3 border border-gray-200 rounded-xl px-4 py-3 cursor-pointer">
+                            <input type="checkbox" id="new-es-combo" onchange="document.getElementById('new-combo-incluye-row').classList.toggle('hidden', !this.checked)" class="w-5 h-5 accent-indigo-600">
+                            <span class="text-sm text-gray-600"><i class="fas fa-boxes-stacked text-indigo-600 mr-1"></i> Es un combo (varias plataformas juntas)</span>
+                        </label>
+                        <div id="new-combo-incluye-row" class="hidden mt-2">
+                            <input id="new-combo-incluye" type="text" maxlength="120" placeholder="¿Qué incluye? Ej: Netflix + Spotify + HBO Max" class="border border-gray-300 rounded-xl px-4 py-3 w-full">
+                        </div>
                         <label class="mt-4 flex items-center gap-3 border border-dashed border-gray-300 rounded-xl px-4 py-3 cursor-pointer hover:bg-gray-100">
                             <i class="fas fa-image text-indigo-600"></i>
                             <span id="new-photo-label" class="text-gray-500">Subir foto del producto (opcional)</span>
@@ -1172,6 +1179,10 @@
                     <h4 class="mb-2 text-base admin-section-title"><i class="fas fa-bell mr-1"></i> Recordatorios de renovación</h4>
                     <p class="text-xs text-gray-400 mb-4">Cuentas vendidas que vencen pronto. Envía el recordatorio por WhatsApp con un clic.</p>
                     <div id="recordatorios-lista" class="space-y-2"></div>
+
+                    <h4 class="mb-2 mt-8 text-base admin-section-title"><i class="fas fa-clipboard-check mr-1"></i> Encuestas de satisfacción</h4>
+                    <p class="text-xs text-gray-400 mb-4">Pedidos entregados hace 2+ días. Pregúntales cómo les fue con un clic (desaparece de la lista una vez que le escribes).</p>
+                    <div id="encuestas-satisfaccion-lista" class="space-y-2"></div>
 
                     <h4 class="mb-2 mt-8 text-base admin-section-title"><i class="fas fa-calendar-days mr-1"></i> Calendario de vencimientos</h4>
                     <p class="text-xs text-gray-400 mb-4">Qué cuentas vencen cada día, de los próximos 14 días.</p>
@@ -1491,6 +1502,7 @@
             </div>
             <div class="p-4 text-center overflow-y-auto">
                 <h3 id="detalle-nombre" class="text-lg font-bold mb-1 text-purple-700"></h3>
+                <p id="detalle-combo-incluye" class="hidden text-indigo-600 text-xs font-semibold mb-1"><i class="fas fa-boxes-stacked mr-1"></i><span id="detalle-combo-incluye-texto"></span></p>
                 <div id="detalle-calificacion" class="hidden flex items-center justify-center gap-1 mb-1 text-sm"></div>
                 <p id="detalle-vendedor" class="text-gray-400 text-[11px] mb-1 flex items-center justify-center gap-1"></p>
                 <p id="detalle-vendedor-conexion" class="hidden text-gray-400 text-[10px] mb-1 flex items-center justify-center gap-1"></p>
@@ -1523,6 +1535,7 @@
                         <div id="detalle-resenas-form" class="hidden mt-2 bg-gray-50 rounded-xl p-3">
                             <div id="resena-estrellas-input" class="flex gap-1 justify-center mb-2 text-2xl"></div>
                             <input id="resena-nombre-input" type="text" placeholder="Tu nombre" maxlength="30" class="border border-gray-300 rounded-lg px-3 py-2 w-full text-sm mb-2">
+                            <input id="resena-telefono-input" type="tel" inputmode="numeric" placeholder="Tu WhatsApp (para confirmar tu compra)" maxlength="12" class="border border-gray-300 rounded-lg px-3 py-2 w-full text-sm mb-2">
                             <textarea id="resena-comentario-input" placeholder="¿Cómo te fue con esta cuenta? (opcional)" maxlength="200" rows="2" class="border border-gray-300 rounded-lg px-3 py-2 w-full text-sm mb-2"></textarea>
                             <div class="flex gap-2">
                                 <button onclick="enviarResena()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-xs font-semibold">Publicar reseña</button>
@@ -1912,6 +1925,21 @@
             }
             const nombre = document.getElementById('resena-nombre-input').value.trim() || 'Cliente';
             const comentario = document.getElementById('resena-comentario-input').value.trim();
+            const telefonoCrudo = document.getElementById('resena-telefono-input').value.trim();
+            const telefono = telefonoCrudo.replace(/\D/g, '').replace(/^51/, '');
+            if (!/^9\d{8}$/.test(telefono)) {
+                mostrarAviso('Escribe el WhatsApp con el que compraste (9 dígitos, empieza con 9) para confirmar tu compra.');
+                return;
+            }
+            let compraVerificada = false;
+            try {
+                const verifDoc = await db.collection('compras_verificadas').doc(id + '_' + telefono).get();
+                compraVerificada = verifDoc.exists;
+            } catch (err) { console.error(err); }
+            if (!compraVerificada) {
+                mostrarAviso('No encontramos una compra confirmada de este producto con ese WhatsApp. Solo quienes compraron pueden dejar reseña — si crees que es un error, escríbenos.');
+                return;
+            }
             try {
                 await db.collection('resenas').add({
                     productoId: id,
@@ -1920,6 +1948,7 @@
                     estrellas: estrellaSeleccionadaResena,
                     comentario: comentario,
                     nombreCliente: nombre,
+                    verificada: true,
                     fecha: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 await db.collection('productos').doc(id).update({
@@ -1969,7 +1998,7 @@
                     return `
                         <div class="border border-gray-100 rounded-xl p-2">
                             <div class="flex items-center justify-between">
-                                <span class="text-xs font-semibold text-gray-700">${r.nombreCliente || 'Cliente'}</span>
+                                <span class="text-xs font-semibold text-gray-700">${r.nombreCliente || 'Cliente'}${r.verificada ? ' <span class="text-emerald-500 text-[10px] font-normal"><i class="fas fa-circle-check"></i> Compra verificada</span>' : ''}</span>
                                 <span class="text-amber-400 text-xs">${'★'.repeat(r.estrellas)}${'☆'.repeat(5 - r.estrellas)}</span>
                             </div>
                             ${r.comentario ? `<p class="text-xs text-gray-500 mt-0.5">${r.comentario}</p>` : ''}
@@ -2079,6 +2108,9 @@
                         `).join('')}
                     </div>
                     ${p.fechaVencimiento ? `<p class="text-xs text-gray-400 mt-4">Vence: ${new Date(p.fechaVencimiento).toLocaleDateString('es-PE')}</p>` : ''}
+                    ${p.estado === 'vendido' ? `
+                        <a href="https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hola, tuve un problema con mi pedido de "${p.productoNombre}" (ID: ${pedidoId}). ¿Me ayudas?`)}" target="_blank" class="mt-5 block text-center bg-red-50 text-red-600 border border-red-200 py-2.5 rounded-xl font-semibold text-sm"><i class="fas fa-triangle-exclamation mr-1"></i> Tuve un problema con mi pedido</a>
+                    ` : ''}
                 `;
             } catch (err) {
                 cont.innerHTML = '<p class="text-sm text-red-400">No se pudo cargar tu pedido. Es posible que necesites el link exacto que te compartimos.</p>';
@@ -2591,6 +2623,21 @@
             document.querySelectorAll('.fondo-3d').forEach(el => activarTilt3D(el, 4));
         });
 
+        // Actualiza cada segundo los relojitos "última unidad" en las tarjetas visibles
+        setInterval(() => {
+            document.querySelectorAll('.stock-timer').forEach(el => {
+                const deadline = parseInt(el.dataset.deadline, 10);
+                const restanteMs = deadline - Date.now();
+                if (restanteMs <= 0) {
+                    el.textContent = 'ahora';
+                    return;
+                }
+                const min = Math.floor(restanteMs / 60000);
+                const seg = Math.floor((restanteMs % 60000) / 1000);
+                el.textContent = `${min}:${String(seg).padStart(2, '0')}`;
+            });
+        }, 1000);
+
         function crearTarjetaProductoCliente(producto) {
             const card = document.createElement('div');
             const ofertaActiva = producto.ofertaHasta && producto.ofertaHasta > Date.now();
@@ -2603,6 +2650,14 @@
             if (tieneStock) {
                 if (agotado) {
                     etiquetaStock = '<p class="text-red-500 text-[9px] font-semibold mb-1">Agotado</p>';
+                } else if (producto.stock === 1) {
+                    const deadlineKey = 'sct_ultima_unidad_' + producto.id;
+                    let deadline = parseInt(sessionStorage.getItem(deadlineKey), 10);
+                    if (!deadline || deadline < Date.now()) {
+                        deadline = Date.now() + 10 * 60 * 1000;
+                        sessionStorage.setItem(deadlineKey, String(deadline));
+                    }
+                    etiquetaStock = `<p class="text-red-500 text-[9px] font-semibold mb-1">🔥 ¡Última unidad! Se reserva <span class="stock-timer" data-deadline="${deadline}">10:00</span></p>`;
                 } else if (producto.stock <= 3) {
                     etiquetaStock = `<p class="text-orange-500 text-[9px] font-semibold mb-1">¡Quedan ${producto.stock}!</p>`;
                 } else {
@@ -2650,6 +2705,7 @@
                 </div>
                 <div class="p-1.5">
                     <h3 class="text-[11px] font-bold mb-0.5 ${ofertaActiva ? 'text-white' : 'text-purple-700'} truncate">${producto.nombre}</h3>
+                    ${producto.esCombo ? `<p class="text-[8px] text-indigo-600 font-semibold mb-0.5"><i class="fas fa-boxes-stacked"></i> Combo${producto.comboIncluye ? ': ' + producto.comboIncluye : ''}</p>` : ''}
                     <p class="${ofertaActiva ? 'text-white/70' : 'text-gray-400'} text-[8px] mb-1 flex items-center gap-1 truncate"><span class="inline-block w-1.5 h-1.5 rounded-full" style="background:${colorVendedor}"></span> ${nombreVendedor} ${insigniaVerificado}</p>
                     ${producto.calificacionCantidad > 0 ? `<p class="text-[8px] text-amber-500 mb-1">⭐ ${(producto.calificacionSuma / producto.calificacionCantidad).toFixed(1)} <span class="text-gray-400">(${producto.calificacionCantidad})</span></p>` : ''}
                     <div class="flex items-end gap-1 mb-1 flex-wrap">
@@ -3095,6 +3151,13 @@
             }
 
             document.getElementById('detalle-nombre').textContent = producto.nombre;
+            const comboEl = document.getElementById('detalle-combo-incluye');
+            if (producto.esCombo) {
+                document.getElementById('detalle-combo-incluye-texto').textContent = producto.comboIncluye ? 'Combo: ' + producto.comboIncluye : 'Es un combo de varias plataformas';
+                comboEl.classList.remove('hidden');
+            } else {
+                comboEl.classList.add('hidden');
+            }
             const nombreVendedorDetalle = producto.propietarioNombre || 'SCT Stream';
             const vendedorVerificadoDetalle = producto.propietario === 'principal' || !!producto.propietarioVerificado;
             const insigniaVerificadoDetalle = vendedorVerificadoDetalle
@@ -5388,6 +5451,16 @@
                     fechaVencimiento: extra.fechaVencimiento || null
                 });
                 await descontarStockPorPedido(id);
+                if (extra.clienteTelefono) {
+                    const pedido = pedidos.find(p => p.id === id);
+                    if (pedido && pedido.productoId) {
+                        db.collection('compras_verificadas').doc(pedido.productoId + '_' + extra.clienteTelefono).set({
+                            productoId: pedido.productoId,
+                            telefono: extra.clienteTelefono,
+                            fecha: firebase.firestore.FieldValue.serverTimestamp()
+                        }).catch(err => console.error('No se pudo registrar la compra verificada:', err));
+                    }
+                }
                 db.collection('configuracion').doc('principal').update({
                     ventasHistoricas: firebase.firestore.FieldValue.increment(1)
                 }).catch(() => {});
@@ -5669,6 +5742,7 @@
             renderTopReferidores();
             renderSuscriptoresWhatsapp();
             renderRecordatoriosRenovacion();
+            renderEncuestasSatisfaccion();
             renderCalendarioVencimientos();
             renderClientesInactivos();
             renderRankingAdmins();
@@ -5827,6 +5901,37 @@
                     </div>
                 `;
             }).join('');
+        }
+
+        function renderEncuestasSatisfaccion() {
+            const cont = document.getElementById('encuestas-satisfaccion-lista');
+            if (!cont) return;
+            const ahora = Date.now();
+            const DIAS_ESPERA = 2;
+            const limite = ahora - DIAS_ESPERA * 86400000;
+            const lista = pedidosFiltrados().filter(p =>
+                p.entregado && p.clienteTelefono && !p.encuestaEnviada &&
+                p.entregadoEn && p.entregadoEn.toDate && p.entregadoEn.toDate().getTime() <= limite
+            ).sort((a, b) => b.entregadoEn.toDate() - a.entregadoEn.toDate());
+            if (lista.length === 0) {
+                cont.innerHTML = '<p class="text-gray-400 text-sm">No hay encuestas pendientes de enviar por ahora.</p>';
+                return;
+            }
+            cont.innerHTML = lista.map(p => {
+                const mensaje = encodeURIComponent(`¡Hola! Hace unos días te entregamos tu cuenta de ${p.productoNombre}. ¿Todo funcionando bien? Cualquier cosa me cuentas 🙌`);
+                return `
+                    <div class="border border-sky-200 bg-sky-50 rounded-2xl p-4 flex items-center justify-between gap-3 flex-wrap">
+                        <div>
+                            <p class="font-medium text-slate-800">${p.productoNombre} <span class="text-xs text-gray-400">(${p.clienteTelefono})</span></p>
+                            <p class="text-xs text-sky-600">Entregado el ${p.entregadoEn.toDate().toLocaleDateString('es-PE')}</p>
+                        </div>
+                        <a href="https://wa.me/${p.clienteTelefono}?text=${mensaje}" target="_blank" onclick="marcarEncuestaEnviada('${p.id}')" class="bg-sky-500 hover:bg-sky-600 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fab fa-whatsapp mr-1"></i>Preguntar</a>
+                    </div>
+                `;
+            }).join('');
+        }
+        function marcarEncuestaEnviada(id) {
+            db.collection('pedidos').doc(id).update({ encuestaEnviada: true }).catch(() => {});
         }
 
         function renderClientesInactivos() {
@@ -6005,6 +6110,8 @@
                 ? (document.getElementById('new-categoria-otro').value.trim() || 'Otro')
                 : categoriaSelect;
             const animacion3D = document.getElementById('new-animacion3d').checked;
+            const esCombo = document.getElementById('new-es-combo').checked;
+            const comboIncluye = esCombo ? document.getElementById('new-combo-incluye').value.trim() : '';
             if (!nombre || !precio) {
                 mostrarAviso("Por favor completa nombre y precio.");
                 return;
@@ -6042,6 +6149,8 @@
                     clicsCompra: 0,
                     categoria: categoria,
                     animacion3D: animacion3D,
+                    esCombo: esCombo,
+                    comboIncluye: comboIncluye,
                     propietario: propietario,
                     propietarioNombre: propietarioNombre,
                     propietarioWhatsapp: propietarioWhatsapp,
@@ -6073,6 +6182,9 @@
             document.getElementById('new-categoria-otro').classList.add('hidden');
             document.getElementById('new-animacion3d').checked = true;
             document.getElementById('new-animacion3d-row').classList.add('hidden');
+            document.getElementById('new-es-combo').checked = false;
+            document.getElementById('new-combo-incluye').value = '';
+            document.getElementById('new-combo-incluye-row').classList.add('hidden');
             document.getElementById('new-photo').value = '';
             document.getElementById('new-photo-preview').classList.add('hidden');
             document.getElementById('new-photo-label').textContent = 'Subir foto del producto (opcional)';
