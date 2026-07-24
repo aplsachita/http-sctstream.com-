@@ -4611,7 +4611,11 @@
                 else actualizarSaludoAdminNormal();
                 const fidelizacionPane = document.querySelector('.admin-tab-pane[data-tab="fidelizacion"]');
                 if (fidelizacionPane && fidelizacionPane.classList.contains('active')) renderFidelizacion();
-            }, err => console.error('Error leyendo pedidos:', err));
+            }, err => {
+                console.error('Error leyendo pedidos:', err);
+                const cont = document.getElementById('ventas-lista');
+                if (cont) cont.innerHTML = '<p class="text-xs text-red-500">No se pudieron cargar tus pedidos.<br><span class="font-mono">' + (err.message || err.code || 'error desconocido') + '</span></p>';
+            });
             escucharAvisosStock();
         }
 
@@ -5376,12 +5380,16 @@
         async function descontarStockPorPedido(pedidoId) {
             const pedido = pedidos.find(p => p.id === pedidoId);
             if (!pedido || !pedido.productoId) return;
-            const producto = productos.find(p => p.id === pedido.productoId);
-            if (!producto) return;
-            if (producto.stock === null || producto.stock === undefined) return;
-            const nuevoStock = Math.max(0, producto.stock - 1);
+            const productoRef = db.collection('productos').doc(pedido.productoId);
             try {
-                await db.collection('productos').doc(producto.id).update({ stock: nuevoStock });
+                await db.runTransaction(async (tx) => {
+                    const doc = await tx.get(productoRef);
+                    if (!doc.exists) return;
+                    const stockActual = doc.data().stock;
+                    if (stockActual === null || stockActual === undefined) return; // sin control de stock, no tocar
+                    const nuevoStock = Math.max(0, stockActual - 1);
+                    tx.update(productoRef, { stock: nuevoStock });
+                });
             } catch (err) {
                 console.error('No se pudo descontar el stock automáticamente:', err);
             }
