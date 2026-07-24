@@ -1147,6 +1147,18 @@
                         </label>
                     </div>
 
+                    <div id="puntos-admin-toggle" class="hidden admin-card p-4 mb-6 flex items-center justify-between gap-3">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800"><i class="fas fa-star mr-1"></i> Programa de puntos por compra</h4>
+                            <p class="text-xs text-gray-400">Solo el súper admin puede activarlo o desactivarlo. Al desactivarlo, se deja de sumar puntos y se oculta "Mis puntos" para todos.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input type="checkbox" id="toggle-puntos-activo" class="sr-only peer" onchange="toggleProgramaPuntos(this.checked)">
+                            <div class="w-11 h-6 bg-gray-300 peer-checked:bg-emerald-500 rounded-full transition-colors"></div>
+                            <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                        </label>
+                    </div>
+
                     <h4 class="mb-2 text-base admin-section-title"><i class="fas fa-bullhorn mr-1"></i> Anuncio interno para tus admins</h4>
                     <p class="text-xs text-gray-400 mb-2">Un mensaje que verán todos tus administradores al entrar a su panel (no lo ven tus clientes).</p>
                     <textarea id="anuncio-admins-input" rows="2" maxlength="300" placeholder="Ej: Mañana habrá mantenimiento de 2am a 4am, no publiquen productos en ese rato." class="border border-gray-300 rounded-xl px-4 py-3 w-full text-sm mb-2"></textarea>
@@ -1717,7 +1729,7 @@
                 </div>
                 <p id="footer-suscripcion-msg" class="hidden text-xs mt-2 text-center"></p>
             </div>
-            <button onclick="abrirMisPuntos()" class="mt-4 text-sm underline opacity-80"><i class="fas fa-star mr-1"></i> Consulta tus puntos y tu nivel</button>
+            <button id="footer-btn-mis-puntos" onclick="abrirMisPuntos()" class="mt-4 text-sm underline opacity-80"><i class="fas fa-star mr-1"></i> Consulta tus puntos y tu nivel</button>
 
     <div id="mis-puntos-modal" class="hidden modal-overlay" onclick="if (event.target === this) cerrarMisPuntos()">
         <div class="bg-white rounded-3xl max-w-sm w-full mx-4 p-8 text-center">
@@ -1822,6 +1834,7 @@
         const storage = firebase.storage();
 
         const WHATSAPP_NUMBER = "51925516886";
+        let programaPuntosActivo = true;
         const YAPE_NUMERO_MOSTRAR = "925 516 886"; // Yape/Plin del súper admin, para la suscripción de nuevos admins
         const SUSCRIPCION_ADMIN_MONTO = 10;
         const SUSCRIPCION_ADMIN_DIAS = 30;
@@ -2239,6 +2252,10 @@
         }
 
         function abrirMisPuntos() {
+            if (!programaPuntosActivo) {
+                mostrarAviso('El programa de puntos no está disponible por ahora.');
+                return;
+            }
             document.getElementById('mis-puntos-telefono').value = '';
             document.getElementById('mis-puntos-resultado').classList.add('hidden');
             document.getElementById('mis-puntos-modal').classList.remove('hidden');
@@ -2359,6 +2376,11 @@
             if (seccionReferidos) seccionReferidos.classList.toggle('hidden', !programaReferidosActivo);
             const toggleAdmin = document.getElementById('toggle-referidos-activo');
             if (toggleAdmin) toggleAdmin.checked = programaReferidosActivo;
+            programaPuntosActivo = !doc.exists || doc.data().programaPuntosActivo !== false;
+            const btnPuntosFooter = document.getElementById('footer-btn-mis-puntos');
+            if (btnPuntosFooter) btnPuntosFooter.classList.toggle('hidden', !programaPuntosActivo);
+            const togglePuntosAdmin = document.getElementById('toggle-puntos-activo');
+            if (togglePuntosAdmin) togglePuntosAdmin.checked = programaPuntosActivo;
             const contadorManual = (doc.exists && doc.data().contadorEntregas) || 0;
             const contadorReal = (doc.exists && doc.data().ventasHistoricas) || 0;
             const contadorFinal = Math.max(contadorManual, contadorReal);
@@ -5001,6 +5023,14 @@
                 }
             } catch (err) { console.error('No se pudo cargar la nota del cliente:', err); }
 
+            let puntosCliente = null;
+            if (programaPuntosActivo) {
+                try {
+                    const puntosDoc = await db.collection('clientes_publico').doc(telefono.replace(/\D/g, '').replace(/^51/, '')).get();
+                    if (puntosDoc.exists) puntosCliente = puntosDoc.data().puntos || 0;
+                } catch (err) { console.error('No se pudieron cargar los puntos del cliente:', err); }
+            }
+
             const datosParaPDF = { telefono, confirmadas, totalGastado, nivel, compras: todasLasCompras };
             window._clientePerfilActual = datosParaPDF;
 
@@ -5009,6 +5039,7 @@
                     <div class="w-14 h-14 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xl font-bold mx-auto mb-2"><i class="fas fa-user"></i></div>
                     <p class="font-bold text-slate-800 dato-sensible">${telefono}</p>
                     <span class="${nivel.clase} text-[11px] px-2 py-0.5 rounded-full font-semibold">${nivel.texto}</span>
+                    ${puntosCliente !== null ? `<span class="ml-1 bg-amber-100 text-amber-700 text-[11px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-star"></i> ${puntosCliente} puntos</span>` : ''}
                     ${sospechoso ? `<span class="block mt-1 text-[11px] text-red-600 font-semibold"><i class="fas fa-triangle-exclamation mr-1"></i>${avisosSinCompra} avisos de stock sin ninguna compra — revisa antes de confiar</span>` : ''}
                     <div class="flex items-center justify-center gap-3 mt-2">
                         <a href="https://wa.me/${telefono.replace(/\D/g, '')}" target="_blank" class="text-emerald-600 text-xs font-semibold"><i class="fab fa-whatsapp mr-1"></i>Escribirle</a>
@@ -5617,7 +5648,7 @@
                             fecha: firebase.firestore.FieldValue.serverTimestamp()
                         }).catch(err => console.error('No se pudo registrar la compra verificada:', err));
                     }
-                    const puntosGanados = Math.max(1, Math.round(parseFloat(pedido && pedido.precio || 0)));
+                    const puntosGanados = programaPuntosActivo ? Math.max(1, Math.round(parseFloat(pedido && pedido.precio || 0))) : 0;
                     db.collection('clientes_publico').doc(extra.clienteTelefono).set({
                         comprasConfirmadas: firebase.firestore.FieldValue.increment(1),
                         puntos: firebase.firestore.FieldValue.increment(puntosGanados),
@@ -6471,6 +6502,24 @@
             if (tab === 'seguridad') cargarTabSeguridad();
         }
 
+        async function toggleProgramaPuntos(activo) {
+            if (!esSuperAdmin) {
+                mostrarAviso('Solo el súper admin puede activar o desactivar este programa.');
+                return;
+            }
+            const btnPuntos = document.getElementById('footer-btn-mis-puntos');
+            try {
+                await db.collection('configuracion').doc('principal').set({ programaPuntosActivo: activo }, { merge: true });
+                programaPuntosActivo = activo;
+                if (btnPuntos) btnPuntos.classList.toggle('hidden', !activo);
+                mostrarAviso(activo ? 'Programa de puntos activado. Ya se suman puntos con cada venta confirmada.' : 'Programa de puntos desactivado. Se dejará de sumar puntos y "Mis puntos" queda oculto.');
+            } catch (err) {
+                const toggleAdmin = document.getElementById('toggle-puntos-activo');
+                if (toggleAdmin) toggleAdmin.checked = !activo;
+                mostrarAviso('No se pudo actualizar: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
         async function toggleProgramaReferidos(activo) {
             if (!esSuperAdmin) {
                 mostrarAviso('Solo el súper admin puede activar o desactivar este programa.');
@@ -6503,6 +6552,7 @@
             document.getElementById('tab-btn-solicitudes').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('tab-btn-administradores').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('referidos-admin-toggle').classList.toggle('hidden', !esSuperAdmin);
+            document.getElementById('puntos-admin-toggle').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('notif-bell-container').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('saludo-superadmin').classList.remove('hidden');
             document.getElementById('panel-subtitulo').textContent = esSuperAdmin
