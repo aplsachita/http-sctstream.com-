@@ -602,15 +602,8 @@
         .producto-pill { background: #eef2ff; color: #4338ca; border-radius: 9999px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
         #admin-modal-panel.dark-panel .producto-pill { background: #26264a !important; color: #c7c9ff !important; }
 
-        /* ---- Fondo de video para el súper admin ---- */
         .admin-panel-surface { background: #ffffff; }
         #admin-modal-panel.dark-panel .admin-panel-surface { background: #17172b !important; }
-        .admin-panel-surface.video-activo { background: transparent !important; }
-        .admin-panel-surface.video-activo .admin-card:not(.perfil-card-super):not(.perfil-card-admin) { background: rgba(255,255,255,0.9) !important; backdrop-filter: blur(3px); }
-        #admin-modal-panel.dark-panel .admin-panel-surface.video-activo .admin-card:not(.perfil-card-super):not(.perfil-card-admin) { background: rgba(23,23,43,0.82) !important; }
-        .admin-panel-surface.video-activo #saludo-superadmin { box-shadow: 0 4px 18px rgba(0,0,0,0.35); }
-        .admin-panel-surface.video-activo .admin-tabs { background: rgba(255,255,255,0.7); border-radius: 1rem; padding: 0 0.5rem; backdrop-filter: blur(3px); }
-        #admin-modal-panel.dark-panel .admin-panel-surface.video-activo .admin-tabs { background: rgba(23,23,43,0.7) !important; }
     </style>
     <!--
       Google Analytics (desactivado hasta que tengas tu ID):
@@ -786,8 +779,6 @@
 
     <div id="admin-modal" class="hidden fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4" onclick="if (event.target === this) toggleAdmin()">
         <div id="admin-modal-panel" class="relative rounded-3xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
-            <video id="superadmin-bg-video" class="hidden absolute inset-0 w-full h-full object-cover" src="" autoplay loop muted playsinline></video>
-            <div id="superadmin-bg-overlay" class="hidden absolute inset-0 bg-black/60"></div>
             <div class="admin-panel-surface relative max-h-[90vh] overflow-auto" id="admin-panel-scroll">
             <div class="p-8">
                 <div id="anuncio-admins-banner" class="hidden bg-indigo-600 text-white rounded-2xl p-4 mb-5 flex items-start gap-3">
@@ -1103,11 +1094,6 @@
                             <button id="editar-whatsapp-btn" onclick="abrirEditarWhatsapp()" class="hidden perfil-super-btn perfil-admin-btn bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 text-xs font-semibold px-3 py-2 rounded-xl"><i class="fas fa-user-pen mr-1"></i>Editar perfil</button>
                             <button id="editar-metodos-btn" onclick="abrirEditarMetodos()" class="hidden perfil-super-btn perfil-admin-btn bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 text-xs font-semibold px-3 py-2 rounded-xl"><i class="fas fa-credit-card mr-1"></i>Métodos de pago</button>
                             <button id="cambiar-pin-btn" onclick="abrirCambioPinPersonal()" class="hidden perfil-super-btn perfil-admin-btn bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 text-xs font-semibold px-3 py-2 rounded-xl"><i class="fas fa-key mr-1"></i>Cambiar PIN</button>
-                            <label id="cambiar-video-fondo-btn" class="hidden perfil-super-btn bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 text-xs font-semibold px-3 py-2 rounded-xl cursor-pointer text-center">
-                                <i class="fas fa-video mr-1"></i><span id="cambiar-video-fondo-texto">Cambiar video de fondo</span>
-                                <input type="file" accept="video/*" class="hidden" onchange="subirVideoFondoSuperAdmin(event)">
-                            </label>
-                            <button id="quitar-video-fondo-btn" onclick="quitarVideoFondoSuperAdmin()" class="hidden perfil-super-btn bg-white border border-indigo-200 text-indigo-600 hover:bg-indigo-50 text-xs font-semibold px-3 py-2 rounded-xl"><i class="fas fa-rotate-left mr-1"></i>Quitar video</button>
                             <button onclick="mostrarConfirmacion('¿Cerrar tu sesión?', cerrarSesion)" class="perfil-super-btn perfil-admin-btn perfil-cerrar-sesion-btn bg-white border border-red-200 text-red-500 hover:bg-red-50 text-xs font-semibold px-3 py-2 rounded-xl"><i class="fas fa-right-from-bracket mr-1"></i>Cerrar sesión</button>
                         </div>
                         <p id="metodos-actuales-texto" class="text-xs text-gray-400 mt-3"></p>
@@ -2211,16 +2197,10 @@
         let notificacionesProductos = JSON.parse(localStorage.getItem('sct_notificaciones') || '[]');
         let pedidos = [];
         let pedidosUnsub = null;
-        const VIDEO_FONDO_DEFAULT = document.getElementById('superadmin-bg-video')
-            ? document.getElementById('superadmin-bg-video').getAttribute('src')
-            : null;
 
         db.collection('configuracion').doc('principal').get().then(doc => {
             if (doc.exists && Array.isArray(doc.data().metodosPago) && doc.data().metodosPago.length > 0) {
                 METODOS_PRINCIPAL = doc.data().metodosPago;
-            }
-            if (doc.exists && doc.data().videoFondoSuperAdmin) {
-                aplicarVideoFondoSuperAdmin(doc.data().videoFondoSuperAdmin);
             }
             const programaReferidosActivo = !doc.exists || doc.data().programaReferidosActivo !== false;
             const seccionReferidos = document.getElementById('referidos');
@@ -6133,8 +6113,6 @@
         function cerrarSesion() {
             auth.signOut();
             detenerHeartbeat();
-            const videoFondo = document.getElementById('superadmin-bg-video');
-            if (videoFondo) videoFondo.pause();
             esSuperAdmin = false;
             adminDesbloqueado = false;
             miNombreAdmin = null;
@@ -6186,56 +6164,6 @@
             if (tab === 'seguridad') cargarTabSeguridad();
         }
 
-        function aplicarVideoFondoSuperAdmin(url) {
-            const video = document.getElementById('superadmin-bg-video');
-            if (!video || !url) return;
-            video.src = url;
-            video.load();
-            if (esSuperAdmin) video.play().catch(() => {});
-        }
-
-        async function subirVideoFondoSuperAdmin(e) {
-            const file = e.target.files[0];
-            e.target.value = '';
-            if (!file) return;
-            if (!file.type.startsWith('video/')) {
-                mostrarAviso('Elige un archivo de video válido (mp4, mov, etc).');
-                return;
-            }
-            const maxMB = 40;
-            if (file.size > maxMB * 1024 * 1024) {
-                mostrarAviso(`Ese video pesa demasiado. Elige uno de menos de ${maxMB}MB.`);
-                return;
-            }
-            const btnTexto = document.getElementById('cambiar-video-fondo-texto');
-            if (btnTexto) btnTexto.textContent = 'Subiendo video…';
-            mostrarAviso('Subiendo tu nuevo video de fondo, espera un momento...');
-            try {
-                const ref = storage.ref('fondo-superadmin/video_' + Date.now() + '.mp4');
-                await ref.put(file);
-                const url = await ref.getDownloadURL();
-                await db.collection('configuracion').doc('principal').set({ videoFondoSuperAdmin: url }, { merge: true });
-                aplicarVideoFondoSuperAdmin(url);
-                mostrarAviso('¡Listo! Tu video de fondo se actualizó.');
-            } catch (err) {
-                mostrarAviso('No se pudo subir el video: ' + (err.message || err.code || 'error desconocido'));
-            } finally {
-                if (btnTexto) btnTexto.textContent = 'Cambiar video de fondo';
-            }
-        }
-
-        function quitarVideoFondoSuperAdmin() {
-            mostrarConfirmacion('¿Quitar tu video personalizado y volver al video de fondo original?', async () => {
-                try {
-                    await db.collection('configuracion').doc('principal').update({ videoFondoSuperAdmin: firebase.firestore.FieldValue.delete() });
-                    aplicarVideoFondoSuperAdmin(VIDEO_FONDO_DEFAULT);
-                    mostrarAviso('Video de fondo restablecido al original.');
-                } catch (err) {
-                    mostrarAviso('No se pudo quitar: ' + (err.message || err.code || 'error desconocido'));
-                }
-            });
-        }
-
         async function toggleProgramaReferidos(activo) {
             if (!esSuperAdmin) {
                 mostrarAviso('Solo el súper admin puede activar o desactivar este programa.');
@@ -6250,24 +6178,6 @@
                 const toggleAdmin = document.getElementById('toggle-referidos-activo');
                 if (toggleAdmin) toggleAdmin.checked = !activo;
                 mostrarAviso('No se pudo actualizar: ' + (err.message || err.code || 'error desconocido'));
-            }
-        }
-
-        function actualizarFondoVideoSuperAdmin() {
-            const video = document.getElementById('superadmin-bg-video');
-            const overlay = document.getElementById('superadmin-bg-overlay');
-            const surface = document.getElementById('admin-panel-scroll');
-            if (!video || !overlay || !surface) return;
-            if (esSuperAdmin) {
-                video.classList.remove('hidden');
-                overlay.classList.remove('hidden');
-                surface.classList.add('video-activo');
-                video.play().catch(() => {});
-            } else {
-                video.pause();
-                video.classList.add('hidden');
-                overlay.classList.add('hidden');
-                surface.classList.remove('video-activo');
             }
         }
 
@@ -6294,12 +6204,9 @@
             document.getElementById('cambiar-pin-btn').classList.toggle('hidden', esSuperAdmin);
             document.getElementById('editar-whatsapp-btn').classList.toggle('hidden', esSuperAdmin);
             document.getElementById('editar-metodos-btn').classList.remove('hidden');
-            document.getElementById('cambiar-video-fondo-btn').classList.toggle('hidden', !esSuperAdmin);
-            document.getElementById('quitar-video-fondo-btn').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('filtro-propietario-select').classList.toggle('hidden', !esSuperAdmin);
             actualizarTarjetaTienda();
             aplicarModoOscuroGuardado();
-            actualizarFondoVideoSuperAdmin();
             cambiarTabAdmin(esSuperAdmin ? 'resumen' : 'agregar');
             if (esSuperAdmin) {
                 filtroPropietarioId = 'todos';
