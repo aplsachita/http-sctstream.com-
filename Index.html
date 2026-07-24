@@ -1500,11 +1500,13 @@
                 <div id="detalle-carrusel-dots" class="hidden absolute bottom-1.5 left-0 right-0 flex justify-center gap-1"></div>
                 <button onclick="compartirProducto()" class="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center text-xs"><i class="fas fa-share-nodes"></i></button>
             </div>
-            <div class="p-4 text-center overflow-y-auto">
+            <div id="detalle-contenido-swipe" class="p-4 text-center overflow-y-auto">
                 <h3 id="detalle-nombre" class="text-lg font-bold mb-1 text-purple-700"></h3>
                 <p id="detalle-combo-incluye" class="hidden text-indigo-600 text-xs font-semibold mb-1"><i class="fas fa-boxes-stacked mr-1"></i><span id="detalle-combo-incluye-texto"></span></p>
                 <div id="detalle-calificacion" class="hidden flex items-center justify-center gap-1 mb-1 text-sm"></div>
                 <p id="detalle-vendedor" class="text-gray-400 text-[11px] mb-1 flex items-center justify-center gap-1"></p>
+                <button id="detalle-ver-tienda-vendedor" onclick="verTodoDeVendedor()" class="hidden text-indigo-500 text-[11px] underline font-semibold mb-0.5"><i class="fas fa-store mr-1"></i>Ver todos sus productos</button>
+                <p id="detalle-swipe-hint" class="hidden text-gray-300 text-[10px] mb-1.5"><i class="fas fa-arrow-left"></i> Desliza para ver más de este vendedor <i class="fas fa-arrow-right"></i></p>
                 <p id="detalle-vendedor-conexion" class="hidden text-gray-400 text-[10px] mb-1 flex items-center justify-center gap-1"></p>
                 <p id="detalle-vendedor-bio" class="hidden text-gray-500 text-[11px] italic mb-1.5 px-2"></p>
                 <p id="detalle-interes" class="hidden text-orange-500 text-[11px] font-semibold mb-1.5"><i class="fas fa-fire mr-0.5"></i></p>
@@ -2531,6 +2533,48 @@
             });
         }
 
+        function verTodoDeVendedor() {
+            const producto = productos.find(p => p.id === productoDetalleActualId);
+            if (!producto) return;
+            vendedorFiltroActivo = producto.propietario;
+            const url = new URL(window.location.href);
+            url.searchParams.set('vendedor', producto.propietario);
+            window.history.replaceState({}, '', url);
+            cerrarDetalleProducto();
+            renderProductos();
+            document.getElementById('productos')?.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Deslizar con el dedo en el detalle pasa al siguiente/anterior producto del mismo vendedor
+        function irAProductoVendedor(direccion) {
+            if (productosVendedorActual.length <= 1) return;
+            const indiceActual = productosVendedorActual.findIndex(p => p.id === productoDetalleActualId);
+            if (indiceActual === -1) return;
+            let nuevoIndice = indiceActual + direccion;
+            if (nuevoIndice < 0) nuevoIndice = productosVendedorActual.length - 1;
+            if (nuevoIndice >= productosVendedorActual.length) nuevoIndice = 0;
+            verDetalleProducto(productosVendedorActual[nuevoIndice].id);
+        }
+        (function activarSwipeDetalleVendedor() {
+            const el = document.getElementById('detalle-contenido-swipe');
+            if (!el) return;
+            let inicioX = null, inicioY = null;
+            el.addEventListener('touchstart', (e) => {
+                if (!e.touches[0]) return;
+                inicioX = e.touches[0].clientX;
+                inicioY = e.touches[0].clientY;
+            }, { passive: true });
+            el.addEventListener('touchend', (e) => {
+                if (inicioX === null || !e.changedTouches[0]) return;
+                const deltaX = e.changedTouches[0].clientX - inicioX;
+                const deltaY = e.changedTouches[0].clientY - inicioY;
+                if (Math.abs(deltaX) > 55 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+                    irAProductoVendedor(deltaX < 0 ? 1 : -1);
+                }
+                inicioX = null; inicioY = null;
+            }, { passive: true });
+        })();
+
         function quitarFiltroVendedor() {
             vendedorFiltroActivo = null;
             const url = new URL(window.location.href);
@@ -2744,6 +2788,7 @@
                             ? `<span class="block text-center bg-gray-600 text-gray-300 py-1.5 rounded-lg font-semibold text-[10px]">Agotado</span>`
                             : `<a href="https://wa.me/${numeroContacto}?text=${mensajeCompraWhatsapp(producto)}" target="_blank" onclick="event.stopPropagation(); registrarClicCompraPorId('${producto.id}')" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-white py-1.5 rounded-lg font-semibold text-[10px]"><i class="fab fa-whatsapp"></i> Comprar ahora</a>`}
                         <button onclick="event.stopPropagation(); verDetalleProducto('${producto.id}')" class="text-[9px] text-gray-300 underline">Ver detalle completo</button>
+                        <button onclick="event.stopPropagation(); vendedorFiltroActivo='${producto.propietario}'; const u=new URL(window.location.href); u.searchParams.set('vendedor','${producto.propietario}'); window.history.replaceState({},'',u); renderProductos(); document.getElementById('productos')?.scrollIntoView({behavior:'smooth'});" class="text-[9px] text-indigo-300 underline"><i class="fas fa-store mr-0.5"></i>Ver todos sus productos</button>
                     </div>
                 `;
                 card.innerHTML = `
@@ -3119,6 +3164,7 @@
 
         let productoDetalleActualId = null;
 
+        let productosVendedorActual = [];
         function verDetalleProducto(id) {
             const producto = productos.find(p => p.id === id);
             if (!producto) return;
@@ -3130,6 +3176,13 @@
             const numeroContacto = producto.propietarioWhatsapp || WHATSAPP_NUMBER;
             const tieneStock = producto.stock !== null && producto.stock !== undefined;
             const agotado = tieneStock && producto.stock <= 0;
+
+            // Lista de productos del mismo vendedor, para el botón "ver todos" y para deslizar entre ellos
+            productosVendedorActual = productos.filter(p => p.propietario === producto.propietario);
+            const btnVerTienda = document.getElementById('detalle-ver-tienda-vendedor');
+            if (btnVerTienda) btnVerTienda.classList.toggle('hidden', productosVendedorActual.length <= 1);
+            const swipeHint = document.getElementById('detalle-swipe-hint');
+            if (swipeHint) swipeHint.classList.toggle('hidden', productosVendedorActual.length <= 1);
 
             const califEl = document.getElementById('detalle-calificacion');
             if (producto.calificacionCantidad > 0) {
