@@ -21,8 +21,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="SCT Stream">
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Font Awesome no bloquea el primer render: se aplica en cuanto llega -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"></noscript>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
@@ -1806,6 +1812,13 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
         const storage = firebase.storage();
+        // Cache local (IndexedDB): en la 2da visita las fotos salen del disco
+        // del cliente en vez de volver a descargarse desde Firestore.
+        db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+
+        // Imagen de reserva: SVG en línea (0 peticiones a internet, ~0.3KB)
+        const IMAGEN_PLACEHOLDER = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#2a1e4a"/><text x="200" y="158" font-family="sans-serif" font-size="26" fill="#a78bfa" text-anchor="middle">SCT Stream</text></svg>');
 
         const WHATSAPP_NUMBER = "51925516886";
         const YAPE_NUMERO_MOSTRAR = "925 516 886"; // Yape/Plin del súper admin, para la suscripción de nuevos admins
@@ -2271,8 +2284,16 @@
             }
         }).catch(err => console.error('Error leyendo configuración principal:', err));
 
-        function comprimirImagen(file, maxAncho = 600, calidad = 0.62) {
-            const LIMITE_BYTES = 220 * 1024; // ~220KB, para que las fotos carguen rápido incluso con datos móviles lentos
+        // ¿El navegador puede exportar WebP? Pesa ~30-40% menos que JPEG a igual calidad.
+        const SOPORTA_WEBP = (() => {
+            try {
+                return document.createElement('canvas').toDataURL('image/webp').startsWith('data:image/webp');
+            } catch (e) { return false; }
+        })();
+        const FORMATO_FOTO = SOPORTA_WEBP ? 'image/webp' : 'image/jpeg';
+
+        function comprimirImagen(file, maxAncho = 520, calidad = 0.58) {
+            const LIMITE_BYTES = 110 * 1024; // ~110KB: mitad de peso que antes, para que carguen rápido con datos móviles
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
@@ -2288,18 +2309,18 @@
                         // Si todavía pesa mucho, bajamos calidad (y si hace falta,
                         // también el ancho) hasta 3 veces más, para que ninguna
                         // imagen deje el producto demasiado pesado para Firestore.
-                        let resultado = canvas.toDataURL('image/jpeg', calidad);
+                        let resultado = canvas.toDataURL(FORMATO_FOTO, calidad);
                         let intento = 0;
                         let calidadActual = calidad;
                         let anchoActual = canvas.width;
-                        while (resultado.length > LIMITE_BYTES && intento < 3) {
-                            calidadActual = Math.max(0.35, calidadActual - 0.15);
-                            anchoActual = Math.round(anchoActual * 0.85);
+                        while (resultado.length > LIMITE_BYTES && intento < 5) {
+                            calidadActual = Math.max(0.4, calidadActual - 0.08);
+                            anchoActual = Math.round(anchoActual * 0.88);
                             const canvas2 = document.createElement('canvas');
                             canvas2.width = anchoActual;
                             canvas2.height = Math.round(canvas.height * (anchoActual / canvas.width));
                             canvas2.getContext('2d').drawImage(canvas, 0, 0, canvas2.width, canvas2.height);
-                            resultado = canvas2.toDataURL('image/jpeg', calidadActual);
+                            resultado = canvas2.toDataURL(FORMATO_FOTO, calidadActual);
                             intento++;
                         }
                         resolve(resultado);
@@ -2315,8 +2336,14 @@
         let yaAbrioProductoDesdeUrl = false;
         let yaAbrioFavoritosCompartidos = false;
 
-        db.collection('productos').orderBy('creado', 'desc').limit(300).onSnapshot(snapshot => {
-            const idsAnteriores = productosIdsConocidos;
+        // Carga en dos fases: primero los 40 productos más nuevos (la tienda
+        // aparece de inmediato) y unos segundos después el resto del catálogo.
+        let listenerProductosInicial = null;
+        let catalogoCompletoPedido = false;
+        let primerSnapshotCompleto = true;
+
+        function manejarSnapshotProductos(snapshot, esCargaInicialDeListener) {
+            const idsAnteriores = esCargaInicialDeListener ? null : productosIdsConocidos;
             productos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             if (idsAnteriores) {
                 const nuevosDocs = snapshot.docs.filter(d => !idsAnteriores.has(d.id));
@@ -2338,12 +2365,48 @@
                 yaAbrioFavoritosCompartidos = true;
                 mostrarFavoritosCompartidos(favoritosCompartidosIds);
             }
-        }, err => console.error('Error leyendo productos:', err));
+        }
 
-        db.collection('galeria').orderBy('creado', 'desc').onSnapshot(snapshot => {
-            fotosGaleria = snapshot.docs.map(doc => ({ id: doc.id, imagen: doc.data().imagen }));
-            renderGaleria();
-        }, err => console.error('Error leyendo galería:', err));
+        function cargarCatalogoCompleto() {
+            if (catalogoCompletoPedido) return;
+            catalogoCompletoPedido = true;
+            db.collection('productos').orderBy('creado', 'desc').limit(300).onSnapshot(snapshot => {
+                if (listenerProductosInicial) { listenerProductosInicial(); listenerProductosInicial = null; }
+                manejarSnapshotProductos(snapshot, primerSnapshotCompleto);
+                primerSnapshotCompleto = false;
+            }, err => console.error('Error leyendo productos:', err));
+        }
+
+        listenerProductosInicial = db.collection('productos').orderBy('creado', 'desc').limit(40)
+            .onSnapshot(snapshot => {
+                manejarSnapshotProductos(snapshot, productosIdsConocidos === null || productosIdsConocidos === undefined);
+                // Ya se pintó lo primero: ahora sí traemos el catálogo completo.
+                if ('requestIdleCallback' in window) {
+                    requestIdleCallback(cargarCatalogoCompleto, { timeout: 3000 });
+                } else {
+                    setTimeout(cargarCatalogoCompleto, 1500);
+                }
+            }, err => console.error('Error leyendo productos:', err));
+
+        // La galería son fotos pesadas y está al final de la página: se descarga
+        // solo cuando el visitante se acerca a esa sección.
+        let galeriaSuscrita = false;
+        function suscribirGaleria() {
+            if (galeriaSuscrita) return;
+            galeriaSuscrita = true;
+            db.collection('galeria').orderBy('creado', 'desc').limit(30).onSnapshot(snapshot => {
+                fotosGaleria = snapshot.docs.map(doc => ({ id: doc.id, imagen: doc.data().imagen }));
+                renderGaleria();
+            }, err => console.error('Error leyendo galería:', err));
+        }
+        (function observarGaleria() {
+            const seccion = document.getElementById('galeria');
+            if (!seccion || !('IntersectionObserver' in window)) { suscribirGaleria(); return; }
+            const obs = new IntersectionObserver((entradas) => {
+                if (entradas.some(e => e.isIntersecting)) { obs.disconnect(); suscribirGaleria(); }
+            }, { rootMargin: '600px' });
+            obs.observe(seccion);
+        })();
 
         // Presencia pública de vendedores (solo fecha + estado de vacaciones,
         // visible para cualquier visitante sin sesión).
@@ -2722,7 +2785,7 @@
             const contenidoFrente = `
                 ${ofertaBadge}
                 <div class="relative">
-                    <img src="${producto.imagen}" loading="lazy" decoding="async" class="w-full h-9 object-cover rounded-t-2xl">
+                    <img src="${producto.imagen || IMAGEN_PLACEHOLDER}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=IMAGEN_PLACEHOLDER;" style="background:#2a1e4a" class="w-full h-9 object-cover rounded-t-2xl">
                     ${insigniasExtra ? `<div class="absolute top-1 left-1 flex gap-0.5">${insigniasExtra}</div>` : ''}
                     <button onclick="event.stopPropagation(); toggleFavorito('${producto.id}')" class="btn-favorito absolute top-1 right-1 w-4 h-4 rounded-full bg-black/40 text-white flex items-center justify-center text-[8px]"><i class="${esFavorito(producto.id) ? 'fas' : 'far'} fa-heart"></i></button>
                     <button onclick="event.stopPropagation(); abrirVistaRapida('${producto.id}')" class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-black/40 text-white flex items-center justify-center text-[8px]"><i class="fas fa-eye"></i></button>
@@ -2894,7 +2957,7 @@
                     ? `<span class="text-[10px] line-through text-gray-400">S/${producto.precioAnterior}</span> <span class="text-sm font-bold text-emerald-600">S/${producto.precio}</span>`
                     : `<span class="text-sm font-bold titulo-color">S/${producto.precio}</span>`;
             div.innerHTML = `
-                <img src="${producto.imagen}" loading="lazy" decoding="async" class="rounded-lg">
+                <img src="${producto.imagen || IMAGEN_PLACEHOLDER}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src=IMAGEN_PLACEHOLDER;" style="background:#2a1e4a" class="rounded-lg">
                 <div class="flex-1 min-w-0">
                     <p class="text-xs font-bold text-purple-700 truncate">${producto.nombre}</p>
                     <p class="text-[10px] text-gray-400 truncate">${producto.propietarioNombre || 'SCT Stream'}</p>
@@ -5365,7 +5428,7 @@
                     canvas.width = img.width * escala;
                     canvas.height = img.height * escala;
                     canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                    resolve(canvas.toDataURL('image/jpeg', calidad));
+                    resolve(canvas.toDataURL(FORMATO_FOTO, calidad));
                 };
                 img.onerror = reject;
                 img.src = dataUri;
@@ -5375,8 +5438,9 @@
         async function optimizarFotosAntiguas() {
             const miUid = auth.currentUser && auth.currentUser.uid;
             const misProductos = esSuperAdmin ? productos : productos.filter(p => p.propietario === miUid);
-            const LIMITE = 200 * 1024; // ~200KB en texto base64
-            const candidatos = misProductos.filter(p => p.imagen && p.imagen.startsWith('data:') && p.imagen.length > LIMITE);
+            const LIMITE = 110 * 1024; // ~110KB en texto base64
+            const esPesada = (src) => src && src.startsWith('data:') && src.length > LIMITE;
+            const candidatos = misProductos.filter(p => esPesada(p.imagen) || (p.imagenes || []).some(esPesada));
 
             if (candidatos.length === 0) {
                 mostrarAviso('Tus fotos ya están optimizadas — no hay ninguna pesada para reducir.');
@@ -5388,9 +5452,25 @@
                 let hechas = 0;
                 for (const p of candidatos) {
                     try {
-                        const nueva = await comprimirDataUri(p.imagen, 700, 0.65);
-                        if (nueva.length < p.imagen.length) {
-                            await db.collection('productos').doc(p.id).update({ imagen: nueva });
+                        const cambios = {};
+                        if (esPesada(p.imagen)) {
+                            const nueva = await comprimirDataUri(p.imagen, 520, 0.58);
+                            if (nueva.length < p.imagen.length) cambios.imagen = nueva;
+                        }
+                        if ((p.imagenes || []).some(esPesada)) {
+                            const extras = [];
+                            for (const foto of p.imagenes) {
+                                if (esPesada(foto)) {
+                                    const nueva = await comprimirDataUri(foto, 400, 0.55);
+                                    extras.push(nueva.length < foto.length ? nueva : foto);
+                                } else {
+                                    extras.push(foto);
+                                }
+                            }
+                            cambios.imagenes = extras;
+                        }
+                        if (Object.keys(cambios).length > 0) {
+                            await db.collection('productos').doc(p.id).update(cambios);
                             hechas++;
                         }
                     } catch (err) {
@@ -6010,7 +6090,7 @@
             const file = e.target.files[0];
             if (!file) return;
             try {
-                comprobantePagoBase64 = await comprimirImagen(file, 500, 0.6);
+                comprobantePagoBase64 = await comprimirImagen(file, 460, 0.55);
                 const img = document.getElementById('registro-comprobante-preview');
                 img.src = comprobantePagoBase64;
                 img.classList.remove('hidden');
@@ -6026,7 +6106,7 @@
             const archivos = Array.from(e.target.files || []).slice(0, 2);
             if (archivos.length === 0) return;
             try {
-                nuevasFotosExtraBase64 = await Promise.all(archivos.map(f => comprimirImagen(f, 500, 0.6)));
+                nuevasFotosExtraBase64 = await Promise.all(archivos.map(f => comprimirImagen(f, 400, 0.55)));
                 const cont = document.getElementById('new-fotos-extra-preview');
                 cont.innerHTML = nuevasFotosExtraBase64.map(src => `<img src="${src}" class="h-16 w-16 rounded-lg object-cover">`).join('');
                 cont.classList.remove('hidden');
@@ -6160,7 +6240,7 @@
                     stock: stock,
                     entregaDemorada: entregaDemorada,
                     publicarEn: publicarEn,
-                    imagen: nuevaFotoBase64 || "https://picsum.photos/id/" + (100 + Math.floor(Math.random()*400)) + "/400/300",
+                    imagen: nuevaFotoBase64 || IMAGEN_PLACEHOLDER,
                     imagenes: nuevasFotosExtraBase64,
                     variantes: variantes,
                     clicsCompra: 0,
