@@ -688,7 +688,10 @@
         <h2 class="titulo-vidrio-flotante text-4xl font-bold text-center mb-12 text-white drop-shadow-lg inline-block px-8 py-3 rounded-full mx-auto w-fit block">Nuestras Plataformas</h2>
         <div id="banner-filtro-vendedor" class="hidden max-w-md mx-auto mb-4 bg-white/95 rounded-2xl px-4 py-3 flex items-center justify-between gap-2 text-sm">
             <span>Viendo productos de <b id="banner-filtro-vendedor-nombre"></b></span>
-            <button onclick="quitarFiltroVendedor()" class="text-purple-600 font-semibold text-xs underline shrink-0">Ver toda la tienda</button>
+            <div class="flex items-center gap-2 shrink-0">
+                <button id="banner-btn-seguir" onclick="toggleSeguirVendedor(vendedorFiltroActivo)" class="text-xs font-semibold px-3 py-1.5 rounded-full"></button>
+                <button onclick="quitarFiltroVendedor()" class="text-purple-600 font-semibold text-xs underline">Ver toda la tienda</button>
+            </div>
         </div>
         <div class="max-w-md mx-auto mb-4">
             <div class="relative">
@@ -796,8 +799,16 @@
         <div id="admin-modal-panel" class="relative rounded-3xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
             <video id="superadmin-bg-video" class="hidden absolute inset-0 w-full h-full object-cover" src="" autoplay loop muted playsinline></video>
             <div id="superadmin-bg-overlay" class="hidden absolute inset-0 bg-black/60"></div>
-            <div id="admin-panel-scroll" class="admin-panel-surface relative max-h-[90vh] overflow-auto">
+            <div class="admin-panel-surface relative max-h-[90vh] overflow-auto" id="admin-panel-scroll">
             <div class="p-8">
+                <div id="anuncio-admins-banner" class="hidden bg-indigo-600 text-white rounded-2xl p-4 mb-5 flex items-start gap-3">
+                    <i class="fas fa-bullhorn mt-0.5"></i>
+                    <div class="flex-1">
+                        <p class="text-xs font-semibold mb-0.5">Aviso del dueño de la tienda</p>
+                        <p id="anuncio-admins-texto" class="text-sm"></p>
+                    </div>
+                    <button onclick="cerrarAnuncioAdmins()" class="text-white/70 hover:text-white text-sm">✕</button>
+                </div>
                 <div class="flex justify-between items-center mb-6">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-indigo-700 text-white flex items-center justify-center text-lg">
@@ -867,6 +878,11 @@
                             <p id="resumen-suscripciones-alerta" class="text-2xl font-bold text-slate-800">0</p>
                             <p class="text-[11px] text-gray-500">Suscripciones vencidas o por vencer</p>
                         </div>
+                        <div class="admin-card p-4 text-center cursor-pointer" onclick="document.getElementById('panel-riesgo-wrap')?.scrollIntoView({behavior:'smooth'})">
+                            <div class="admin-stat-icon bg-red-100 text-red-600 mx-auto mb-2"><i class="fas fa-triangle-exclamation"></i></div>
+                            <p id="resumen-riesgo-alerta" class="text-2xl font-bold text-slate-800">0</p>
+                            <p class="text-[11px] text-gray-500">Admins en riesgo (calificación/inactividad)</p>
+                        </div>
                         <div class="admin-card p-4 text-center">
                             <div class="admin-stat-icon bg-teal-100 text-teal-600 mx-auto mb-2"><i class="fas fa-cart-shopping"></i></div>
                             <p id="resumen-total-ventas" class="text-2xl font-bold text-slate-800">0</p>
@@ -897,6 +913,16 @@
                         <h4 class="mb-4 text-base admin-section-title"><i class="fas fa-chart-simple mr-1"></i> Plataformas más publicadas</h4>
                         <div id="stats-categorias-lista" class="space-y-2"></div>
                     </div>
+                    <div id="stats-origen-superadmin" class="hidden mb-8">
+                        <h4 class="mb-4 text-base admin-section-title"><i class="fas fa-bullhorn mr-1"></i> De dónde vienen tus clientes</h4>
+                        <p class="text-xs text-gray-400 -mt-3 mb-4">Según el link por el que entraron (agrega ?utm_source=facebook a tus anuncios para verlo aquí).</p>
+                        <div id="stats-origen-lista" class="space-y-2"></div>
+                    </div>
+                    <div id="panel-riesgo-wrap" class="hidden mb-8">
+                        <h4 class="mb-2 text-base admin-section-title"><i class="fas fa-triangle-exclamation mr-1 text-red-500"></i> Panel de riesgo</h4>
+                        <p class="text-xs text-gray-400 mb-4">Admins con calificación promedio baja (menos de 3.5 ⭐, con al menos 2 reseñas), cuenta bloqueada, o que no entran a su panel hace 14+ días. Revísalos antes de que se vuelva un problema mayor.</p>
+                        <div id="panel-riesgo-lista" class="space-y-2"></div>
+                    </div>
                     <div id="stats-salud-superadmin" class="hidden mb-8">
                         <h4 class="mb-2 text-base admin-section-title"><i class="fas fa-stethoscope mr-1"></i> Productos sin interés hace 30 días</h4>
                         <p class="text-xs text-gray-400 mb-4">Publicados hace más de un mes y sin ningún clic en "Comprar". Candidatos a bajar de precio o quitar.</p>
@@ -920,6 +946,10 @@
                         <canvas id="grafica-ventas-canvas" width="600" height="180" class="w-full"></canvas>
                     </div>
                     <p id="resumen-vacio-normal" class="hidden text-sm text-gray-400">El resumen general solo está disponible para el súper administrador. Usa las pestañas de arriba para gestionar tus productos y ventas.</p>
+                    <div id="mentores-disponibles-wrap" class="hidden mt-4">
+                        <h4 class="mb-2 text-sm font-semibold text-gray-600"><i class="fas fa-chalkboard-user mr-1 text-violet-500"></i> Admins con experiencia a quienes preguntar</h4>
+                        <div id="mentores-disponibles-lista" class="space-y-2"></div>
+                    </div>
                 </div>
 
                 <div class="admin-tab-pane" data-tab="agregar">
@@ -1038,6 +1068,29 @@
                                 <div id="perfil-meta-barra" class="h-full rounded-full bg-emerald-400" style="width:0%; transition: width .6s ease;"></div>
                             </div>
                         </div>
+                        <div id="perfil-meta-semanal-wrap" class="hidden mt-2">
+                            <div class="flex items-center justify-between mb-1">
+                                <span id="perfil-meta-semanal-texto" class="text-[10px] text-gray-400"></span>
+                                <button onclick="editarMetaSemanal()" class="text-[10px] text-indigo-500 underline">Mi meta semanal</button>
+                            </div>
+                            <div class="w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                                <div id="perfil-meta-semanal-barra" class="h-full rounded-full bg-sky-400" style="width:0%; transition: width .6s ease;"></div>
+                            </div>
+                        </div>
+                        <p id="perfil-comparacion-mes" class="hidden text-[10px] text-gray-500 mt-2"></p>
+                        <p id="perfil-suscripcion-cuenta" class="hidden text-[10px] text-gray-500 mt-1"></p>
+                        <button id="perfil-btn-calculadora" onclick="toggleCalculadoraGanancias()" class="hidden text-[10px] text-indigo-500 underline mt-1 block">🧮 Calculadora rápida de ganancias</button>
+                        <div id="perfil-calculadora-ganancias" class="hidden mt-2 bg-indigo-50 rounded-xl p-3">
+                            <label class="text-[10px] text-gray-500 block mb-1">Si vendo esta cantidad de cuentas más:</label>
+                            <input id="calc-ganancias-input" type="number" min="1" value="5" oninput="actualizarCalculadoraGanancias()" class="border border-gray-300 rounded-lg px-3 py-1.5 w-full text-sm mb-1">
+                            <p id="calc-ganancias-resultado" class="text-xs font-semibold text-indigo-700"></p>
+                        </div>
+                        <div id="perfil-incompleto-aviso" class="hidden mt-2 bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-xs text-amber-700"></div>
+                        <p id="perfil-tiempo-respuesta" class="hidden text-[10px] text-gray-500 mt-2"></p>
+                        <div id="perfil-logros-timeline" class="hidden mt-3 pt-3 border-t border-gray-100">
+                            <p class="text-[10px] font-semibold text-gray-500 mb-1.5">🏆 Tu línea de tiempo</p>
+                            <div id="perfil-logros-lista" class="space-y-1"></div>
+                        </div>
 
                         <div id="perfil-super-stats" class="perfil-super-stats hidden grid grid-cols-3 gap-2 mt-4">
                             <div class="perfil-super-stat">
@@ -1118,9 +1171,28 @@
                         </label>
                     </div>
 
+                    <h4 class="mb-2 text-base admin-section-title"><i class="fas fa-bullhorn mr-1"></i> Anuncio interno para tus admins</h4>
+                    <p class="text-xs text-gray-400 mb-2">Un mensaje que verán todos tus administradores al entrar a su panel (no lo ven tus clientes).</p>
+                    <textarea id="anuncio-admins-input" rows="2" maxlength="300" placeholder="Ej: Mañana habrá mantenimiento de 2am a 4am, no publiquen productos en ese rato." class="border border-gray-300 rounded-xl px-4 py-3 w-full text-sm mb-2"></textarea>
+                    <label class="block text-xs text-gray-500 mb-1">Publicar (déjalo vacío para publicarlo ya mismo)</label>
+                    <input id="anuncio-admins-fecha" type="datetime-local" class="border border-gray-300 rounded-xl px-4 py-2 w-full text-sm mb-2">
+                    <div class="flex gap-2 mb-8">
+                        <button onclick="publicarAnuncioAdmins()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-paper-plane mr-1"></i>Publicar anuncio</button>
+                        <button onclick="borrarAnuncioAdmins()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-xl text-xs font-semibold">Quitar anuncio actual</button>
+                    </div>
+
                     <h4 class="mb-2 text-base admin-section-title"><i class="fas fa-trophy mr-1"></i> Top referidores</h4>
                     <p class="text-xs text-gray-400 mb-4">Clientes que más amigos han traído (según ventas confirmadas con link de referido). Prémialos con su mes gratis.</p>
                     <div id="referidores-lista" class="space-y-2 mb-8"></div>
+
+                    <h4 class="mb-2 text-base admin-section-title"><i class="fab fa-whatsapp mr-1"></i> Suscriptores de ofertas por WhatsApp</h4>
+                    <p class="text-xs text-gray-400 mb-2">Clientes que dejaron su número en el footer de la tienda para recibir promociones.</p>
+                    <div class="flex items-center gap-2 mb-3">
+                        <span id="suscriptores-total" class="text-2xl font-bold text-slate-800">0</span>
+                        <span class="text-xs text-gray-400">suscritos</span>
+                        <button onclick="copiarSuscriptoresWhatsapp()" class="ml-auto bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-copy mr-1"></i>Copiar todos los números</button>
+                    </div>
+                    <div id="suscriptores-lista" class="space-y-1 mb-8 max-h-48 overflow-y-auto"></div>
 
                     <h4 class="mb-2 text-base admin-section-title"><i class="fas fa-bell mr-1"></i> Recordatorios de renovación</h4>
                     <p class="text-xs text-gray-400 mb-4">Cuentas vendidas que vencen pronto. Envía el recordatorio por WhatsApp con un clic.</p>
@@ -1146,7 +1218,26 @@
                     <div id="admins-activos-container" class="hidden">
                         <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
                             <h4 class="text-base admin-section-title">Administradores Activos</h4>
-                            <input id="buscar-admin-input" type="text" placeholder="🔍 Buscar por nombre..." oninput="renderAdminsActivos()" class="border border-gray-300 rounded-xl px-3 py-2 text-sm w-48 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <input id="buscar-admin-input" type="text" placeholder="🔍 Buscar por nombre..." oninput="renderAdminsActivos()" class="border border-gray-300 rounded-xl px-3 py-2 text-sm w-48 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <button id="btn-toggle-comparador" onclick="toggleVistaComparadorAdmins()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-table-columns mr-1"></i>Ver tabla comparativa</button>
+                                <button onclick="exportarAdminsCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-file-csv mr-1"></i>Exportar a CSV</button>
+                            </div>
+                        </div>
+                        <div id="comparador-admins-container" class="hidden mb-6 overflow-x-auto">
+                            <table class="w-full text-sm border-collapse">
+                                <thead>
+                                    <tr class="text-left text-xs text-gray-400 border-b border-gray-200">
+                                        <th class="py-2 pr-3">Admin</th>
+                                        <th class="py-2 pr-3">Ventas</th>
+                                        <th class="py-2 pr-3">Ingresos</th>
+                                        <th class="py-2 pr-3">Calificación</th>
+                                        <th class="py-2 pr-3">Suscripción</th>
+                                        <th class="py-2 pr-3">Productos</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="comparador-admins-tbody"></tbody>
+                            </table>
                         </div>
                         <div id="admins-activos-lista" class="space-y-4"></div>
                     </div>
@@ -1296,7 +1387,18 @@
             <input id="editar-nombre-input" type="text" class="border-2 border-gray-300 rounded-xl px-4 py-3 text-left w-full mb-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Tu nombre">
             <label class="block text-xs font-semibold text-gray-500 mb-1">WhatsApp</label>
             <input id="editar-whatsapp-input" type="tel" inputmode="numeric" class="border-2 border-gray-300 rounded-xl px-4 py-3 text-left w-full mb-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Tu número de WhatsApp">
-            <button type="button" onclick="probarMiWhatsapp()" class="text-[11px] text-indigo-500 underline mb-3 block"><i class="fab fa-whatsapp mr-0.5"></i>Probar que este número abre bien en WhatsApp</button>
+            <button type="button" onclick="probarMiWhatsapp()" class="text-[11px] text-indigo-500 underline mb-1 block"><i class="fab fa-whatsapp mr-0.5"></i>Probar que este número abre bien en WhatsApp</button>
+            <p id="editar-whatsapp-pendiente-aviso" class="hidden text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 mb-3"></p>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Correo de acceso</label>
+            <input id="editar-correo-input" type="email" class="border-2 border-gray-300 rounded-xl px-4 py-3 text-left w-full mb-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Tu correo">
+            <p id="editar-correo-pendiente-aviso" class="hidden text-[11px] text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 mb-3"></p>
+            <p class="text-[11px] text-gray-400 mb-3">Por seguridad, los cambios de WhatsApp y correo quedan pendientes hasta que el dueño de la tienda los apruebe.</p>
+            <label class="block text-xs font-semibold text-gray-500 mb-1">Link corto de tu perfil (opcional)</label>
+            <div class="flex items-center gap-1 mb-1">
+                <span class="text-xs text-gray-400 shrink-0">sctstream.xyz/?v=</span>
+                <input id="editar-alias-input" type="text" maxlength="20" placeholder="tunombre" class="border-2 border-gray-300 rounded-xl px-3 py-2 text-left w-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+            <p class="text-[11px] text-gray-400 mb-3">Solo letras y números, sin espacios. Compártelo para que la gente llegue directo a tus productos.</p>
             <label class="block text-xs font-semibold text-gray-500 mb-1">Biografía corta (opcional)</label>
             <textarea id="editar-bio-input" rows="2" maxlength="140" class="border-2 border-gray-300 rounded-xl px-4 py-3 text-left w-full mb-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Ej: Vendo hace 2 años, especializado en cuentas familiares"></textarea>
             <label class="block text-xs font-semibold text-gray-500 mb-1">Estado (como el de WhatsApp)</label>
@@ -1414,6 +1516,7 @@
             </div>
             <div class="p-4 text-center overflow-y-auto">
                 <h3 id="detalle-nombre" class="text-lg font-bold mb-1 text-purple-700"></h3>
+                <div id="detalle-calificacion" class="hidden flex items-center justify-center gap-1 mb-1 text-sm"></div>
                 <p id="detalle-vendedor" class="text-gray-400 text-[11px] mb-1 flex items-center justify-center gap-1"></p>
                 <p id="detalle-vendedor-conexion" class="hidden text-gray-400 text-[10px] mb-1 flex items-center justify-center gap-1"></p>
                 <p id="detalle-vendedor-bio" class="hidden text-gray-500 text-[11px] italic mb-1.5 px-2"></p>
@@ -1433,6 +1536,20 @@
                 <div id="detalle-relacionados" class="hidden mt-3 pt-3 border-t border-gray-100 text-left">
                     <p class="text-xs font-semibold text-gray-500 mb-2">También te puede interesar</p>
                     <div id="detalle-relacionados-lista" class="flex gap-2 overflow-x-auto"></div>
+                </div>
+                <div class="mt-3 pt-3 border-t border-gray-100 text-left">
+                    <p class="text-xs font-semibold text-gray-500 mb-2"><i class="fas fa-comment-dots mr-1"></i> Reseñas de clientes</p>
+                    <div id="detalle-resenas-lista" class="space-y-2 mb-2"></div>
+                    <button id="detalle-resenas-btn" onclick="abrirFormularioResena()" class="text-xs text-indigo-600 underline font-semibold">Dejar una reseña</button>
+                    <div id="detalle-resenas-form" class="hidden mt-2 bg-gray-50 rounded-xl p-3">
+                        <div id="resena-estrellas-input" class="flex gap-1 justify-center mb-2 text-2xl"></div>
+                        <input id="resena-nombre-input" type="text" placeholder="Tu nombre" maxlength="30" class="border border-gray-300 rounded-lg px-3 py-2 w-full text-sm mb-2">
+                        <textarea id="resena-comentario-input" placeholder="¿Cómo te fue con esta cuenta? (opcional)" maxlength="200" rows="2" class="border border-gray-300 rounded-lg px-3 py-2 w-full text-sm mb-2"></textarea>
+                        <div class="flex gap-2">
+                            <button onclick="enviarResena()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-xs font-semibold">Publicar reseña</button>
+                            <button onclick="document.getElementById('detalle-resenas-form').classList.add('hidden')" class="text-gray-400 text-xs px-2">Cancelar</button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="p-4 pt-2 border-t border-gray-100 shrink-0 bg-white">
@@ -1600,6 +1717,14 @@
         <div class="max-w-7xl mx-auto px-6 text-center">
             <p class="text-2xl font-bold mb-2 titulo-color">SCT Stream</p>
             <p class="opacity-70">Entregas rápidas • Soporte 24/7 • Cuentas 100% seguras</p>
+            <div class="max-w-xs mx-auto mt-6 bg-white/10 rounded-2xl p-4 text-left">
+                <p class="text-sm font-semibold mb-2 text-center"><i class="fab fa-whatsapp mr-1"></i> Recibe ofertas por WhatsApp</p>
+                <div class="flex gap-2">
+                    <input id="footer-suscripcion-numero" type="tel" inputmode="numeric" placeholder="Tu WhatsApp (ej: 987654321)" class="flex-1 rounded-lg px-3 py-2 text-sm text-gray-800">
+                    <button onclick="suscribirseOfertas()" class="bg-white text-purple-700 font-semibold px-3 py-2 rounded-lg text-sm shrink-0">Unirme</button>
+                </div>
+                <p id="footer-suscripcion-msg" class="hidden text-xs mt-2 text-center"></p>
+            </div>
             <div class="mt-10 flex justify-center gap-8 text-3xl">
                 <a href="https://wa.me/51925516886" target="_blank" class="hover:text-green-400 transition">
                     <i class="fab fa-whatsapp"></i>
@@ -1715,6 +1840,7 @@
         let miBioAdmin = null;
         let miEstadoAdmin = null;
         let miMetaVentas = null;
+        let miMetaVentasSemanal = null;
         let miMetodosPagoAdmin = [];
         let METODOS_PRINCIPAL = ['Efectivo', 'Yape', 'Plin', 'Transferencia bancaria'];
 
@@ -1767,6 +1893,104 @@
             actualizarPrecioYBotonDetalle(producto, agotado, numeroContacto);
         }
 
+        // ===================== Reseñas y calificaciones =====================
+        function textoEstrellas(promedio) {
+            const llenas = Math.round(promedio);
+            let out = '';
+            for (let i = 1; i <= 5; i++) out += i <= llenas ? '⭐' : '☆';
+            return `<span class="text-amber-400">${out}</span>`;
+        }
+
+        let estrellaSeleccionadaResena = 0;
+        function abrirFormularioResena() {
+            const id = productoDetalleActualId;
+            if (localStorage.getItem('sct_resena_' + id)) {
+                mostrarAviso('Ya dejaste una reseña para este producto. ¡Gracias!');
+                return;
+            }
+            estrellaSeleccionadaResena = 0;
+            const cont = document.getElementById('resena-estrellas-input');
+            cont.innerHTML = [1, 2, 3, 4, 5].map(n => `<span onclick="estrellaSeleccionadaResena=${n}; pintarEstrellasResena();" class="cursor-pointer text-gray-300" data-estrella="${n}">★</span>`).join('');
+            document.getElementById('resena-nombre-input').value = '';
+            document.getElementById('resena-comentario-input').value = '';
+            document.getElementById('detalle-resenas-form').classList.remove('hidden');
+            document.getElementById('detalle-resenas-btn').classList.add('hidden');
+        }
+        function pintarEstrellasResena() {
+            document.querySelectorAll('#resena-estrellas-input span').forEach(el => {
+                const n = parseInt(el.dataset.estrella, 10);
+                el.className = 'cursor-pointer ' + (n <= estrellaSeleccionadaResena ? 'text-amber-400' : 'text-gray-300');
+            });
+        }
+        async function enviarResena() {
+            const id = productoDetalleActualId;
+            const producto = productos.find(p => p.id === id);
+            if (!producto) return;
+            if (estrellaSeleccionadaResena < 1) {
+                mostrarAviso('Toca las estrellas para calificar del 1 al 5 antes de publicar.');
+                return;
+            }
+            const nombre = document.getElementById('resena-nombre-input').value.trim() || 'Cliente';
+            const comentario = document.getElementById('resena-comentario-input').value.trim();
+            try {
+                await db.collection('resenas').add({
+                    productoId: id,
+                    productoNombre: producto.nombre,
+                    propietario: producto.propietario || 'principal',
+                    estrellas: estrellaSeleccionadaResena,
+                    comentario: comentario,
+                    nombreCliente: nombre,
+                    fecha: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                await db.collection('productos').doc(id).update({
+                    calificacionSuma: firebase.firestore.FieldValue.increment(estrellaSeleccionadaResena),
+                    calificacionCantidad: firebase.firestore.FieldValue.increment(1)
+                });
+                localStorage.setItem('sct_resena_' + id, '1');
+                document.getElementById('detalle-resenas-form').classList.add('hidden');
+                mostrarAviso('¡Gracias por tu reseña!');
+                producto.calificacionSuma = (producto.calificacionSuma || 0) + estrellaSeleccionadaResena;
+                producto.calificacionCantidad = (producto.calificacionCantidad || 0) + 1;
+                cargarResenasProducto(id);
+                const califEl = document.getElementById('detalle-calificacion');
+                const promedio = producto.calificacionSuma / producto.calificacionCantidad;
+                califEl.innerHTML = `${textoEstrellas(promedio)} <span class="text-gray-500 text-xs">${promedio.toFixed(1)} (${producto.calificacionCantidad})</span>`;
+                califEl.classList.remove('hidden');
+            } catch (err) {
+                mostrarAviso('No se pudo publicar tu reseña: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+        async function cargarResenasProducto(id) {
+            const cont = document.getElementById('detalle-resenas-lista');
+            const btn = document.getElementById('detalle-resenas-btn');
+            document.getElementById('detalle-resenas-form').classList.add('hidden');
+            btn.classList.toggle('hidden', !!localStorage.getItem('sct_resena_' + id));
+            cont.innerHTML = '<p class="text-xs text-gray-300">Cargando reseñas…</p>';
+            try {
+                const snap = await db.collection('resenas').where('productoId', '==', id).orderBy('fecha', 'desc').limit(5).get();
+                if (snap.empty) {
+                    cont.innerHTML = '<p class="text-xs text-gray-400">Todavía no hay reseñas. ¡Sé el primero!</p>';
+                    return;
+                }
+                cont.innerHTML = snap.docs.map(d => {
+                    const r = d.data();
+                    return `
+                        <div class="border border-gray-100 rounded-xl p-2">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-semibold text-gray-700">${r.nombreCliente || 'Cliente'}</span>
+                                <span class="text-amber-400 text-xs">${'★'.repeat(r.estrellas)}${'☆'.repeat(5 - r.estrellas)}</span>
+                            </div>
+                            ${r.comentario ? `<p class="text-xs text-gray-500 mt-0.5">${r.comentario}</p>` : ''}
+                            ${r.respuesta ? `<div class="mt-1.5 pl-2 border-l-2 border-indigo-200"><p class="text-[10px] font-semibold text-indigo-600">Respuesta del vendedor</p><p class="text-xs text-gray-500">${r.respuesta}</p></div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                cont.innerHTML = '<p class="text-xs text-gray-400">No se pudieron cargar las reseñas.</p>';
+                console.error(err);
+            }
+        }
+
         function mensajeCompraWhatsapp(producto, metodoElegido, varianteElegida) {
             const precio = varianteElegida ? varianteElegida.precio : precioFinalProducto(producto);
             let msg = varianteElegida
@@ -1803,6 +2027,7 @@
                 estado: 'interesado',
                 esProvincia: clienteEsProvincia,
                 referidoPor: sessionStorage.getItem('sct_ref') || null,
+                origenTrafico: origenTraficoActual(),
                 clienteTelefono: null,
                 fechaVencimiento: null,
                 creado: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1896,6 +2121,61 @@
             const ref = params.get('ref');
             if (ref) sessionStorage.setItem('sct_ref', ref.replace(/\D/g, ''));
         })();
+
+        // ---- Origen de tráfico (UTM), para saber si una venta vino de Facebook, WhatsApp, etc. ----
+        (function capturarOrigenTrafico() {
+            const params = new URLSearchParams(window.location.search);
+            const fuente = params.get('utm_source');
+            if (fuente) {
+                sessionStorage.setItem('sct_utm_source', fuente);
+                sessionStorage.setItem('sct_utm_medium', params.get('utm_medium') || '');
+                sessionStorage.setItem('sct_utm_campaign', params.get('utm_campaign') || '');
+            } else if (!sessionStorage.getItem('sct_utm_source') && document.referrer) {
+                try {
+                    const dominioRef = new URL(document.referrer).hostname;
+                    if (dominioRef && !dominioRef.includes(window.location.hostname)) {
+                        sessionStorage.setItem('sct_utm_source', dominioRef);
+                        sessionStorage.setItem('sct_utm_medium', 'referral');
+                    }
+                } catch (e) {}
+            }
+        })();
+        function origenTraficoActual() {
+            const fuente = sessionStorage.getItem('sct_utm_source');
+            if (!fuente) return null;
+            return {
+                fuente,
+                medio: sessionStorage.getItem('sct_utm_medium') || null,
+                campana: sessionStorage.getItem('sct_utm_campaign') || null
+            };
+        }
+
+        async function suscribirseOfertas() {
+            const input = document.getElementById('footer-suscripcion-numero');
+            const msgEl = document.getElementById('footer-suscripcion-msg');
+            const numero = input.value.trim();
+            if (!esWhatsappPeruValido(numero)) {
+                msgEl.textContent = 'Escribe un WhatsApp peruano válido (9 dígitos, empieza con 9).';
+                msgEl.className = 'text-xs mt-2 text-center text-red-200';
+                msgEl.classList.remove('hidden');
+                return;
+            }
+            const limpio = numero.replace(/\D/g, '').replace(/^51/, '');
+            try {
+                await db.collection('suscriptores_whatsapp').doc(limpio).set({
+                    telefono: limpio,
+                    fecha: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                input.value = '';
+                msgEl.textContent = '¡Listo! Te avisaremos por WhatsApp cuando haya ofertas.';
+                msgEl.className = 'text-xs mt-2 text-center text-emerald-200';
+                msgEl.classList.remove('hidden');
+            } catch (err) {
+                msgEl.textContent = 'No se pudo guardar tu número, intenta de nuevo.';
+                msgEl.className = 'text-xs mt-2 text-center text-red-200';
+                msgEl.classList.remove('hidden');
+            }
+        }
 
         function generarLinkReferido() {
             const input = document.getElementById('referido-telefono-input');
@@ -2193,6 +2473,19 @@
         let etiquetaActiva = null;
         let vendedorFiltroActivo = new URLSearchParams(window.location.search).get('vendedor');
 
+        // Soporte para link corto de perfil: ?v=carlos en vez de ?vendedor=<uid largo>
+        (async function resolverAliasVendedor() {
+            const alias = new URLSearchParams(window.location.search).get('v');
+            if (!alias || vendedorFiltroActivo) return;
+            try {
+                const snap = await db.collection('administradores').where('alias', '==', alias.toLowerCase()).limit(1).get();
+                if (!snap.empty) {
+                    vendedorFiltroActivo = snap.docs[0].id;
+                    if (typeof filtrarYRenderizarProductos === 'function') filtrarYRenderizarProductos();
+                }
+            } catch (err) { console.error('No se pudo resolver el alias del vendedor:', err); }
+        })();
+
         function productosFiltrados() {
             const ahora = Date.now();
             return productos.filter(p => {
@@ -2372,6 +2665,7 @@
                 <div class="p-1.5">
                     <h3 class="text-[11px] font-bold mb-0.5 ${ofertaActiva ? 'text-white' : 'text-purple-700'} truncate">${producto.nombre}</h3>
                     <p class="${ofertaActiva ? 'text-white/70' : 'text-gray-400'} text-[8px] mb-1 flex items-center gap-1 truncate"><span class="inline-block w-1.5 h-1.5 rounded-full" style="background:${colorVendedor}"></span> ${nombreVendedor} ${insigniaVerificado}</p>
+                    ${producto.calificacionCantidad > 0 ? `<p class="text-[8px] text-amber-500 mb-1">⭐ ${(producto.calificacionSuma / producto.calificacionCantidad).toFixed(1)} <span class="text-gray-400">(${producto.calificacionCantidad})</span></p>` : ''}
                     <div class="flex items-end gap-1 mb-1 flex-wrap">
                         ${precioHtml}
                     </div>
@@ -2443,6 +2737,7 @@
                 if (vendedorFiltroActivo) {
                     const ejemplo = productos.find(p => p.propietario === vendedorFiltroActivo);
                     document.getElementById('banner-filtro-vendedor-nombre').textContent = ejemplo ? (ejemplo.propietarioNombre || 'este vendedor') : 'este vendedor';
+                    actualizarBotonSeguirVendedor();
                     bannerVendedor.classList.remove('hidden');
                 } else {
                     bannerVendedor.classList.add('hidden');
@@ -2782,6 +3077,16 @@
             const numeroContacto = producto.propietarioWhatsapp || WHATSAPP_NUMBER;
             const tieneStock = producto.stock !== null && producto.stock !== undefined;
             const agotado = tieneStock && producto.stock <= 0;
+
+            const califEl = document.getElementById('detalle-calificacion');
+            if (producto.calificacionCantidad > 0) {
+                const promedio = producto.calificacionSuma / producto.calificacionCantidad;
+                califEl.innerHTML = `${textoEstrellas(promedio)} <span class="text-gray-500 text-xs">${promedio.toFixed(1)} (${producto.calificacionCantidad})</span>`;
+                califEl.classList.remove('hidden');
+            } else {
+                califEl.classList.add('hidden');
+            }
+            cargarResenasProducto(id);
 
             // Carrusel de fotos (principal + adicionales, si tiene)
             const carrusel = document.getElementById('detalle-carrusel');
@@ -3298,6 +3603,7 @@
                 estado: 'interesado',
                 esProvincia: clienteEsProvincia,
                 referidoPor: sessionStorage.getItem('sct_ref') || null,
+                origenTrafico: origenTraficoActual(),
                 clienteTelefono: null,
                 fechaVencimiento: null,
                 creado: firebase.firestore.FieldValue.serverTimestamp(),
@@ -3399,6 +3705,34 @@
         // ===================== Favoritos =====================
         let favoritos = [];
         try { favoritos = JSON.parse(localStorage.getItem('sct_favoritos') || '[]'); } catch (err) { favoritos = []; }
+
+        let vendedoresSeguidos = [];
+        try { vendedoresSeguidos = JSON.parse(localStorage.getItem('sct_siguiendo') || '[]'); } catch (err) { vendedoresSeguidos = []; }
+
+        function esSiguiendoVendedor(vendedorId) {
+            return vendedoresSeguidos.includes(vendedorId);
+        }
+
+        function toggleSeguirVendedor(vendedorId) {
+            if (!vendedorId) return;
+            if (vendedoresSeguidos.includes(vendedorId)) {
+                vendedoresSeguidos = vendedoresSeguidos.filter(v => v !== vendedorId);
+            } else {
+                vendedoresSeguidos.push(vendedorId);
+            }
+            localStorage.setItem('sct_siguiendo', JSON.stringify(vendedoresSeguidos));
+            actualizarBotonSeguirVendedor();
+        }
+
+        function actualizarBotonSeguirVendedor() {
+            const btn = document.getElementById('banner-btn-seguir');
+            if (!btn || !vendedorFiltroActivo) return;
+            const siguiendo = esSiguiendoVendedor(vendedorFiltroActivo);
+            btn.textContent = siguiendo ? '✓ Siguiendo' : '+ Seguir';
+            btn.className = siguiendo
+                ? 'text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-700'
+                : 'text-xs font-semibold px-3 py-1.5 rounded-full bg-purple-100 text-purple-700';
+        }
 
         function esFavorito(id) {
             return favoritos.includes(id);
@@ -3553,10 +3887,26 @@
             ctx.fillStyle = '#9ca3af';
             ctx.fillText('Este resumen no es un comprobante de pago — coordina el pago por WhatsApp.', 20, y);
 
-            const enlace = document.createElement('a');
-            enlace.download = `pedido_sct_stream_${Date.now()}.png`;
-            enlace.href = canvas.toDataURL('image/png');
-            enlace.click();
+            const finalizarDescarga = () => {
+                const enlace = document.createElement('a');
+                enlace.download = `pedido_sct_stream_${Date.now()}.png`;
+                enlace.href = canvas.toDataURL('image/png');
+                enlace.click();
+            };
+
+            const logo = new Image();
+            logo.crossOrigin = 'anonymous';
+            logo.onload = () => {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(anchoCanvas - 45, 35, 22, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.drawImage(logo, anchoCanvas - 67, 13, 44, 44);
+                ctx.restore();
+                finalizarDescarga();
+            };
+            logo.onerror = finalizarDescarga;
+            logo.src = 'icon-192.png';
         }
 
         function renderGaleria() {
@@ -3808,6 +4158,70 @@
             destacadoEl.textContent = frase || `Tienes ${adminsActivos.length} administrador${adminsActivos.length === 1 ? '' : 'es'} activo${adminsActivos.length === 1 ? '' : 's'}.`;
         }
 
+        function actualizarPanelRiesgo() {
+            const cont = document.getElementById('panel-riesgo-lista');
+            const wrap = document.getElementById('panel-riesgo-wrap');
+            const contador = document.getElementById('resumen-riesgo-alerta');
+            if (!cont || !wrap) return;
+            const DIAS_INACTIVO_ADMIN = 14;
+            const enRiesgo = adminsActivos.map(adm => {
+                const misProductos = productos.filter(p => p.propietario === adm.id);
+                const sumaCalif = misProductos.reduce((s, p) => s + (p.calificacionSuma || 0), 0);
+                const cantCalif = misProductos.reduce((s, p) => s + (p.calificacionCantidad || 0), 0);
+                const calificacion = cantCalif >= 2 ? sumaCalif / cantCalif : null;
+                const motivos = [];
+                if (calificacion !== null && calificacion < 3.5) motivos.push(`⭐ ${calificacion.toFixed(1)} de calificación (${cantCalif} reseñas)`);
+                if (adm.bloqueado) motivos.push('🚫 Cuenta bloqueada actualmente');
+                if (!adm.ultimaConexion) {
+                    motivos.push('😴 Nunca se ha conectado');
+                } else if (adm.ultimaConexion.toDate) {
+                    const diasSinEntrar = Math.floor((Date.now() - adm.ultimaConexion.toDate().getTime()) / 86400000);
+                    if (diasSinEntrar >= DIAS_INACTIVO_ADMIN) motivos.push(`😴 No entra hace ${diasSinEntrar} días`);
+                }
+                return { adm, motivos };
+            }).filter(r => r.motivos.length > 0);
+
+            if (contador) contador.textContent = enRiesgo.length;
+            if (enRiesgo.length === 0) {
+                wrap.classList.add('hidden');
+                return;
+            }
+            wrap.classList.remove('hidden');
+            cont.innerHTML = enRiesgo.map(r => `
+                <div class="bg-red-50 border border-red-200 rounded-xl p-3">
+                    <p class="text-sm font-semibold text-red-700">${r.adm.nombre || 'Administrador'}</p>
+                    <p class="text-xs text-red-500">${r.motivos.join(' · ')}</p>
+                </div>
+            `).join('');
+        }
+
+        function actualizarStatsOrigen() {
+            const cont = document.getElementById('stats-origen-lista');
+            if (!cont) return;
+            const conPedidos = pedidos.filter(p => p.origenTrafico && p.origenTrafico.fuente);
+            if (conPedidos.length === 0) {
+                cont.innerHTML = '<p class="text-gray-400 text-sm">Aún no hay pedidos con un origen de tráfico identificado.</p>';
+                return;
+            }
+            const conteo = {};
+            conPedidos.forEach(p => {
+                const clave = p.origenTrafico.fuente;
+                if (!conteo[clave]) conteo[clave] = 0;
+                conteo[clave]++;
+            });
+            const ordenado = Object.entries(conteo).sort((a, b) => b[1] - a[1]).slice(0, 8);
+            const max = ordenado[0][1];
+            cont.innerHTML = ordenado.map(([fuente, total]) => `
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-gray-500 w-24 truncate">${fuente}</span>
+                    <div class="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                        <div class="h-full bg-sky-500" style="width:${Math.max(8, (total / max) * 100)}%"></div>
+                    </div>
+                    <span class="text-xs font-semibold text-sky-600 w-6 text-right">${total}</span>
+                </div>
+            `).join('');
+        }
+
         function actualizarResumenSuperAdmin() {
             if (!esSuperAdmin) return;
             const totalAdmins = document.getElementById('resumen-total-admins');
@@ -3833,6 +4247,8 @@
             if (clientesRecurrentesEl) clientesRecurrentesEl.textContent = clientesRecurrentes;
             actualizarSaludoSuperAdmin();
             actualizarStatsCategorias();
+            actualizarStatsOrigen();
+            actualizarPanelRiesgo();
             actualizarStatsInteres();
             actualizarStatsSalud();
             dibujarGraficaVentas();
@@ -3920,7 +4336,10 @@
                     : '';
                 const stockActual = (producto.stock === null || producto.stock === undefined) ? '' : producto.stock;
                 const sinStock = stockActual !== '' && stockActual <= 0;
-                const badgeStock = sinStock ? '<span class="bg-red-100 text-red-600 text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2">AGOTADO</span>' : '';
+                const stockBajo = stockActual !== '' && stockActual > 0 && stockActual <= 2;
+                const badgeStock = sinStock ? '<span class="bg-red-100 text-red-600 text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2">AGOTADO</span>'
+                    : stockBajo ? `<span class="bg-amber-100 text-amber-700 text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2"><i class="fas fa-triangle-exclamation"></i> Queda${stockActual === 1 ? '' : 'n'} ${stockActual}, repón pronto</span>`
+                    : '';
                 const ofertaActiva = producto.ofertaHasta && producto.ofertaHasta > Date.now();
                 const badgeOferta = ofertaActiva ? `<span class="bg-red-100 text-red-600 text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2"><i class="fas fa-bolt"></i> Oferta activa (${formatCuentaRegresiva(producto.ofertaHasta)})</span>` : '';
                 const botonOferta = ofertaActiva
@@ -3986,7 +4405,9 @@
                                 <button onclick="mostrarQrProducto('${producto.id}', '${producto.nombre.replace(/'/g, "\\'")}')" class="bg-slate-500 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-qrcode mr-1"></i>QR</button>
                                 <button onclick="duplicarProducto('${producto.id}')" class="bg-slate-500 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-copy mr-1"></i>Duplicar</button>
                                 <button onclick="generarImagenProducto('${producto.id}')" class="bg-slate-500 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-image mr-1"></i>Imagen para compartir</button>
+                                <button onclick="toggleResenasProductoAdmin('${producto.id}')" class="bg-slate-500 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-comment-dots mr-1"></i>Reseñas${producto.calificacionCantidad > 0 ? ` (${producto.calificacionCantidad})` : ''}</button>
                             </div>
+                            <div id="resenas-admin-${producto.id}" class="hidden space-y-2 border-t border-gray-100 pt-2"></div>
                             <div class="flex items-center gap-2 flex-wrap">
                                 <input type="text" id="etiquetas-input-${producto.id}" value="${(producto.etiquetas || []).join(', ')}" placeholder="Etiquetas separadas por coma (ej: Familiar, Renovable)" class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs flex-1 min-w-[200px]">
                                 <button onclick="guardarEtiquetasProducto('${producto.id}')" class="bg-slate-500 hover:bg-slate-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Guardar etiquetas</button>
@@ -5194,8 +5615,62 @@
         }
 
         // ---- Fidelización: top referidores y recordatorios de renovación ----
+        async function publicarAnuncioAdmins() {
+            if (!esSuperAdmin) return;
+            const texto = document.getElementById('anuncio-admins-input').value.trim();
+            const fechaInput = document.getElementById('anuncio-admins-fecha').value;
+            if (!texto) {
+                mostrarAviso('Escribe el mensaje del anuncio antes de publicarlo.');
+                return;
+            }
+            const publicarEn = fechaInput ? new Date(fechaInput).getTime() : Date.now();
+            if (fechaInput && publicarEn <= Date.now()) {
+                mostrarAviso('La fecha programada debe ser en el futuro. Déjala vacía si quieres publicarlo ya mismo.');
+                return;
+            }
+            try {
+                await db.collection('configuracion').doc('anuncio_admins').set({
+                    texto, fecha: Date.now(), publicarEn
+                });
+                mostrarAviso(fechaInput
+                    ? `Anuncio programado para el ${new Date(publicarEn).toLocaleString('es-PE')}.`
+                    : 'Anuncio publicado. Lo verán tus admins la próxima vez que entren a su panel.');
+            } catch (err) {
+                mostrarAviso('No se pudo publicar: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+        async function borrarAnuncioAdmins() {
+            if (!esSuperAdmin) return;
+            try {
+                await db.collection('configuracion').doc('anuncio_admins').delete();
+                document.getElementById('anuncio-admins-input').value = '';
+                mostrarAviso('Anuncio quitado.');
+            } catch (err) {
+                mostrarAviso('No se pudo quitar: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+        async function revisarAnuncioAdmins() {
+            try {
+                const doc = await db.collection('configuracion').doc('anuncio_admins').get();
+                if (!doc.exists || !doc.data().texto) return;
+                const { texto, fecha, publicarEn } = doc.data();
+                if (publicarEn && publicarEn > Date.now()) return; // todavía no llega la hora programada
+                const vistoHasta = parseInt(localStorage.getItem('sct_anuncio_visto') || '0', 10);
+                if (fecha <= vistoHasta) return;
+                document.getElementById('anuncio-admins-texto').textContent = texto;
+                document.getElementById('anuncio-admins-banner').dataset.fecha = fecha;
+                document.getElementById('anuncio-admins-banner').classList.remove('hidden');
+            } catch (err) { console.error(err); }
+        }
+        function cerrarAnuncioAdmins() {
+            const banner = document.getElementById('anuncio-admins-banner');
+            localStorage.setItem('sct_anuncio_visto', banner.dataset.fecha || String(Date.now()));
+            banner.classList.add('hidden');
+        }
+
         function renderFidelizacion() {
             renderTopReferidores();
+            renderSuscriptoresWhatsapp();
             renderRecordatoriosRenovacion();
             renderCalendarioVencimientos();
             renderClientesInactivos();
@@ -5267,6 +5742,42 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        let suscriptoresWhatsappCache = [];
+        async function renderSuscriptoresWhatsapp() {
+            const cont = document.getElementById('suscriptores-lista');
+            const totalEl = document.getElementById('suscriptores-total');
+            if (!cont) return;
+            if (!esSuperAdmin) return;
+            try {
+                const snap = await db.collection('suscriptores_whatsapp').orderBy('fecha', 'desc').limit(200).get();
+                suscriptoresWhatsappCache = snap.docs.map(d => d.data().telefono).filter(Boolean);
+                if (totalEl) totalEl.textContent = suscriptoresWhatsappCache.length;
+                if (suscriptoresWhatsappCache.length === 0) {
+                    cont.innerHTML = '<p class="text-gray-400 text-sm">Todavía nadie se ha suscrito.</p>';
+                    return;
+                }
+                cont.innerHTML = suscriptoresWhatsappCache.map(tel => `
+                    <div class="flex items-center justify-between text-sm border-b border-gray-100 py-1">
+                        <span class="text-slate-600">${tel}</span>
+                        <a href="https://wa.me/${tel}" target="_blank" class="text-green-500 text-xs"><i class="fab fa-whatsapp"></i> Chatear</a>
+                    </div>
+                `).join('');
+            } catch (err) {
+                cont.innerHTML = '<p class="text-gray-400 text-sm">No se pudo cargar la lista.</p>';
+                console.error(err);
+            }
+        }
+        function copiarSuscriptoresWhatsapp() {
+            if (suscriptoresWhatsappCache.length === 0) {
+                mostrarAviso('Todavía no hay números suscritos para copiar.');
+                return;
+            }
+            const texto = suscriptoresWhatsappCache.join(', ');
+            navigator.clipboard && navigator.clipboard.writeText(texto).then(() => {
+                mostrarAviso(`${suscriptoresWhatsappCache.length} números copiados. Pégalos en tu lista de difusión de WhatsApp.`);
+            }).catch(() => mostrarAviso('No se pudo copiar automáticamente. Números: ' + texto));
         }
 
         function renderTopReferidores() {
@@ -5774,11 +6285,15 @@
         function abrirPanelAdmin() {
             const modal = document.getElementById('admin-modal');
             modal.classList.remove('hidden');
+            if (!esSuperAdmin) revisarAnuncioAdmins();
             document.getElementById('solicitudes-container').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('admins-activos-container').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('resumen-superadmin').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('stats-categorias-superadmin').classList.toggle('hidden', !esSuperAdmin);
+            document.getElementById('stats-origen-superadmin').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('resumen-vacio-normal').classList.toggle('hidden', esSuperAdmin);
+            document.getElementById('mentores-disponibles-wrap').classList.toggle('hidden', esSuperAdmin);
+            if (!esSuperAdmin) renderMentoresDisponibles();
             document.getElementById('tab-btn-solicitudes').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('tab-btn-administradores').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('referidos-admin-toggle').classList.toggle('hidden', !esSuperAdmin);
@@ -6322,6 +6837,7 @@
                         miBioAdmin = doc.data().bio;
                         miEstadoAdmin = doc.data().estado;
                         miMetaVentas = doc.data().metaVentasMensual;
+                        miMetaVentasSemanal = doc.data().metaVentasSemanal;
                         miMetodosPagoAdmin = doc.data().metodosPago || [];
                         miAdminCreado = doc.data().creado;
                         miFotoAdmin = doc.data().foto || null;
@@ -6408,10 +6924,14 @@
                         miBioAdmin = doc.data().bio;
                         miEstadoAdmin = doc.data().estado;
                         miMetaVentas = doc.data().metaVentasMensual;
+                        miMetaVentasSemanal = doc.data().metaVentasSemanal;
                         miMetodosPagoAdmin = doc.data().metodosPago || [];
                         miAdminCreado = doc.data().creado;
                         miFotoAdmin = doc.data().foto || null;
-                        finalizarLogin(auth.currentUser.uid, miNombreAdmin, () => revisarPinPersonal(doc.data()));
+                        finalizarLogin(auth.currentUser.uid, miNombreAdmin, () => {
+                            revisarPinPersonal(doc.data());
+                            completarCambioCorreoSiAplica(datosDoc);
+                        });
                         return;
                     } else if (doc.exists && doc.data().bloqueado) {
                         mostrarAviso('Tu cuenta de administrador está bloqueada temporalmente. Contacta al dueño de la tienda.');
@@ -6629,13 +7149,17 @@
                 miBioAdmin = datos.bio;
                 miEstadoAdmin = datos.estado;
                 miMetaVentas = datos.metaVentasMensual;
+                miMetaVentasSemanal = datos.metaVentasSemanal;
                 miMetodosPagoAdmin = datos.metodosPago || [];
                 esSuperAdmin = false;
                 if (!datos.aprobado) {
                     mostrarPendiente(cred.user.uid);
                     return;
                 }
-                finalizarLogin(cred.user.uid, datos.nombre, () => revisarPinPersonal(datos));
+                finalizarLogin(cred.user.uid, datos.nombre, () => {
+                    revisarPinPersonal(datos);
+                    completarCambioCorreoSiAplica(datos);
+                });
             } catch (err) {
                 console.error(err);
                 let msg = err.message || err.code || 'error desconocido';
@@ -6694,6 +7218,7 @@
                         miBioAdmin = doc.data().bio;
                         miEstadoAdmin = doc.data().estado;
                         miMetaVentas = doc.data().metaVentasMensual;
+                        miMetaVentasSemanal = doc.data().metaVentasSemanal;
                     miMetodosPagoAdmin = doc.data().metodosPago || [];
                     miAdminCreado = doc.data().creado;
                     miFotoAdmin = doc.data().foto || null;
@@ -6780,10 +7305,115 @@
                 }, err => console.error('Error leyendo administradores activos:', err));
         }
 
+        async function renderMentoresDisponibles() {
+            const cont = document.getElementById('mentores-disponibles-lista');
+            if (!cont) return;
+            const miUid = auth.currentUser && auth.currentUser.uid;
+            try {
+                const snap = await db.collection('administradores')
+                    .where('mentor', '==', true)
+                    .where('aprobado', '==', true)
+                    .get();
+                const mentores = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(m => m.id !== miUid);
+                if (mentores.length === 0) {
+                    document.getElementById('mentores-disponibles-wrap').classList.add('hidden');
+                    return;
+                }
+                cont.innerHTML = mentores.map(m => `
+                    <div class="flex items-center justify-between bg-violet-50 rounded-xl px-3 py-2">
+                        <span class="text-sm text-slate-700">${m.nombre || 'Administrador'}</span>
+                        ${m.whatsapp ? `<a href="https://wa.me/${normalizarWhatsapp(m.whatsapp)}?text=${encodeURIComponent('Hola! Soy nuevo administrador en SCT Stream y me dijeron que tú me podrías ayudar con dudas 🙌')}" target="_blank" class="text-violet-600 text-xs font-semibold"><i class="fab fa-whatsapp"></i> Escribirle</a>` : ''}
+                    </div>
+                `).join('');
+            } catch (err) {
+                console.error('No se pudo cargar la lista de mentores:', err);
+                document.getElementById('mentores-disponibles-wrap').classList.add('hidden');
+            }
+        }
+
+        function exportarAdminsCSV() {
+            if (!esSuperAdmin) return;
+            if (adminsActivos.length === 0) {
+                mostrarAviso('Todavía no hay administradores para exportar.');
+                return;
+            }
+            const filas = [['Nombre', 'Correo', 'WhatsApp', 'Ventas', 'Ingresos', 'Calificación', 'Suscripción vence', 'Verificado', 'Mentor', 'Bloqueado']];
+            adminsActivos.forEach(adm => {
+                const pedidosDeEste = pedidos.filter(p => p.propietario === adm.id);
+                const { totalVentas, ingresos } = calcularStatsVentas(pedidosDeEste);
+                const misProductos = productos.filter(p => p.propietario === adm.id);
+                const sumaCalif = misProductos.reduce((s, p) => s + (p.calificacionSuma || 0), 0);
+                const cantCalif = misProductos.reduce((s, p) => s + (p.calificacionCantidad || 0), 0);
+                const calificacion = cantCalif > 0 ? (sumaCalif / cantCalif).toFixed(1) : '';
+                filas.push([
+                    adm.nombre || '', adm.correo || '', adm.whatsapp || '',
+                    totalVentas, ingresos.toFixed(2), calificacion,
+                    adm.suscripcionVenceEl ? new Date(adm.suscripcionVenceEl).toLocaleDateString('es-PE') : '',
+                    adm.verificado ? 'Sí' : 'No', adm.mentor ? 'Sí' : 'No', adm.bloqueado ? 'Sí' : 'No'
+                ]);
+            });
+            const csv = filas.map(fila => fila.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const enlace = document.createElement('a');
+            enlace.href = URL.createObjectURL(blob);
+            enlace.download = `administradores_sct_stream_${Date.now()}.csv`;
+            enlace.click();
+        }
+
+        function toggleVistaComparadorAdmins() {
+            const cont = document.getElementById('comparador-admins-container');
+            const lista = document.getElementById('admins-activos-lista');
+            const btn = document.getElementById('btn-toggle-comparador');
+            const mostrando = cont.classList.contains('hidden');
+            cont.classList.toggle('hidden', !mostrando);
+            lista.classList.toggle('hidden', mostrando);
+            btn.innerHTML = mostrando
+                ? '<i class="fas fa-list mr-1"></i>Ver tarjetas'
+                : '<i class="fas fa-table-columns mr-1"></i>Ver tabla comparativa';
+            if (mostrando) renderComparadorAdmins();
+        }
+
+        function renderComparadorAdmins() {
+            const tbody = document.getElementById('comparador-admins-tbody');
+            if (!tbody) return;
+            if (adminsActivos.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-gray-400 text-sm py-3">Todavía no hay administradores aprobados.</td></tr>';
+                return;
+            }
+            const filas = adminsActivos.map(adm => {
+                const pedidosDeEste = pedidos.filter(p => p.propietario === adm.id);
+                const { totalVentas, ingresos } = calcularStatsVentas(pedidosDeEste);
+                const misProductos = productos.filter(p => p.propietario === adm.id);
+                const sumaCalif = misProductos.reduce((s, p) => s + (p.calificacionSuma || 0), 0);
+                const cantCalif = misProductos.reduce((s, p) => s + (p.calificacionCantidad || 0), 0);
+                const calificacion = cantCalif > 0 ? (sumaCalif / cantCalif).toFixed(1) : '—';
+                const suscripcionVencida = adm.suscripcionVenceEl && adm.suscripcionVenceEl < Date.now();
+                const suscripcionTxt = !adm.suscripcionVenceEl
+                    ? '<span class="text-gray-400">—</span>'
+                    : suscripcionVencida
+                        ? '<span class="text-red-600 font-semibold">Vencida</span>'
+                        : `<span class="text-emerald-600">${new Date(adm.suscripcionVenceEl).toLocaleDateString('es-PE')}</span>`;
+                return { adm, totalVentas, ingresos, calificacion, cantCalif, suscripcionTxt, numProductos: misProductos.length };
+            }).sort((a, b) => b.ingresos - a.ingresos);
+
+            tbody.innerHTML = filas.map(f => `
+                <tr class="border-b border-gray-100">
+                    <td class="py-2 pr-3 font-medium text-slate-700">${f.adm.nombre || 'Administrador'}</td>
+                    <td class="py-2 pr-3">${f.totalVentas}</td>
+                    <td class="py-2 pr-3">S/ ${f.ingresos.toFixed(0)}</td>
+                    <td class="py-2 pr-3">${f.cantCalif > 0 ? `⭐ ${f.calificacion} <span class="text-gray-400 text-xs">(${f.cantCalif})</span>` : '<span class="text-gray-400">—</span>'}</td>
+                    <td class="py-2 pr-3">${f.suscripcionTxt}</td>
+                    <td class="py-2 pr-3">${f.numProductos}</td>
+                </tr>
+            `).join('');
+        }
+
         function renderAdminsActivos() {
             const cont = document.getElementById('admins-activos-lista');
             poblarFiltroPropietarioSelect();
             if (!cont) return;
+            const comparadorVisible = !document.getElementById('comparador-admins-container').classList.contains('hidden');
+            if (comparadorVisible) renderComparadorAdmins();
             cont.innerHTML = '';
             if (adminsActivos.length === 0) {
                 cont.innerHTML = '<p class="text-gray-400 text-sm">Todavía no hay administradores aprobados.</p>';
@@ -6825,6 +7455,25 @@
                 const productosHtml = nombresProductos.length > 0
                     ? nombresProductos.map(n => `<span class="producto-pill">${n}</span>`).join('')
                     : `<span class="text-xs text-gray-400 italic">Todavía no publicó productos</span>`;
+                const cambiosPendientesHtml = `
+                    ${adm.whatsappPendiente ? `
+                        <div class="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-2.5 flex items-center justify-between gap-2 flex-wrap">
+                            <p class="text-xs text-amber-700"><i class="fas fa-triangle-exclamation mr-1"></i> Pidió cambiar su WhatsApp a: <b>${adm.whatsappPendiente}</b></p>
+                            <div class="flex gap-1.5">
+                                <button onclick="aprobarCambioWhatsapp('${adm.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-[11px] font-semibold">Aprobar</button>
+                                <button onclick="rechazarCambioWhatsapp('${adm.id}')" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-2.5 py-1 rounded-lg text-[11px] font-semibold">Rechazar</button>
+                            </div>
+                        </div>` : ''}
+                    ${adm.correoPendiente ? `
+                        <div class="mt-2 bg-amber-50 border border-amber-200 rounded-xl p-2.5 flex items-center justify-between gap-2 flex-wrap">
+                            <p class="text-xs text-amber-700"><i class="fas fa-triangle-exclamation mr-1"></i> Pidió cambiar su correo a: <b>${adm.correoPendiente}</b>${adm.correoPendienteAprobado ? ' <span class="text-emerald-600">(aprobado, falta que entre a su panel para completarlo)</span>' : ''}</p>
+                            ${!adm.correoPendienteAprobado ? `
+                            <div class="flex gap-1.5">
+                                <button onclick="aprobarCambioCorreo('${adm.id}')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg text-[11px] font-semibold">Aprobar</button>
+                                <button onclick="rechazarCambioCorreo('${adm.id}')" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-2.5 py-1 rounded-lg text-[11px] font-semibold">Rechazar</button>
+                            </div>` : ''}
+                        </div>` : ''}
+                `;
                 div.innerHTML = `
                     ${medalla ? `<span class="absolute -top-2 -right-2 text-2xl">${medalla}</span>` : ''}
                     <div class="flex items-start gap-3">
@@ -6836,6 +7485,7 @@
                             <div class="flex items-center gap-2 flex-wrap">
                                 <p class="font-semibold text-slate-800"><span class="dato-sensible">${adm.nombre || 'Administrador'}</span> <span class="text-[10px] font-mono font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">#${codigoCortoAdmin(adm.id)}</span></p>
                                 ${adm.verificado ? '<span class="bg-sky-100 text-sky-700 text-[10px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-circle-check"></i> Verificado</span>' : ''}
+                                ${adm.mentor ? '<span class="bg-violet-100 text-violet-700 text-[10px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-chalkboard-user"></i> Mentor</span>' : ''}
                                 ${bloqueado ? '<span class="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">BLOQUEADO</span>' : '<span class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-semibold">ACTIVO</span>'}
                                 ${esNuevo ? '<span class="bg-blue-100 text-blue-700 text-[10px] px-2 py-0.5 rounded-full font-semibold">🆕 Nuevo</span>' : ''}
                                 <span class="bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-semibold">${numProductos} producto${numProductos === 1 ? '' : 's'}</span>
@@ -6847,21 +7497,84 @@
                             ${fechaIngreso ? `<p class="text-xs text-gray-400 mt-1"><i class="fas fa-calendar-alt"></i> Se unió el ${fechaIngreso}</p>` : ''}
                             <p class="text-xs text-gray-400 mt-0.5"><i class="fas fa-signal"></i> ${conectado ? 'Conectado ahora' : 'Última conexión: ' + formatUltimaConexion(adm.ultimaConexion)}</p>
                             <div class="flex flex-wrap gap-1.5 mt-2">${productosHtml}</div>
+                            ${cambiosPendientesHtml}
                         </div>
                     </div>
                     <div class="flex gap-2 mt-3 flex-wrap">
                         <button onclick="filtrarProductosPorPropietario('${adm.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-xl text-xs font-semibold">Ver sus productos</button>
                         <button onclick="toggleVerificacionAdmin('${adm.id}', ${!!adm.verificado})" class="${adm.verificado ? 'bg-gray-200 hover:bg-gray-300 text-gray-700' : 'bg-sky-500 hover:bg-sky-600 text-white'} px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-circle-check mr-1"></i>${adm.verificado ? 'Quitar verificación' : 'Verificar cuenta'}</button>
+                        <button onclick="toggleMentorAdmin('${adm.id}', ${!!adm.mentor})" class="${adm.mentor ? 'bg-gray-200 hover:bg-gray-300 text-gray-700' : 'bg-violet-500 hover:bg-violet-600 text-white'} px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-chalkboard-user mr-1"></i>${adm.mentor ? 'Quitar mentor' : 'Marcar como mentor'}</button>
                         <button onclick="toggleBloqueoAdmin('${adm.id}', ${bloqueado})" class="${bloqueado ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-500 hover:bg-amber-600'} text-white px-3 py-2 rounded-xl text-xs font-semibold">${bloqueado ? 'Desbloquear' : 'Bloquear'}</button>
                         ${conectado ? `<button onclick="revocarSesionAdmin('${adm.id}', '${(adm.nombre || 'Administrador').replace(/'/g, "\\'")}')" class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-right-from-bracket mr-1"></i>Cerrar su sesión</button>` : ''}
                         <button onclick="reiniciarPinAdmin('${adm.id}')" class="bg-slate-500 hover:bg-slate-600 text-white px-3 py-2 rounded-xl text-xs font-semibold">Reiniciar PIN</button>
                         <button onclick="renovarSuscripcionAdmin('${adm.id}')" class="${suscripcionVencida ? 'bg-red-500 hover:bg-red-600' : 'bg-emerald-600 hover:bg-emerald-700'} text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-crown mr-1"></i>Registrar pago (+30 días)</button>
                         ${(suscripcionVencida || suscripcionPorVencer) && adm.whatsapp ? `<a href="https://wa.me/${adm.whatsapp}?text=${encodeURIComponent(`Hola ${adm.nombre || ''}! Tu suscripción de admin en SCT Stream ${suscripcionVencida ? 'ya venció' : 'vence pronto'}. Yapea/Plinea S/ ${adm.suscripcionMonto || SUSCRIPCION_ADMIN_MONTO} al ${YAPE_NUMERO_MOSTRAR} y me avisas para renovarla 🙌`)}" target="_blank" class="bg-sky-500 hover:bg-sky-600 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fab fa-whatsapp mr-1"></i>Recordar pago</a>` : ''}
+                        ${adm.whatsapp ? `<select onchange="enviarMensajeRapido('${adm.id}', this.value); this.value='';" class="bg-white border border-gray-300 rounded-xl px-2 py-2 text-xs font-semibold text-gray-600">
+                            <option value="">💬 Mensaje rápido...</option>
+                            <option value="felicitacion">🎉 Felicitación por buen mes</option>
+                            <option value="bajo_rendimiento">⚠️ Aviso de bajo rendimiento</option>
+                            <option value="bienvenida">👋 Bienvenida</option>
+                            <option value="completar_perfil">📝 Pedirle completar su perfil</option>
+                            <option value="revision_calidad">🔍 Aviso de revisión de calidad</option>
+                        </select>` : ''}
                         <button onclick="eliminarAdministrador('${adm.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-xl text-xs font-semibold">Eliminar</button>
                     </div>
                 `;
                 cont.appendChild(div);
             });
+        }
+
+        async function aprobarCambioWhatsapp(id) {
+            if (!esSuperAdmin) return;
+            const admin = adminsActivos.find(a => a.id === id);
+            if (!admin || !admin.whatsappPendiente) return;
+            const nuevoWhatsapp = admin.whatsappPendiente;
+            try {
+                await db.collection('administradores').doc(id).update({
+                    whatsapp: nuevoWhatsapp,
+                    whatsappPendiente: firebase.firestore.FieldValue.delete()
+                });
+                const misProductos = productos.filter(p => p.propietario === id);
+                for (const p of misProductos) {
+                    await db.collection('productos').doc(p.id).update({ propietarioWhatsapp: normalizarWhatsapp(nuevoWhatsapp) }).catch(() => {});
+                }
+                mostrarAviso(`Cambio de WhatsApp aprobado para ${admin.nombre || 'este admin'}.`);
+            } catch (err) {
+                mostrarAviso('No se pudo aprobar el cambio: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+        async function rechazarCambioWhatsapp(id) {
+            if (!esSuperAdmin) return;
+            try {
+                await db.collection('administradores').doc(id).update({ whatsappPendiente: firebase.firestore.FieldValue.delete() });
+                mostrarAviso('Cambio de WhatsApp rechazado.');
+            } catch (err) {
+                mostrarAviso('No se pudo rechazar el cambio: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+        async function aprobarCambioCorreo(id) {
+            if (!esSuperAdmin) return;
+            try {
+                // El correo real de acceso solo lo puede cambiar el propio admin desde su sesión
+                // (por seguridad de Firebase). Aquí solo damos luz verde; se completa solo la
+                // próxima vez que ese admin entre a su panel.
+                await db.collection('administradores').doc(id).update({ correoPendienteAprobado: true });
+                mostrarAviso('Cambio de correo aprobado. Se completará solo en cuanto ese admin vuelva a entrar a su panel.');
+            } catch (err) {
+                mostrarAviso('No se pudo aprobar el cambio: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+        async function rechazarCambioCorreo(id) {
+            if (!esSuperAdmin) return;
+            try {
+                await db.collection('administradores').doc(id).update({
+                    correoPendiente: firebase.firestore.FieldValue.delete(),
+                    correoPendienteAprobado: firebase.firestore.FieldValue.delete()
+                });
+                mostrarAviso('Cambio de correo rechazado.');
+            } catch (err) {
+                mostrarAviso('No se pudo rechazar el cambio: ' + (err.message || err.code || 'error desconocido'));
+            }
         }
 
         async function renovarSuscripcionAdmin(id) {
@@ -6874,6 +7587,87 @@
                 mostrarAviso(`Pago registrado. Suscripción activa hasta el ${new Date(nuevaFecha).toLocaleDateString('es-PE')}.`);
             } catch (err) {
                 mostrarAviso('No se pudo registrar el pago: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
+        function enviarMensajeRapido(id, plantilla) {
+            if (!esSuperAdmin || !plantilla) return;
+            const admin = adminsActivos.find(a => a.id === id);
+            if (!admin || !admin.whatsapp) return;
+            const nombre = admin.nombre || 'admin';
+            const plantillas = {
+                felicitacion: `¡Felicitaciones ${nombre}! 🎉 Vi tus números de este mes en SCT Stream y vas muy bien, sigue así 💪`,
+                bajo_rendimiento: `Hola ${nombre}, notamos que tus ventas bajaron este mes en SCT Stream. ¿Todo bien? Si necesitas ayuda o tienes algún problema, cuéntame para ver cómo apoyarte.`,
+                bienvenida: `¡Bienvenido a SCT Stream, ${nombre}! 👋 Cualquier duda que tengas para empezar a publicar y vender, aquí estoy.`,
+                completar_perfil: `Hola ${nombre}, noté que tu perfil en SCT Stream está incompleto (falta foto, bio o WhatsApp). Complétalo cuando puedas, ayuda bastante a vender más 🙌`,
+                revision_calidad: `Hola ${nombre}, vamos a hacer una revisión de calidad de tus productos/atención en SCT Stream esta semana. Si tienes algo pendiente, este es buen momento para ponerte al día.`
+            };
+            const msg = plantillas[plantilla];
+            if (!msg) return;
+            window.open(`https://wa.me/${normalizarWhatsapp(admin.whatsapp)}?text=${encodeURIComponent(msg)}`, '_blank');
+        }
+
+        async function toggleMentorAdmin(id, mentorActual) {
+            if (!esSuperAdmin) return;
+            try {
+                await db.collection('administradores').doc(id).update({ mentor: !mentorActual });
+                mostrarAviso(!mentorActual ? 'Marcado como mentor. Otros admins nuevos podrán contactarlo.' : 'Ya no está marcado como mentor.');
+            } catch (err) {
+                mostrarAviso('No se pudo actualizar: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
+        async function toggleResenasProductoAdmin(productoId) {
+            const cont = document.getElementById('resenas-admin-' + productoId);
+            if (!cont) return;
+            const estabaOculto = cont.classList.contains('hidden');
+            cont.classList.toggle('hidden', !estabaOculto);
+            if (!estabaOculto) return;
+            cont.innerHTML = '<p class="text-xs text-gray-300">Cargando reseñas…</p>';
+            try {
+                const snap = await db.collection('resenas').where('productoId', '==', productoId).orderBy('fecha', 'desc').limit(20).get();
+                if (snap.empty) {
+                    cont.innerHTML = '<p class="text-xs text-gray-400">Este producto todavía no tiene reseñas.</p>';
+                    return;
+                }
+                cont.innerHTML = snap.docs.map(d => {
+                    const r = d.data();
+                    return `
+                        <div class="bg-gray-50 rounded-xl p-2.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-semibold text-gray-700">${r.nombreCliente || 'Cliente'}</span>
+                                <span class="text-amber-400 text-xs">${'★'.repeat(r.estrellas)}${'☆'.repeat(5 - r.estrellas)}</span>
+                            </div>
+                            ${r.comentario ? `<p class="text-xs text-gray-500 mt-0.5">${r.comentario}</p>` : ''}
+                            ${r.respuesta
+                                ? `<div class="mt-1.5 pl-2 border-l-2 border-indigo-200"><p class="text-[10px] font-semibold text-indigo-600">Tu respuesta</p><p class="text-xs text-gray-500">${r.respuesta}</p></div>`
+                                : `<div class="mt-1.5 flex gap-1.5">
+                                     <input type="text" id="respuesta-input-${d.id}" placeholder="Responder a este cliente..." maxlength="200" class="flex-1 border border-gray-300 rounded-lg px-2 py-1 text-xs">
+                                     <button onclick="responderResena('${d.id}', '${productoId}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-lg text-[11px] font-semibold shrink-0">Responder</button>
+                                   </div>`}
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                cont.innerHTML = '<p class="text-xs text-gray-400">No se pudieron cargar las reseñas.</p>';
+                console.error(err);
+            }
+        }
+
+        async function responderResena(resenaId, productoId) {
+            const input = document.getElementById('respuesta-input-' + resenaId);
+            const texto = input.value.trim();
+            if (!texto) {
+                mostrarAviso('Escribe tu respuesta antes de enviarla.');
+                return;
+            }
+            try {
+                await db.collection('resenas').doc(resenaId).update({ respuesta: texto });
+                mostrarAviso('Respuesta publicada.');
+                document.getElementById('resenas-admin-' + productoId).classList.add('hidden');
+                toggleResenasProductoAdmin(productoId);
+            } catch (err) {
+                mostrarAviso('No se pudo publicar la respuesta: ' + (err.message || err.code || 'error desconocido'));
             }
         }
 
@@ -6961,6 +7755,25 @@
             });
         }
 
+        async function completarCambioCorreoSiAplica(datos) {
+            if (!datos || !datos.correoPendienteAprobado || !datos.correoPendiente) return;
+            const nuevoCorreo = datos.correoPendiente;
+            const uid = auth.currentUser && auth.currentUser.uid;
+            if (!uid) return;
+            try {
+                await auth.currentUser.updateEmail(nuevoCorreo);
+                await db.collection('administradores').doc(uid).update({
+                    correo: nuevoCorreo,
+                    correoPendiente: firebase.firestore.FieldValue.delete(),
+                    correoPendienteAprobado: firebase.firestore.FieldValue.delete()
+                });
+                mostrarAviso(`Listo, tu correo de acceso ahora es ${nuevoCorreo}. Úsalo la próxima vez que inicies sesión.`);
+            } catch (err) {
+                console.error(err);
+                mostrarAviso('Tu cambio de correo fue aprobado, pero no se pudo completar automáticamente (a veces Firebase pide que vuelvas a iniciar sesión primero). Intenta cerrar sesión y volver a entrar; si el problema sigue, avísale al dueño de la tienda.');
+            }
+        }
+
         function revisarPinPersonal(datosAdmin) {
             if (esSuperAdmin) return;
             if (!datosAdmin || !datosAdmin.pin) {
@@ -6998,13 +7811,35 @@
             }
         }
 
-        function abrirEditarWhatsapp() {
+        async function abrirEditarWhatsapp() {
             document.getElementById('editar-nombre-input').value = (miNombreAdmin && miNombreAdmin !== 'Administrador') ? miNombreAdmin : '';
             document.getElementById('editar-whatsapp-input').value = miWhatsappAdmin || '';
             document.getElementById('editar-whatsapp-input').placeholder = `Ej: ${generarNumeroEjemploWhatsapp()}`;
             document.getElementById('editar-bio-input').value = miBioAdmin || '';
             document.getElementById('editar-estado-input').value = miEstadoAdmin || '';
+            document.getElementById('editar-correo-input').value = (auth.currentUser && auth.currentUser.email) || '';
+            document.getElementById('editar-alias-input').value = '';
             document.getElementById('editar-whatsapp-error').classList.add('hidden');
+            document.getElementById('editar-whatsapp-pendiente-aviso').classList.add('hidden');
+            document.getElementById('editar-correo-pendiente-aviso').classList.add('hidden');
+            const uid = auth.currentUser && auth.currentUser.uid;
+            if (uid && !esSuperAdmin) {
+                try {
+                    const doc = await db.collection('administradores').doc(uid).get();
+                    const datos = doc.data() || {};
+                    if (datos.whatsappPendiente) {
+                        const av = document.getElementById('editar-whatsapp-pendiente-aviso');
+                        av.textContent = `⏳ Tienes un cambio a "${datos.whatsappPendiente}" esperando aprobación del dueño de la tienda.`;
+                        av.classList.remove('hidden');
+                    }
+                    if (datos.correoPendiente) {
+                        const av = document.getElementById('editar-correo-pendiente-aviso');
+                        av.textContent = `⏳ Tienes un cambio a "${datos.correoPendiente}" esperando aprobación del dueño de la tienda.`;
+                        av.classList.remove('hidden');
+                    }
+                    document.getElementById('editar-alias-input').value = datos.alias || '';
+                } catch (err) { console.error(err); }
+            }
             document.getElementById('editar-whatsapp-modal').classList.remove('hidden');
         }
 
@@ -7027,7 +7862,9 @@
             const valorCrudo = document.getElementById('editar-whatsapp-input').value.trim();
             const bioCruda = document.getElementById('editar-bio-input').value.trim();
             const estadoCrudo = document.getElementById('editar-estado-input').value.trim();
+            const correoCrudo = document.getElementById('editar-correo-input').value.trim();
             const errorEl = document.getElementById('editar-whatsapp-error');
+            errorEl.classList.add('hidden');
             const soloDigitos = valorCrudo.replace(/\D/g, '');
             let numeroLocal = soloDigitos;
             if (numeroLocal.startsWith('51') && numeroLocal.length === 11) numeroLocal = numeroLocal.slice(2);
@@ -7037,22 +7874,68 @@
                 errorEl.classList.remove('hidden');
                 return;
             }
+            if (correoCrudo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correoCrudo)) {
+                errorEl.textContent = 'Escribe un correo electrónico válido.';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            const aliasCrudo = document.getElementById('editar-alias-input').value.trim().toLowerCase();
+            if (aliasCrudo && !/^[a-z0-9]{3,20}$/.test(aliasCrudo)) {
+                errorEl.textContent = 'El link corto solo puede tener letras y números, sin espacios (mínimo 3 caracteres).';
+                errorEl.classList.remove('hidden');
+                return;
+            }
 
             const uid = auth.currentUser && auth.currentUser.uid;
             if (!uid) return;
 
+            if (aliasCrudo && !esSuperAdmin) {
+                try {
+                    const choque = await db.collection('administradores').where('alias', '==', aliasCrudo).limit(1).get();
+                    if (!choque.empty && choque.docs[0].id !== uid) {
+                        errorEl.textContent = 'Ese link corto ya lo está usando otro administrador. Elige otro.';
+                        errorEl.classList.remove('hidden');
+                        return;
+                    }
+                } catch (err) { console.error(err); }
+            }
+
             const nombreFinal = nombreCrudo || 'Administrador';
+            const cambios = { nombre: nombreFinal, bio: bioCruda, estado: estadoCrudo };
+            if (!esSuperAdmin) cambios.alias = aliasCrudo || firebase.firestore.FieldValue.delete();
+            let avisosPendientes = [];
+
+            if (esSuperAdmin) {
+                // El súper admin no necesita aprobación de sí mismo: se aplica directo.
+                cambios.whatsapp = valorCrudo;
+            } else if (valorCrudo !== (miWhatsappAdmin || '')) {
+                cambios.whatsappPendiente = valorCrudo;
+                avisosPendientes.push(`WhatsApp nuevo: ${valorCrudo}`);
+            }
+
+            const correoActual = (auth.currentUser.email || '').toLowerCase();
+            if (!esSuperAdmin && correoCrudo && correoCrudo.toLowerCase() !== correoActual) {
+                cambios.correoPendiente = correoCrudo;
+                avisosPendientes.push(`Correo nuevo: ${correoCrudo}`);
+            }
 
             try {
-                await db.collection('administradores').doc(uid).update({ whatsapp: valorCrudo, nombre: nombreFinal, bio: bioCruda, estado: estadoCrudo });
-                miWhatsappAdmin = valorCrudo;
+                await db.collection('administradores').doc(uid).update(cambios);
                 miNombreAdmin = nombreFinal;
                 miBioAdmin = bioCruda;
                 miEstadoAdmin = estadoCrudo;
+                if (esSuperAdmin) miWhatsappAdmin = valorCrudo;
                 cerrarEditarWhatsapp();
                 actualizarPerfilAdminCard();
 
-                const nuevoNumero = normalizarWhatsapp(valorCrudo);
+                if (avisosPendientes.length > 0) {
+                    const msg = `Hola, ${nombreFinal} (admin de SCT Stream) pidió un cambio sensible en su cuenta:\n${avisosPendientes.join('\n')}\nMi ID: ${uid}\nEntra a tu panel para aprobarlo o rechazarlo.`;
+                    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`, '_blank');
+                    mostrarAviso('Guardamos tu nombre/bio/estado. Tu cambio de ' + avisosPendientes.map(a => a.split(':')[0].toLowerCase()).join(' y ') + ' quedó pendiente de aprobación del dueño de la tienda.');
+                    return;
+                }
+
+                const nuevoNumero = normalizarWhatsapp(esSuperAdmin ? valorCrudo : (miWhatsappAdmin || valorCrudo));
                 const misProductos = productos.filter(p => p.propietario === uid);
                 if (misProductos.length > 0) {
                     mostrarConfirmacion(`¿Actualizar también el nombre/WhatsApp en tus ${misProductos.length} producto(s) ya publicados?`, async () => {
@@ -7174,6 +8057,25 @@
             requestAnimationFrame(paso);
         }
 
+        function toggleCalculadoraGanancias() {
+            document.getElementById('perfil-calculadora-ganancias').classList.toggle('hidden');
+            actualizarCalculadoraGanancias();
+        }
+        function actualizarCalculadoraGanancias() {
+            const resultEl = document.getElementById('calc-ganancias-resultado');
+            if (!resultEl) return;
+            const uid = auth.currentUser && auth.currentUser.uid;
+            const misProductos = uid ? productos.filter(p => p.propietario === uid) : [];
+            if (misProductos.length === 0) {
+                resultEl.textContent = 'Publica al menos un producto para calcular esto.';
+                return;
+            }
+            const precioPromedio = misProductos.reduce((s, p) => s + (precioFinalProducto(p) || 0), 0) / misProductos.length;
+            const cantidad = parseInt(document.getElementById('calc-ganancias-input').value, 10) || 0;
+            const total = cantidad * precioPromedio;
+            resultEl.textContent = `Ganarías aprox. S/ ${total.toFixed(0)} (con tu precio promedio de S/ ${precioPromedio.toFixed(0)} por venta)`;
+        }
+
         function editarMetaVentas() {
             const actual = miMetaVentas || '';
             const nueva = prompt('¿Cuál es tu meta de ventas para este mes?', actual);
@@ -7189,6 +8091,24 @@
                 miMetaVentas = numero;
                 actualizarPerfilAdminCard();
                 mostrarAviso('Meta guardada. ¡A por ella! 💪');
+            }).catch(err => mostrarAviso('No se pudo guardar: ' + (err.message || err.code || 'error desconocido')));
+        }
+
+        function editarMetaSemanal() {
+            const actual = miMetaVentasSemanal || '';
+            const nueva = prompt('¿Cuál es tu meta de ventas para esta semana?', actual);
+            if (nueva === null) return;
+            const numero = parseInt(nueva.replace(/\D/g, ''), 10);
+            if (isNaN(numero) || numero <= 0) {
+                mostrarAviso('Escribe un número válido.');
+                return;
+            }
+            const uid = auth.currentUser && auth.currentUser.uid;
+            if (!uid) return;
+            db.collection('administradores').doc(uid).update({ metaVentasSemanal: numero }).then(() => {
+                miMetaVentasSemanal = numero;
+                actualizarPerfilAdminCard();
+                mostrarAviso('Meta semanal guardada. ¡Vamos! 💪');
             }).catch(err => mostrarAviso('No se pudo guardar: ' + (err.message || err.code || 'error desconocido')));
         }
 
@@ -7258,12 +8178,13 @@
                 }
             }
             const metaWrap = document.getElementById('perfil-meta-wrap');
+            let ventasDelMesMeta = 0;
             if (metaWrap) {
                 if (esSuperAdmin) {
                     metaWrap.classList.add('hidden');
                 } else if (miMetaVentas > 0) {
                     const inicioMesMeta = new Date(); inicioMesMeta.setDate(1); inicioMesMeta.setHours(0, 0, 0, 0);
-                    const ventasDelMesMeta = pedidos.filter(p => p.estado === 'vendido' && p.vendidoEn && p.vendidoEn.toDate && p.vendidoEn.toDate() >= inicioMesMeta).length;
+                    ventasDelMesMeta = pedidos.filter(p => p.estado === 'vendido' && p.vendidoEn && p.vendidoEn.toDate && p.vendidoEn.toDate() >= inicioMesMeta).length;
                     const progresoMeta = Math.min(100, Math.round((ventasDelMesMeta / miMetaVentas) * 100));
                     document.getElementById('perfil-meta-texto').textContent = `🎯 Meta: ${ventasDelMesMeta}/${miMetaVentas} ventas este mes`;
                     document.getElementById('perfil-meta-barra').style.width = progresoMeta + '%';
@@ -7274,6 +8195,141 @@
                     document.getElementById('perfil-meta-barra').style.width = '0%';
                 }
             }
+
+            // Meta semanal
+            const metaSemanalWrap = document.getElementById('perfil-meta-semanal-wrap');
+            if (metaSemanalWrap) {
+                if (esSuperAdmin) {
+                    metaSemanalWrap.classList.add('hidden');
+                } else {
+                    const inicioSemana = new Date();
+                    const diaSemana = (inicioSemana.getDay() + 6) % 7; // lunes = 0
+                    inicioSemana.setDate(inicioSemana.getDate() - diaSemana);
+                    inicioSemana.setHours(0, 0, 0, 0);
+                    const ventasDeLaSemana = pedidos.filter(p => p.estado === 'vendido' && p.vendidoEn && p.vendidoEn.toDate && p.vendidoEn.toDate() >= inicioSemana).length;
+                    metaSemanalWrap.classList.remove('hidden');
+                    if (miMetaVentasSemanal > 0) {
+                        const progresoSemanal = Math.min(100, Math.round((ventasDeLaSemana / miMetaVentasSemanal) * 100));
+                        document.getElementById('perfil-meta-semanal-texto').textContent = `📅 Meta semanal: ${ventasDeLaSemana}/${miMetaVentasSemanal} ventas`;
+                        document.getElementById('perfil-meta-semanal-barra').style.width = progresoSemanal + '%';
+                    } else {
+                        document.getElementById('perfil-meta-semanal-texto').textContent = 'Todavía no pusiste una meta semanal';
+                        document.getElementById('perfil-meta-semanal-barra').style.width = '0%';
+                    }
+                }
+            }
+
+            // Comparación con el mes anterior
+            const compEl = document.getElementById('perfil-comparacion-mes');
+            if (compEl) {
+                if (esSuperAdmin) {
+                    compEl.classList.add('hidden');
+                } else {
+                    const hoy = new Date();
+                    const inicioMesAnterior = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+                    const finMesAnterior = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+                    const ventasMesAnterior = pedidos.filter(p => p.estado === 'vendido' && p.vendidoEn && p.vendidoEn.toDate && p.vendidoEn.toDate() >= inicioMesAnterior && p.vendidoEn.toDate() < finMesAnterior).length;
+                    if (ventasMesAnterior === 0 && ventasDelMesMeta === 0) {
+                        compEl.classList.add('hidden');
+                    } else if (ventasMesAnterior === 0) {
+                        compEl.textContent = `📈 Llevas ${ventasDelMesMeta} venta${ventasDelMesMeta === 1 ? '' : 's'} este mes (el mes pasado no vendiste nada).`;
+                        compEl.classList.remove('hidden');
+                    } else {
+                        const cambio = Math.round(((ventasDelMesMeta - ventasMesAnterior) / ventasMesAnterior) * 100);
+                        const flecha = cambio >= 0 ? '📈' : '📉';
+                        compEl.textContent = `${flecha} ${cambio >= 0 ? '+' : ''}${cambio}% vs. el mes pasado (${ventasMesAnterior} ventas)`;
+                        compEl.classList.remove('hidden');
+                    }
+                }
+            }
+
+            // Cuenta regresiva de suscripción
+            const suscEl = document.getElementById('perfil-suscripcion-cuenta');
+            if (suscEl) {
+                const miRegistroSusc = !esSuperAdmin && auth.currentUser ? adminsActivos.find(a => a.id === auth.currentUser.uid) : null;
+                if (miRegistroSusc && miRegistroSusc.suscripcionVenceEl) {
+                    const diasRestantes = Math.ceil((miRegistroSusc.suscripcionVenceEl - Date.now()) / (24 * 60 * 60 * 1000));
+                    suscEl.textContent = diasRestantes >= 0
+                        ? `👑 Tu suscripción vence en ${diasRestantes} día${diasRestantes === 1 ? '' : 's'} (${new Date(miRegistroSusc.suscripcionVenceEl).toLocaleDateString('es-PE')})`
+                        : `👑 Tu suscripción venció hace ${Math.abs(diasRestantes)} día${Math.abs(diasRestantes) === 1 ? '' : 's'}`;
+                    suscEl.classList.remove('hidden');
+                } else {
+                    suscEl.classList.add('hidden');
+                }
+            }
+
+            // Calculadora rápida de ganancias
+            const calcBtn = document.getElementById('perfil-btn-calculadora');
+            if (calcBtn) {
+                calcBtn.classList.toggle('hidden', esSuperAdmin);
+                if (!esSuperAdmin) actualizarCalculadoraGanancias();
+            }
+
+            // Aviso de perfil incompleto
+            const incompletoEl = document.getElementById('perfil-incompleto-aviso');
+            if (incompletoEl) {
+                if (esSuperAdmin) {
+                    incompletoEl.classList.add('hidden');
+                } else {
+                    const faltantes = [];
+                    if (!miFotoAdmin) faltantes.push('foto');
+                    if (!miBioAdmin) faltantes.push('biografía');
+                    if (!miWhatsappAdmin) faltantes.push('WhatsApp');
+                    if (faltantes.length > 0) {
+                        incompletoEl.innerHTML = `<i class="fas fa-circle-info mr-1"></i>Tu perfil está incompleto: te falta ${faltantes.join(', ')}. Los perfiles completos suelen vender más. <button onclick="abrirEditarWhatsapp()" class="underline font-semibold">Completarlo</button>`;
+                        incompletoEl.classList.remove('hidden');
+                    } else {
+                        incompletoEl.classList.add('hidden');
+                    }
+                }
+            }
+
+            // Tiempo de respuesta promedio (desde que alguien marca "interesado" hasta que se marca vendido)
+            const tiempoRespEl = document.getElementById('perfil-tiempo-respuesta');
+            if (tiempoRespEl) {
+                if (esSuperAdmin) {
+                    tiempoRespEl.classList.add('hidden');
+                } else {
+                    const uid = auth.currentUser && auth.currentUser.uid;
+                    const misVentasConTiempo = pedidos.filter(p => p.propietario === uid && p.estado === 'vendido' && p.creado && p.creado.toDate && p.vendidoEn && p.vendidoEn.toDate);
+                    if (misVentasConTiempo.length >= 3) {
+                        const promedioMs = misVentasConTiempo.reduce((s, p) => s + (p.vendidoEn.toDate().getTime() - p.creado.toDate().getTime()), 0) / misVentasConTiempo.length;
+                        const horas = promedioMs / (1000 * 60 * 60);
+                        const texto = horas < 1 ? `${Math.round(promedioMs / 60000)} min` : horas < 24 ? `${horas.toFixed(1)} horas` : `${(horas / 24).toFixed(1)} días`;
+                        tiempoRespEl.textContent = `⏱️ Tardas en promedio ${texto} en confirmar una venta`;
+                        tiempoRespEl.classList.remove('hidden');
+                    } else {
+                        tiempoRespEl.classList.add('hidden');
+                    }
+                }
+            }
+
+            // Línea de tiempo de logros
+            const logrosWrap = document.getElementById('perfil-logros-timeline');
+            if (logrosWrap) {
+                if (esSuperAdmin) {
+                    logrosWrap.classList.add('hidden');
+                } else {
+                    const uid = auth.currentUser && auth.currentUser.uid;
+                    const misVentasOrdenadas = pedidos
+                        .filter(p => p.propietario === uid && p.estado === 'vendido' && p.vendidoEn && p.vendidoEn.toDate)
+                        .sort((a, b) => a.vendidoEn.toDate() - b.vendidoEn.toDate());
+                    const hitos = [];
+                    if (misVentasOrdenadas.length >= 1) hitos.push({ emoji: '🎉', texto: 'Primera venta', fecha: misVentasOrdenadas[0].vendidoEn.toDate() });
+                    if (misVentasOrdenadas.length >= 5) hitos.push({ emoji: '🥉', texto: 'Vendedor Bronce (5 ventas)', fecha: misVentasOrdenadas[4].vendidoEn.toDate() });
+                    if (misVentasOrdenadas.length >= 20) hitos.push({ emoji: '🥈', texto: 'Vendedor Plata (20 ventas)', fecha: misVentasOrdenadas[19].vendidoEn.toDate() });
+                    if (misVentasOrdenadas.length >= 50) hitos.push({ emoji: '🥇', texto: 'Vendedor Oro (50 ventas)', fecha: misVentasOrdenadas[49].vendidoEn.toDate() });
+                    if (hitos.length === 0) {
+                        logrosWrap.classList.add('hidden');
+                    } else {
+                        document.getElementById('perfil-logros-lista').innerHTML = hitos.map(h => `
+                            <p class="text-[10px] text-gray-500">${h.emoji} ${h.texto} — ${h.fecha.toLocaleDateString('es-PE')}</p>
+                        `).join('');
+                        logrosWrap.classList.remove('hidden');
+                    }
+                }
+            }
+
             whatsappEl.innerHTML = whatsapp
                 ? `<i class="fab fa-whatsapp"></i> ${whatsapp} <i class="fas fa-copy"></i>`
                 : `<i class="fab fa-whatsapp"></i> Sin número configurado`;
