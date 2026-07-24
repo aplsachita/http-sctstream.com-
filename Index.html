@@ -187,8 +187,8 @@
         /* ---- Filas de productos deslizables verticalmente por categoría ---- */
         .fila-categoria-scroll {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 8px;
+            grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
+            gap: 6px;
             max-height: 215px;
             overflow-y: auto;
             overflow-x: hidden;
@@ -2709,17 +2709,17 @@
             const contenidoFrente = `
                 ${ofertaBadge}
                 <div class="relative">
-                    <img src="${producto.imagen}" loading="lazy" decoding="async" class="w-full h-11 object-cover rounded-t-2xl">
+                    <img src="${producto.imagen}" loading="lazy" decoding="async" class="w-full h-9 object-cover rounded-t-2xl">
                     ${insigniasExtra ? `<div class="absolute top-1 left-1 flex gap-0.5">${insigniasExtra}</div>` : ''}
-                    <button onclick="event.stopPropagation(); toggleFavorito('${producto.id}')" class="btn-favorito absolute top-1 right-1 w-5 h-5 rounded-full bg-black/40 text-white flex items-center justify-center text-[9px]"><i class="${esFavorito(producto.id) ? 'fas' : 'far'} fa-heart"></i></button>
-                    <button onclick="event.stopPropagation(); abrirVistaRapida('${producto.id}')" class="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-black/40 text-white flex items-center justify-center text-[9px]"><i class="fas fa-eye"></i></button>
+                    <button onclick="event.stopPropagation(); toggleFavorito('${producto.id}')" class="btn-favorito absolute top-1 right-1 w-4 h-4 rounded-full bg-black/40 text-white flex items-center justify-center text-[8px]"><i class="${esFavorito(producto.id) ? 'fas' : 'far'} fa-heart"></i></button>
+                    <button onclick="event.stopPropagation(); abrirVistaRapida('${producto.id}')" class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-black/40 text-white flex items-center justify-center text-[8px]"><i class="fas fa-eye"></i></button>
                 </div>
-                <div class="p-1.5">
-                    <h3 class="text-[11px] font-bold mb-0.5 ${ofertaActiva ? 'text-white' : 'text-purple-700'} truncate">${producto.nombre}</h3>
-                    ${producto.esCombo ? `<p class="text-[8px] text-indigo-600 font-semibold mb-0.5"><i class="fas fa-boxes-stacked"></i> Combo${producto.comboIncluye ? ': ' + producto.comboIncluye : ''}</p>` : ''}
-                    <p class="${ofertaActiva ? 'text-white/70' : 'text-gray-400'} text-[8px] mb-1 flex items-center gap-1 truncate"><span class="inline-block w-1.5 h-1.5 rounded-full" style="background:${colorVendedor}"></span> ${nombreVendedor} ${insigniaVerificado}</p>
-                    ${producto.calificacionCantidad > 0 ? `<p class="text-[8px] text-amber-500 mb-1">⭐ ${(producto.calificacionSuma / producto.calificacionCantidad).toFixed(1)} <span class="text-gray-400">(${producto.calificacionCantidad})</span></p>` : ''}
-                    <div class="flex items-end gap-1 mb-1 flex-wrap">
+                <div class="p-1">
+                    <h3 class="text-[10px] font-bold mb-0.5 ${ofertaActiva ? 'text-white' : 'text-purple-700'} truncate">${producto.nombre}</h3>
+                    ${producto.esCombo ? `<p class="text-[7px] text-indigo-600 font-semibold mb-0.5 truncate"><i class="fas fa-boxes-stacked"></i> Combo${producto.comboIncluye ? ': ' + producto.comboIncluye : ''}</p>` : ''}
+                    <p class="${ofertaActiva ? 'text-white/70' : 'text-gray-400'} text-[7px] mb-0.5 flex items-center gap-1 truncate"><span class="inline-block w-1.5 h-1.5 rounded-full" style="background:${colorVendedor}"></span> ${nombreVendedor} ${insigniaVerificado}</p>
+                    ${producto.calificacionCantidad > 0 ? `<p class="text-[7px] text-amber-500 mb-0.5">⭐ ${(producto.calificacionSuma / producto.calificacionCantidad).toFixed(1)} <span class="text-gray-400">(${producto.calificacionCantidad})</span></p>` : ''}
+                    <div class="flex items-end gap-1 mb-0.5 flex-wrap">
                         ${precioHtml}
                     </div>
                     ${etiquetaEntrega}
