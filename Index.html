@@ -90,24 +90,6 @@
             transform-style: preserve-3d;
             cursor: pointer;
         }
-        .tarjeta-3d-interior.girada { transform: rotateY(180deg); }
-        .tarjeta-3d-frente, .tarjeta-3d-reverso {
-            position: absolute; inset: 0;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-            border-radius: 1rem;
-            display: flex;
-            flex-direction: column;
-        }
-        .tarjeta-3d-frente { position: relative; background: white; border-radius: 1rem; overflow: hidden; }
-        .tarjeta-3d-reverso {
-            transform: rotateY(180deg);
-            background: #111827;
-            color: white;
-            padding: 0.6rem;
-            justify-content: space-between;
-            overflow: hidden;
-        }
 
         /* Fondos con efecto 3D: hero, galería y footer — solo al pasar el cursor, sin animación infinita */
         .fondo-3d {
@@ -194,6 +176,13 @@
         .fila-categoria-scroll > div:nth-child(3n) { animation-delay: 0.5s; }
         .fila-categoria-scroll > div:nth-child(4n) { animation-delay: 0.75s; }
         .fila-categoria-scroll > div:nth-child(5n) { animation-delay: 1s; }
+        .tarjeta-entrada-3d {
+            animation: entradaTarjeta3D 0.5s cubic-bezier(.2,.9,.3,1.2) both;
+        }
+        @keyframes entradaTarjeta3D {
+            0% { opacity: 0; transform: translateY(16px) rotateX(20deg) scale(0.9); }
+            100% { opacity: 1; transform: translateY(0) rotateX(0) scale(1); }
+        }
 
         /* ---- Filas de productos deslizables verticalmente por categoría ---- */
         .fila-categoria-scroll {
@@ -2643,44 +2632,20 @@
             el.addEventListener('mouseleave', soltar);
         }
 
-        // Voltea una tarjeta de producto al tocarla/clickearla, mostrando los detalles y el botón de
-        // WhatsApp atrás. Si había otra tarjeta volteada, la cierra primero (solo una abierta a la vez).
-        function toggleTarjeta3D(el, ev) {
-            if (ev) ev.stopPropagation();
-            // El hover en PC deja un transform "en línea" (rotateY leve). Hay que limpiarlo
-            // antes de voltear, porque un estilo en línea pesa más que la clase 'girada'
-            // y bloquearía el giro de 180° impidiendo ver el reverso.
-            el.style.transform = '';
-            el.style.transition = '';
-            document.querySelectorAll('.tarjeta-3d-interior.girada').forEach(otra => {
-                if (otra !== el) {
-                    otra.classList.remove('girada');
-                    otra.style.transform = '';
-                    otra.style.transition = '';
-                }
-            });
-            const yaEstabaGirada = el.classList.contains('girada');
-            el.classList.toggle('girada', !yaEstabaGirada);
-        }
-
         // En PC (mouse), inclina la tarjeta hacia la izquierda o derecha en 3D según de qué lado
-        // está el cursor. Solo mientras no esté volteada (el click para voltear sigue funcionando
-        // igual). En celular no aplica, porque no hay "hover" al tocar con el dedo.
+        // está el cursor. En celular no aplica, porque no hay "hover" al tocar con el dedo.
         function activarInclinacionTarjeta(el, intensidad = 12) {
             if (!el || el.dataset.inclinacionLista) return;
             el.dataset.inclinacionLista = '1';
             el.addEventListener('mousemove', (e) => {
-                if (el.classList.contains('girada')) return;
                 const rect = el.getBoundingClientRect();
                 const x = (e.clientX - rect.left) / rect.width - 0.5;
                 el.style.transition = 'transform 0.15s ease';
                 el.style.transform = `rotateY(${x * intensidad}deg)`;
             });
             el.addEventListener('mouseleave', () => {
-                if (el.classList.contains('girada')) return;
                 el.style.transition = 'transform 0.15s ease';
                 el.style.transform = '';
-                setTimeout(() => { if (!el.classList.contains('girada')) el.style.transition = ''; }, 160);
             });
         }
 
@@ -2708,7 +2673,7 @@
             const card = document.createElement('div');
             const ofertaActiva = producto.ofertaHasta && producto.ofertaHasta > Date.now();
             const efecto3D = tieneEfecto3D(producto);
-            card.className = 'rounded-2xl overflow-hidden card-hover shadow-md cursor-pointer ' + (efecto3D ? 'tarjeta-3d' : '') + ' ' + (ofertaActiva ? 'oferta-relampago' : 'card-borde-animado');
+            card.className = 'rounded-2xl overflow-hidden card-hover shadow-md cursor-pointer tarjeta-entrada-3d ' + (efecto3D ? 'tarjeta-3d' : '') + ' ' + (ofertaActiva ? 'oferta-relampago' : 'card-borde-animado');
             const numeroContacto = producto.propietarioWhatsapp || WHATSAPP_NUMBER;
             const tieneStock = producto.stock !== null && producto.stock !== undefined;
             const agotado = tieneStock && producto.stock <= 0;
@@ -2780,41 +2745,17 @@
                     ${etiquetaEntrega}
                     ${etiquetaStock}
                     ${botonComprarFinal}
-                    ${efecto3D ? '<p class="text-center text-[7px] text-gray-400 mt-1"><i class="fas fa-arrows-rotate"></i> Toca para ver detalles</p>' : ''}
                 </div>
             `;
             if (efecto3D) {
-                const contenidoReverso = `
-                    <div>
-                        <h4 class="text-xs font-bold mb-1.5">${producto.nombre}</h4>
-                        <ul class="text-[9px] space-y-1 text-gray-200">
-                            <li><i class="fas fa-layer-group text-indigo-300"></i> Categoría: ${producto.categoria || 'General'}</li>
-                            ${producto.entregaDemorada ? `<li><i class="fas fa-clock text-orange-300"></i> Entrega hasta 24h</li>` : `<li><i class="fas fa-bolt text-emerald-300"></i> Entrega rápida</li>`}
-                            <li><i class="fas fa-shield-halved text-sky-300"></i> ${nombreVendedor} ${vendedorVerificado ? '(verificado)' : ''}</li>
-                            ${tieneStock ? `<li><i class="fas fa-box text-amber-300"></i> ${agotado ? 'Agotado' : `Quedan ${producto.stock}`}</li>` : ''}
-                        </ul>
-                    </div>
-                    <div class="flex flex-col gap-1.5 mt-2">
-                        ${agotado
-                            ? `<span class="block text-center bg-gray-600 text-gray-300 py-1.5 rounded-lg font-semibold text-[10px]">Agotado</span>`
-                            : `<a href="https://wa.me/${numeroContacto}?text=${mensajeCompraWhatsapp(producto)}" target="_blank" onclick="event.stopPropagation(); registrarClicCompraPorId('${producto.id}')" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-white py-1.5 rounded-lg font-semibold text-[10px]"><i class="fab fa-whatsapp"></i> Comprar ahora</a>`}
-                        <button onclick="event.stopPropagation(); verDetalleProducto('${producto.id}')" class="text-[9px] text-gray-300 underline">Ver detalle completo</button>
-                        <button onclick="event.stopPropagation(); vendedorFiltroActivo='${producto.propietario}'; const u=new URL(window.location.href); u.searchParams.set('vendedor','${producto.propietario}'); window.history.replaceState({},'',u); renderProductos(); document.getElementById('productos')?.scrollIntoView({behavior:'smooth'});" class="text-[9px] text-indigo-300 underline"><i class="fas fa-store mr-0.5"></i>Ver todos sus productos</button>
-                    </div>
-                `;
-                card.innerHTML = `
-                    <div class="tarjeta-3d-interior" onclick="toggleTarjeta3D(this, event)">
-                        <div class="tarjeta-3d-frente">${contenidoFrente}</div>
-                        <div class="tarjeta-3d-reverso">${contenidoReverso}</div>
-                    </div>
-                `;
+                card.innerHTML = `<div class="tarjeta-3d-interior">${contenidoFrente}</div>`;
                 activarInclinacionTarjeta(card.querySelector('.tarjeta-3d-interior'));
             } else {
                 card.innerHTML = contenidoFrente;
             }
             card.addEventListener('click', (ev) => {
                 activarEfectoLlamas(card);
-                if (ev.target.closest('a') || ev.target.closest('.tarjeta-3d-interior')) return;
+                if (ev.target.closest('a')) return;
                 verDetalleProducto(producto.id);
             });
             return card;
