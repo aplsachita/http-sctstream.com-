@@ -176,13 +176,6 @@
         .fila-categoria-scroll > div:nth-child(3n) { animation-delay: 0.5s; }
         .fila-categoria-scroll > div:nth-child(4n) { animation-delay: 0.75s; }
         .fila-categoria-scroll > div:nth-child(5n) { animation-delay: 1s; }
-        .tarjeta-entrada-3d {
-            animation: entradaTarjeta3D 0.5s cubic-bezier(.2,.9,.3,1.2) both;
-        }
-        @keyframes entradaTarjeta3D {
-            0% { opacity: 0; transform: translateY(16px) rotateX(20deg) scale(0.9); }
-            100% { opacity: 1; transform: translateY(0) rotateX(0) scale(1); }
-        }
 
         /* ---- Filas de productos deslizables verticalmente por categoría ---- */
         .fila-categoria-scroll {
@@ -2673,7 +2666,7 @@
             const card = document.createElement('div');
             const ofertaActiva = producto.ofertaHasta && producto.ofertaHasta > Date.now();
             const efecto3D = tieneEfecto3D(producto);
-            card.className = 'rounded-2xl overflow-hidden card-hover shadow-md cursor-pointer tarjeta-entrada-3d ' + (efecto3D ? 'tarjeta-3d' : '') + ' ' + (ofertaActiva ? 'oferta-relampago' : 'card-borde-animado');
+            card.className = 'rounded-2xl overflow-hidden card-hover shadow-md cursor-pointer ' + (efecto3D ? 'tarjeta-3d' : '') + ' ' + (ofertaActiva ? 'oferta-relampago' : 'card-borde-animado');
             const numeroContacto = producto.propietarioWhatsapp || WHATSAPP_NUMBER;
             const tieneStock = producto.stock !== null && producto.stock !== undefined;
             const agotado = tieneStock && producto.stock <= 0;
