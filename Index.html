@@ -795,7 +795,7 @@
         </a>
     </section>
 
-    <div id="admin-modal" class="hidden fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4" onclick="if (event.target === this) toggleAdmin()">
+    <div id="admin-modal" class="hidden fixed inset-0 bg-black/70 z-[100] flex items-start justify-center p-4 overflow-y-auto" onclick="if (event.target === this) toggleAdmin()">
         <div id="admin-modal-panel" class="relative rounded-3xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
             <video id="superadmin-bg-video" class="hidden absolute inset-0 w-full h-full object-cover" src="" autoplay loop muted playsinline></video>
             <div id="superadmin-bg-overlay" class="hidden absolute inset-0 bg-black/60"></div>
@@ -1986,7 +1986,7 @@
                     `;
                 }).join('');
             } catch (err) {
-                cont.innerHTML = '<p class="text-xs text-gray-400">No se pudieron cargar las reseñas.</p>';
+                cont.innerHTML = '<p class="text-xs text-red-500">No se pudieron cargar las reseñas.<br><span class="font-mono">' + (err.message || err.code || 'error desconocido') + '</span></p>';
                 console.error(err);
             }
         }
@@ -7649,7 +7649,7 @@
                     `;
                 }).join('');
             } catch (err) {
-                cont.innerHTML = '<p class="text-xs text-gray-400">No se pudieron cargar las reseñas.</p>';
+                cont.innerHTML = '<p class="text-xs text-red-500">No se pudieron cargar las reseñas.<br><span class="font-mono">' + (err.message || err.code || 'error desconocido') + '</span></p>';
                 console.error(err);
             }
         }
