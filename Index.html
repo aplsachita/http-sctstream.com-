@@ -2631,6 +2631,24 @@
             return null;
         }
 
+        auth.getRedirectResult().then(async resultado => {
+            if (!resultado || !resultado.user) return;
+            const intent = sessionStorage.getItem('sct_google_intent');
+            sessionStorage.removeItem('sct_google_intent');
+            if (intent === 'cliente') {
+                await aplicarResultadoGoogleCliente(resultado.user);
+            } else if (intent === 'registro_admin') {
+                aplicarResultadoGoogleRegistroAdmin(resultado.user);
+            } else if (intent === 'login_admin') {
+                await procesarLoginExitoso(resultado, resultado.user.email || '', document.getElementById('login-error'));
+            }
+        }).catch(err => {
+            console.error('Error procesando el resultado de Google:', err);
+            if (err && err.code && err.code !== 'auth/no-auth-event') {
+                mostrarAviso('No se pudo completar el inicio de sesión con Google: ' + (err.message || err.code));
+            }
+        });
+
         auth.onAuthStateChanged(async user => {
             if (!user) {
                 adminDesbloqueado = false;
@@ -6658,38 +6676,37 @@
         }
 
         async function iniciarSesionClienteConGoogle() {
+            sessionStorage.setItem('sct_google_intent', 'cliente');
             try {
-                const resultado = await auth.signInWithPopup(googleProvider);
-                const user = resultado.user;
-                // Salvaguarda: si este correo resulta ser el del súper admin o ya tiene
-                // cuenta de administrador, no lo tratamos como cliente — lo mandamos
-                // directo al inicio de sesión de administrador correspondiente.
-                if (user.email && user.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
-                    cerrarMiCuentaCliente();
-                    mostrarAviso('Esta cuenta es la del dueño de la tienda. Usa el botón de administración (⚙️) para entrar a tu panel.');
-                    return;
-                }
-                const docAdmin = await db.collection('administradores').doc(user.uid).get();
-                if (docAdmin.exists) {
-                    cerrarMiCuentaCliente();
-                    mostrarAviso('Esta cuenta ya es de administrador. Usa el botón de administración (⚙️) para entrar a tu panel.');
-                    return;
-                }
-                const datosCliente = {
-                    nombre: user.displayName || 'Cliente',
-                    correo: user.email || null,
-                    foto: user.photoURL || null,
-                    ultimaConexion: firebase.firestore.FieldValue.serverTimestamp()
-                };
-                await db.collection('clientes').doc(user.uid).set(datosCliente, { merge: true });
-                esClienteConectado = true;
-                miClienteDatos = datosCliente;
-                actualizarIconoCuentaCliente();
-                abrirMiCuentaCliente();
+                await auth.signInWithRedirect(googleProvider);
             } catch (err) {
-                if (err.code === 'auth/popup-closed-by-user') return;
                 mostrarAviso('No se pudo conectar con Google: ' + (err.message || err.code || 'error desconocido'));
             }
+        }
+        async function aplicarResultadoGoogleCliente(user) {
+            // Salvaguarda: si este correo resulta ser el del súper admin o ya tiene
+            // cuenta de administrador, no lo tratamos como cliente — lo mandamos
+            // directo al inicio de sesión de administrador correspondiente.
+            if (user.email && user.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
+                mostrarAviso('Esta cuenta es la del dueño de la tienda. Usa el botón de administración (⚙️) para entrar a tu panel.');
+                return;
+            }
+            const docAdmin = await db.collection('administradores').doc(user.uid).get();
+            if (docAdmin.exists) {
+                mostrarAviso('Esta cuenta ya es de administrador. Usa el botón de administración (⚙️) para entrar a tu panel.');
+                return;
+            }
+            const datosCliente = {
+                nombre: user.displayName || 'Cliente',
+                correo: user.email || null,
+                foto: user.photoURL || null,
+                ultimaConexion: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            await db.collection('clientes').doc(user.uid).set(datosCliente, { merge: true });
+            esClienteConectado = true;
+            miClienteDatos = datosCliente;
+            actualizarIconoCuentaCliente();
+            abrirMiCuentaCliente();
         }
 
         function cerrarSesionCliente() {
@@ -7541,20 +7558,23 @@
         }
 
         async function registrarAdminConGoogle() {
+            sessionStorage.setItem('sct_google_intent', 'registro_admin');
+            document.getElementById('cuenta-modal').classList.add('hidden');
             try {
-                const resultado = await auth.signInWithPopup(googleProvider);
-                credencialGoogleRegistro = resultado.user;
-                document.getElementById('registro-correo').value = resultado.user.email || '';
-                document.getElementById('registro-correo').disabled = true;
-                document.getElementById('registro-nombre').value = resultado.user.displayName || '';
-                document.getElementById('registro-password').value = '';
-                document.getElementById('registro-password').classList.add('hidden');
-                document.getElementById('registro-google-info').classList.remove('hidden');
+                await auth.signInWithRedirect(googleProvider);
             } catch (err) {
-                if (err.code !== 'auth/popup-closed-by-user') {
-                    mostrarAviso('No se pudo conectar con Google: ' + (err.message || err.code || 'error desconocido'));
-                }
+                mostrarAviso('No se pudo conectar con Google: ' + (err.message || err.code || 'error desconocido'));
             }
+        }
+        function aplicarResultadoGoogleRegistroAdmin(user) {
+            document.getElementById('cuenta-modal').classList.remove('hidden');
+            credencialGoogleRegistro = user;
+            document.getElementById('registro-correo').value = user.email || '';
+            document.getElementById('registro-correo').disabled = true;
+            document.getElementById('registro-nombre').value = user.displayName || '';
+            document.getElementById('registro-password').value = '';
+            document.getElementById('registro-password').classList.add('hidden');
+            document.getElementById('registro-google-info').classList.remove('hidden');
         }
 
         function cerrarCuentaModal() {
@@ -7770,14 +7790,11 @@
         }
 
         async function iniciarSesionAdminConGoogle() {
-            const errorEl = document.getElementById('login-error');
-            errorEl.classList.add('hidden');
+            sessionStorage.setItem('sct_google_intent', 'login_admin');
             try {
-                const cred = await auth.signInWithPopup(googleProvider);
-                await procesarLoginExitoso(cred, cred.user.email || '', errorEl);
+                await auth.signInWithRedirect(googleProvider);
             } catch (err) {
-                if (err.code === 'auth/popup-closed-by-user') return;
-                console.error(err);
+                const errorEl = document.getElementById('login-error');
                 errorEl.textContent = 'No se pudo conectar con Google: ' + (err.message || err.code || 'error desconocido');
                 errorEl.classList.remove('hidden');
             }
