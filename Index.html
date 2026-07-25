@@ -1333,6 +1333,17 @@
         </div>
     </div>
 
+    <div id="eleccion-acceso-modal" class="hidden modal-overlay" onclick="if (event.target === this) cerrarEleccionAcceso()">
+        <div class="bg-white rounded-3xl max-w-sm w-full mx-4 p-8 text-center">
+            <i class="fas fa-user-gear text-4xl text-slate-700 mb-4"></i>
+            <h3 class="text-lg font-bold mb-1">Acceso de administrador</h3>
+            <p class="text-gray-500 text-sm mb-6">¿Ya tienes cuenta o quieres crear una nueva?</p>
+            <button onclick="cerrarEleccionAcceso(); modoLoginSuperAdmin = false; abrirLogin();" class="boton-animado-morado text-white py-3 rounded-xl font-semibold w-full mb-2"><i class="fas fa-right-to-bracket mr-1"></i> Ya tengo cuenta</button>
+            <button onclick="cerrarEleccionAcceso(); abrirCuentaModal();" class="border-2 border-slate-300 text-slate-700 py-3 rounded-xl font-semibold w-full mb-2 hover:bg-slate-50">Crear cuenta nueva</button>
+            <button onclick="cerrarEleccionAcceso()" class="text-gray-400 text-sm mt-2">Cancelar</button>
+        </div>
+    </div>
+
     <div id="pin-modal" class="hidden modal-overlay">
         <div class="bg-white rounded-3xl max-w-sm w-full mx-4 p-8 text-center">
             <i class="fas fa-lock text-4xl text-purple-600 mb-4"></i>
@@ -6559,13 +6570,22 @@
             document.getElementById('admin-modal').classList.add('hidden');
         }
 
+        function mostrarEleccionAcceso() {
+            document.getElementById('eleccion-acceso-modal').classList.remove('hidden');
+        }
+        function cerrarEleccionAcceso() {
+            document.getElementById('eleccion-acceso-modal').classList.add('hidden');
+        }
+
         function toggleAdmin() {
             const modal = document.getElementById('admin-modal');
             if (modal.classList.contains('hidden')) {
                 if (adminDesbloqueado) {
                     abrirPanelAdmin();
-                } else {
+                } else if (auth.currentUser) {
                     abrirPin();
+                } else {
+                    mostrarEleccionAcceso();
                 }
             } else {
                 modal.classList.add('hidden');
@@ -7536,19 +7556,19 @@
             try {
                 const cred = await auth.signInWithEmailAndPassword(correo, password);
 
-                if (modoLoginSuperAdmin) {
-                    if (correo.toLowerCase() !== SUPER_ADMIN_EMAIL.toLowerCase()) {
-                        await auth.signOut();
-                        modoLoginSuperAdmin = false;
-                        errorEl.textContent = 'Ese correo no corresponde a la cuenta de súper admin.';
-                        errorEl.classList.remove('hidden');
-                        return;
-                    }
+                if (correo.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
                     modoLoginSuperAdmin = false;
                     cerrarLogin();
                     esSuperAdmin = true;
                     db.collection('configuracion').doc('principal').set({ superAdminUid: cred.user.uid }, { merge: true }).catch(err => console.error('No se pudo registrar el UID de súper admin:', err));
                     finalizarLogin('superadmin', 'Súper admin');
+                    return;
+                }
+                if (modoLoginSuperAdmin) {
+                    await auth.signOut();
+                    modoLoginSuperAdmin = false;
+                    errorEl.textContent = 'Ese correo no corresponde a la cuenta de súper admin.';
+                    errorEl.classList.remove('hidden');
                     return;
                 }
 
