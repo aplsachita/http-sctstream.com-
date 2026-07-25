@@ -1171,6 +1171,18 @@
                         </label>
                     </div>
 
+                    <div id="suscripcion-admin-toggle" class="hidden admin-card p-4 mb-6 flex items-center justify-between gap-3">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800"><i class="fas fa-crown mr-1"></i> Suscripción para admins nuevos (S/ <span id="suscripcion-toggle-monto">10</span>/mes)</h4>
+                            <p class="text-xs text-gray-400">Si la desactivas, cualquiera puede registrarse como admin gratis, sin pagar ni subir comprobante. Los admins que ya pagaron no se ven afectados.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input type="checkbox" id="toggle-suscripcion-activa" class="sr-only peer" onchange="toggleSuscripcionAdmin(this.checked)">
+                            <div class="w-11 h-6 bg-gray-300 peer-checked:bg-emerald-500 rounded-full transition-colors"></div>
+                            <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                        </label>
+                    </div>
+
                     <h4 class="mb-2 text-base admin-section-title"><i class="fas fa-bullhorn mr-1"></i> Anuncio interno para tus admins</h4>
                     <p class="text-xs text-gray-400 mb-2">Un mensaje que verán todos tus administradores al entrar a su panel (no lo ven tus clientes).</p>
                     <textarea id="anuncio-admins-input" rows="2" maxlength="300" placeholder="Ej: Mañana habrá mantenimiento de 2am a 4am, no publiquen productos en ese rato." class="border border-gray-300 rounded-xl px-4 py-3 w-full text-sm mb-2"></textarea>
@@ -1480,9 +1492,9 @@
                         </label>
                     </div>
                 </div>
-                <div class="text-left mb-3 border border-indigo-200 bg-indigo-50 rounded-xl p-4">
-                    <p class="text-sm font-semibold text-indigo-700 mb-1"><i class="fas fa-crown mr-1"></i> Suscripción de administrador: S/ 10 al mes</p>
-                    <p class="text-xs text-gray-600 mb-2">Yapea o Plinea S/ 10 al <b>${YAPE_NUMERO_MOSTRAR}</b> y sube la captura de tu pago aquí abajo. Tu cuenta se activa cuando el dueño de la tienda confirme el pago.</p>
+                <div id="registro-suscripcion-bloque" class="text-left mb-3 border border-indigo-200 bg-indigo-50 rounded-xl p-4">
+                    <p class="text-sm font-semibold text-indigo-700 mb-1"><i class="fas fa-crown mr-1"></i> Suscripción de administrador: S/ <span id="registro-monto-suscripcion">10</span> al mes</p>
+                    <p class="text-xs text-gray-600 mb-2">Yapea o Plinea S/ <span id="registro-monto-suscripcion-2">10</span> al <b id="registro-yape-numero"></b> y sube la captura de tu pago aquí abajo. Tu cuenta se activa cuando el dueño de la tienda confirme el pago.</p>
                     <label class="flex items-center gap-3 border border-dashed border-indigo-300 rounded-xl px-4 py-3 cursor-pointer hover:bg-indigo-100 bg-white">
                         <i class="fas fa-receipt text-indigo-600"></i>
                         <span id="registro-comprobante-label" class="text-gray-500 text-sm">Subir captura de pago (Yape/Plin)</span>
@@ -1490,6 +1502,7 @@
                     </label>
                     <img id="registro-comprobante-preview" class="hidden mt-2 h-24 rounded-xl object-cover mx-auto">
                 </div>
+                <p id="registro-suscripcion-gratis" class="hidden text-left mb-3 border border-emerald-200 bg-emerald-50 rounded-xl p-4 text-sm text-emerald-700"><i class="fas fa-gift mr-1"></i> Ahora mismo el registro es gratis, sin ningún pago.</p>
                 <p id="registro-error" class="hidden text-red-500 text-sm mb-3"></p>
                 <button onclick="crearCuentaAdmin()" class="boton-animado-morado text-white py-3 rounded-xl font-semibold w-full mb-2">Crear cuenta</button>
                 <button onclick="cerrarCuentaModal()" class="text-gray-400 text-sm w-full">Cancelar</button>
@@ -1857,6 +1870,7 @@
 
         const WHATSAPP_NUMBER = "51925516886";
         let programaPuntosActivo = true;
+        let suscripcionAdminActiva = true;
         const YAPE_NUMERO_MOSTRAR = "925 516 886"; // Yape/Plin del súper admin, para la suscripción de nuevos admins
         const SUSCRIPCION_ADMIN_MONTO = 10;
         const SUSCRIPCION_ADMIN_DIAS = 30;
@@ -2398,6 +2412,12 @@
             programaPuntosActivo = !doc.exists || doc.data().programaPuntosActivo !== false;
             const togglePuntosAdmin = document.getElementById('toggle-puntos-activo');
             if (togglePuntosAdmin) togglePuntosAdmin.checked = programaPuntosActivo;
+            suscripcionAdminActiva = !doc.exists || doc.data().suscripcionAdminActiva !== false;
+            const toggleSuscripcion = document.getElementById('toggle-suscripcion-activa');
+            if (toggleSuscripcion) toggleSuscripcion.checked = suscripcionAdminActiva;
+            document.querySelectorAll('#registro-monto-suscripcion, #registro-monto-suscripcion-2').forEach(el => el.textContent = SUSCRIPCION_ADMIN_MONTO);
+            const yapeNumEl = document.getElementById('registro-yape-numero');
+            if (yapeNumEl) yapeNumEl.textContent = YAPE_NUMERO_MOSTRAR;
             const contadorManual = (doc.exists && doc.data().contadorEntregas) || 0;
             const contadorReal = (doc.exists && doc.data().ventasHistoricas) || 0;
             const contadorFinal = Math.max(contadorManual, contadorReal);
@@ -6625,6 +6645,22 @@
             if (tab === 'pendientes') renderPendientes();
         }
 
+        async function toggleSuscripcionAdmin(activo) {
+            if (!esSuperAdmin) {
+                mostrarAviso('Solo el súper admin puede activar o desactivar esto.');
+                return;
+            }
+            try {
+                await db.collection('configuracion').doc('principal').set({ suscripcionAdminActiva: activo }, { merge: true });
+                suscripcionAdminActiva = activo;
+                mostrarAviso(activo ? 'Los admins nuevos volverán a pagar la suscripción para registrarse.' : 'Los admins nuevos ahora pueden registrarse gratis, sin pagar.');
+            } catch (err) {
+                const toggleEl = document.getElementById('toggle-suscripcion-activa');
+                if (toggleEl) toggleEl.checked = !activo;
+                mostrarAviso('No se pudo actualizar: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
         async function toggleProgramaPuntos(activo) {
             if (!esSuperAdmin) {
                 mostrarAviso('Solo el súper admin puede activar o desactivar esto para sus propios productos.');
@@ -6675,6 +6711,9 @@
             document.getElementById('tab-btn-administradores').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('referidos-admin-toggle').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('puntos-admin-toggle').classList.toggle('hidden', !esSuperAdmin);
+            document.getElementById('suscripcion-admin-toggle').classList.toggle('hidden', !esSuperAdmin);
+            const montoToggleEl = document.getElementById('suscripcion-toggle-monto');
+            if (montoToggleEl) montoToggleEl.textContent = SUSCRIPCION_ADMIN_MONTO;
             document.getElementById('notif-bell-container').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('saludo-superadmin').classList.remove('hidden');
             document.getElementById('panel-subtitulo').textContent = esSuperAdmin
@@ -6710,7 +6749,7 @@
             actualizarUI();
         }
 
-        const ADMIN_PIN = "202020";
+        const ADMIN_PIN = "758413";
         const SUPER_PIN = "751229";
         // CAMBIA esto por el correo real de tu cuenta de súper admin (Firebase Authentication > Email/contraseña).
         // El PIN de arriba ya NO es suficiente por sí solo: además hay que iniciar sesión con este correo y su contraseña.
@@ -7348,6 +7387,8 @@
             comprobantePagoBase64 = null;
             document.getElementById('registro-comprobante-preview').classList.add('hidden');
             document.getElementById('registro-comprobante-label').textContent = 'Subir captura de pago (Yape/Plin)';
+            document.getElementById('registro-suscripcion-bloque').classList.toggle('hidden', !suscripcionAdminActiva);
+            document.getElementById('registro-suscripcion-gratis').classList.toggle('hidden', suscripcionAdminActiva);
             document.getElementById('cuenta-modal').classList.remove('hidden');
         }
 
@@ -7412,7 +7453,7 @@
                 errorEl.classList.remove('hidden');
                 return;
             }
-            if (!comprobantePagoBase64) {
+            if (suscripcionAdminActiva && !comprobantePagoBase64) {
                 errorEl.textContent = `Sube la captura de tu pago de S/ ${SUSCRIPCION_ADMIN_MONTO} por Yape/Plin para poder crear tu cuenta.`;
                 errorEl.classList.remove('hidden');
                 return;
@@ -7420,18 +7461,21 @@
 
             try {
                 const cred = await auth.createUserWithEmailAndPassword(correo, password);
-                await db.collection('administradores').doc(cred.user.uid).set({
+                const datosNuevaCuenta = {
                     pin,
                     correo,
                     nombre: nombreCrudo,
                     whatsapp: whatsappCrudo,
                     metodosPago: metodosPago,
-                    comprobantePago: comprobantePagoBase64,
-                    suscripcionMonto: SUSCRIPCION_ADMIN_MONTO,
                     suscripcionVenceEl: null,
                     aprobado: false,
                     creado: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                };
+                if (suscripcionAdminActiva) {
+                    datosNuevaCuenta.comprobantePago = comprobantePagoBase64;
+                    datosNuevaCuenta.suscripcionMonto = SUSCRIPCION_ADMIN_MONTO;
+                }
+                await db.collection('administradores').doc(cred.user.uid).set(datosNuevaCuenta);
                 cerrarCuentaModal();
                 miUidPendiente = cred.user.uid;
                 miMetodosPagoAdmin = metodosPago;
@@ -7635,7 +7679,9 @@
                 const metodosTxt = (sol.metodosPago && sol.metodosPago.length > 0) ? sol.metodosPago.join(', ') : 'No especificó';
                 const comprobanteTxt = sol.comprobantePago
                     ? `<button type="button" onclick="abrirZoomFoto('${sol.comprobantePago}')" class="mt-2 flex items-center gap-2 text-xs font-semibold text-indigo-600 underline"><i class="fas fa-receipt"></i> Ver captura del pago de S/ ${sol.suscripcionMonto || SUSCRIPCION_ADMIN_MONTO}</button>`
-                    : `<p class="mt-2 text-xs text-red-500"><i class="fas fa-triangle-exclamation"></i> No subió captura de pago</p>`;
+                    : (sol.suscripcionMonto
+                        ? `<p class="mt-2 text-xs text-red-500"><i class="fas fa-triangle-exclamation"></i> No subió captura de pago</p>`
+                        : `<p class="mt-2 text-xs text-emerald-600"><i class="fas fa-gift"></i> Se registró gratis (suscripción estaba desactivada)</p>`);
                 const div = document.createElement('div');
                 div.className = 'admin-card border-l-4 border-l-amber-400 p-4';
                 div.innerHTML = `
