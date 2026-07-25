@@ -2869,7 +2869,7 @@
             const contenidoFrente = `
                 ${ofertaBadge}
                 <div class="relative">
-                    <img src="${producto.imagenMiniatura || producto.imagen}" loading="lazy" decoding="async" class="w-full h-9 object-cover rounded-t-2xl">
+                    <img src="${producto.imagenMiniatura || producto.imagen}" loading="lazy" decoding="async" class="w-full h-9 object-cover rounded-t-2xl bg-gray-100">
                     ${insigniasExtra ? `<div class="absolute top-1 left-1 flex gap-0.5">${insigniasExtra}</div>` : ''}
                     <button onclick="event.stopPropagation(); toggleFavorito('${producto.id}')" class="btn-favorito absolute top-1 right-1 w-4 h-4 rounded-full bg-black/40 text-white flex items-center justify-center text-[8px]"><i class="${esFavorito(producto.id) ? 'fas' : 'far'} fa-heart"></i></button>
                     <button onclick="event.stopPropagation(); abrirVistaRapida('${producto.id}')" class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-black/40 text-white flex items-center justify-center text-[8px]"><i class="fas fa-eye"></i></button>
@@ -3041,7 +3041,7 @@
                     ? `<span class="text-[10px] line-through text-gray-400">S/${producto.precioAnterior}</span> <span class="text-sm font-bold text-emerald-600">S/${producto.precio}</span>`
                     : `<span class="text-sm font-bold titulo-color">S/${producto.precio}</span>`;
             div.innerHTML = `
-                <img src="${producto.imagenMiniatura || producto.imagen}" loading="lazy" decoding="async" class="rounded-lg">
+                <img src="${producto.imagenMiniatura || producto.imagen}" loading="lazy" decoding="async" class="rounded-lg bg-gray-100">
                 <div class="flex-1 min-w-0">
                     <p class="text-xs font-bold text-purple-700 truncate">${producto.nombre}</p>
                     <p class="text-[10px] text-gray-400 truncate">${producto.propietarioNombre || 'APL market'}</p>
@@ -3298,7 +3298,7 @@
             // Carrusel de fotos (principal + adicionales, si tiene)
             const carrusel = document.getElementById('detalle-carrusel');
             const fotos = [producto.imagen, ...(producto.imagenes || [])].filter(Boolean);
-            carrusel.innerHTML = fotos.map(src => `<img src="${src}" loading="lazy" decoding="async" onclick="abrirZoomFoto('${src}')" style="cursor: zoom-in;">`).join('');
+            carrusel.innerHTML = fotos.map(src => `<img src="${src}" loading="lazy" decoding="async" onclick="abrirZoomFoto('${src}')" style="cursor: zoom-in; background-color: #f3f4f6;">`).join('');
             const dots = document.getElementById('detalle-carrusel-dots');
             if (fotos.length > 1) {
                 dots.innerHTML = fotos.map((_, i) => `<span class="${i === 0 ? 'activo' : ''}"></span>`).join('');
@@ -3403,7 +3403,7 @@
             if (relacionados.length > 0) {
                 relacionadosEl.innerHTML = relacionados.map(r => `
                     <div onclick="verDetalleProducto('${r.id}')" class="shrink-0 w-20 cursor-pointer">
-                        <img src="${r.imagen}" loading="lazy" decoding="async" class="w-20 h-14 object-cover rounded-lg mb-1">
+                        <img src="${r.imagen}" loading="lazy" decoding="async" class="w-20 h-14 object-cover rounded-lg mb-1 bg-gray-100">
                         <p class="text-[10px] text-gray-600 truncate">${r.nombre}</p>
                         <p class="text-[10px] font-bold titulo-color">S/ ${r.precio}</p>
                     </div>
@@ -3917,7 +3917,7 @@
                 const conDescuento = precioUnit < item.precio;
                 return `
                 <div class="flex items-center gap-3">
-                    <img src="${item.imagen}" loading="lazy" decoding="async" class="w-14 h-14 rounded-xl object-cover shrink-0">
+                    <img src="${item.imagen}" loading="lazy" decoding="async" class="w-14 h-14 rounded-xl object-cover shrink-0 bg-gray-100">
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-semibold text-slate-800 truncate">${item.nombre}${item.varianteNombre ? ` <span class="text-gray-400 font-normal">(${item.varianteNombre})</span>` : ''}</p>
                         <p class="text-xs text-gray-400">S/ ${precioUnit} c/u ${conDescuento ? '<span class="text-emerald-600 font-semibold">(precio por cantidad)</span>' : ''} · ${item.propietarioNombre}</p>
@@ -4183,7 +4183,7 @@
                 const botonEliminar = (adminDesbloqueado && esSuperAdmin)
                     ? `<button class="galeria-delete" onclick="eliminarFoto('${foto.id}')" title="Eliminar foto"><i class="fas fa-times"></i></button>`
                     : '';
-                div.innerHTML = `<div class="w-full h-full overflow-hidden rounded-2xl relative"><img src="${foto.imagen}" loading="lazy" decoding="async" class="w-full h-full object-cover hover:scale-110 transition">${botonEliminar}</div>`;
+                div.innerHTML = `<div class="w-full h-full overflow-hidden rounded-2xl relative"><img src="${foto.imagen}" loading="lazy" decoding="async" class="w-full h-full object-cover hover:scale-110 transition bg-gray-100">${botonEliminar}</div>`;
                 grid.appendChild(div);
             });
         }
@@ -4643,7 +4643,7 @@
                     : '';
                 div.innerHTML = `
                     <div class="flex items-center gap-3 mb-3">
-                        <img src="${producto.imagenMiniatura || producto.imagen}" loading="lazy" decoding="async" class="w-14 h-14 rounded-xl object-cover">
+                        <img src="${producto.imagenMiniatura || producto.imagen}" loading="lazy" decoding="async" class="w-14 h-14 rounded-xl object-cover bg-gray-100">
                         <div class="flex-1">
                             <p class="font-medium text-slate-800">${producto.nombre}${badgePendiente}${badgeStock}${badgeOferta}${badgeDescuento}${badgeEntrega}${badgeProgramado}</p>
                             <p class="text-indigo-600 font-bold">S/ ${producto.precio}</p>
@@ -6546,7 +6546,7 @@
             }
             cont.innerHTML = pendientes.map(p => `
                 <div class="border border-amber-200 bg-amber-50 rounded-2xl p-4 flex items-center gap-3 flex-wrap">
-                    <img src="${p.imagenMiniatura || p.imagen}" loading="lazy" decoding="async" class="w-16 h-16 rounded-xl object-cover shrink-0">
+                    <img src="${p.imagenMiniatura || p.imagen}" loading="lazy" decoding="async" class="w-16 h-16 rounded-xl object-cover shrink-0 bg-gray-100">
                     <div class="flex-1 min-w-[140px]">
                         <p class="font-semibold text-slate-800">${p.nombre}</p>
                         <p class="text-xs text-gray-500">S/ ${p.precio} · ${p.categoria || 'Sin categoría'}</p>
