@@ -54,7 +54,7 @@
            Magenta, violeta, cian y lima en loop rápido + textura de
            líneas de escaneo (guiño a una señal de TV/streaming).
            ============================================================ */
-        body { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0) !important; perspective: 1800px; }
+        body { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0) !important; }
         .hero-colorful { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0); }
         .titulo-color { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .boton-animado { background: linear-gradient(100deg, #ff9fd0, #b8a4ff, #8be9f5, #eaffb0); transition: filter 0.2s ease; }
@@ -3419,8 +3419,12 @@
             const panelDetalle = document.getElementById('detalle-producto-panel');
             if (panelDetalle) {
                 panelDetalle.classList.remove('panel-entrada-3d');
+                panelDetalle.style.transform = '';
                 void panelDetalle.offsetWidth; // fuerza al navegador a "olvidar" la animación anterior
                 panelDetalle.classList.add('panel-entrada-3d');
+                panelDetalle.addEventListener('animationend', function limpiarTransform3D() {
+                    panelDetalle.style.transform = 'none';
+                }, { once: true });
             }
         }
 
