@@ -963,23 +963,25 @@
 
                 <div class="admin-tab-pane" data-tab="agregar">
                     <h4 class="mb-4 text-base admin-section-title">Agregar Nuevo Producto</h4>
-                    <div class="admin-card p-5">
+                    <div id="aviso-solo-lectura-agregar" class="hidden mb-4 bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700"><i class="fas fa-umbrella-beach mr-1"></i> Estás en modo vacaciones: no puedes publicar productos nuevos hasta desactivarlo en tu perfil.</div>
+                    <div id="formulario-agregar-producto" class="admin-card p-5">
                         <div class="grid grid-cols-2 gap-4">
-                            <input id="new-name" type="text" placeholder="Nombre (Netflix, etc)" class="border border-gray-300 rounded-xl px-4 py-3 min-w-0 w-full">
-                            <input id="new-price" type="number" placeholder="Precio en soles (S/)" class="border border-gray-300 rounded-xl px-4 py-3 min-w-0 w-full">
+                            <input id="new-name" type="text" oninput="sugerirCategoriaProducto(); autoguardarBorradorProducto();" placeholder="Nombre (Netflix, etc)" class="border border-gray-300 rounded-xl px-4 py-3 min-w-0 w-full">
+                            <input id="new-price" type="number" oninput="autoguardarBorradorProducto();" placeholder="Precio en soles (S/)" class="border border-gray-300 rounded-xl px-4 py-3 min-w-0 w-full">
                         </div>
-                        <input id="new-desc" type="text" placeholder="Descripción (ej: 4K • 4 pantallas)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-4">
-                        <input id="new-stock" type="number" min="0" placeholder="Stock disponible (déjalo vacío si no quieres controlarlo)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-4">
+                        <p id="sugerencia-categoria" class="hidden text-xs text-indigo-600 mt-1"></p>
+                        <input id="new-desc" type="text" oninput="autoguardarBorradorProducto();" placeholder="Descripción (ej: 4K • 4 pantallas)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-4">
+                        <input id="new-stock" type="number" min="0" oninput="autoguardarBorradorProducto();" placeholder="Stock disponible (déjalo vacío si no quieres controlarlo)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-4">
                         <label class="mt-4 flex items-center gap-3 border border-gray-300 rounded-xl px-4 py-3 cursor-pointer">
-                            <input type="checkbox" id="new-entrega-demorada" class="w-5 h-5 accent-orange-500">
+                            <input type="checkbox" id="new-entrega-demorada" onchange="autoguardarBorradorProducto();" class="w-5 h-5 accent-orange-500">
                             <span class="text-sm text-gray-600"><i class="fas fa-clock text-orange-500 mr-1"></i> Este producto tarda hasta 24 horas en entregarse</span>
                         </label>
                         <label class="block mt-4 text-xs text-gray-500">
                             <i class="fas fa-calendar-clock mr-1"></i> Publicar más tarde (opcional, déjalo vacío para publicar ya):
-                            <input type="datetime-local" id="new-publicar-en" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-1 text-gray-700">
+                            <input type="datetime-local" id="new-publicar-en" onchange="autoguardarBorradorProducto();" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-1 text-gray-700">
                         </label>
                         <div class="grid grid-cols-2 gap-4 mt-4">
-                            <select id="new-categoria" onchange="document.getElementById('new-categoria-otro').classList.toggle('hidden', this.value !== 'Otro'); document.getElementById('new-animacion3d-row').classList.toggle('hidden', this.value !== 'Ropa' && this.value !== 'Zapatillas');" class="border border-gray-300 rounded-xl px-4 py-3">
+                            <select id="new-categoria" onchange="document.getElementById('new-categoria-otro').classList.toggle('hidden', this.value !== 'Otro'); document.getElementById('new-animacion3d-row').classList.toggle('hidden', this.value !== 'Ropa' && this.value !== 'Zapatillas'); autoguardarBorradorProducto();" class="border border-gray-300 rounded-xl px-4 py-3">
                                 <option value="Electrónica">Electrónica</option>
                                 <option value="Ropa">Ropa</option>
                                 <option value="Zapatillas">Zapatillas</option>
@@ -990,18 +992,18 @@
                                 <option value="Servicios">Servicios</option>
                                 <option value="Otro">Otro (escribir)</option>
                             </select>
-                            <input id="new-categoria-otro" type="text" placeholder="Nombre de la categoría" class="hidden border border-gray-300 rounded-xl px-4 py-3">
+                            <input id="new-categoria-otro" type="text" oninput="autoguardarBorradorProducto();" placeholder="Nombre de la categoría" class="hidden border border-gray-300 rounded-xl px-4 py-3">
                         </div>
                         <label id="new-animacion3d-row" class="hidden mt-4 flex items-center gap-3 border border-gray-200 rounded-xl px-4 py-3 cursor-pointer">
                             <input type="checkbox" id="new-animacion3d" checked class="w-5 h-5 accent-indigo-600">
                             <span class="text-sm text-gray-600"><i class="fas fa-cube text-indigo-600 mr-1"></i> Mostrar animación 3D en la foto de este producto</span>
                         </label>
                         <label class="mt-4 flex items-center gap-3 border border-gray-200 rounded-xl px-4 py-3 cursor-pointer">
-                            <input type="checkbox" id="new-es-combo" onchange="document.getElementById('new-combo-incluye-row').classList.toggle('hidden', !this.checked)" class="w-5 h-5 accent-indigo-600">
+                            <input type="checkbox" id="new-es-combo" onchange="document.getElementById('new-combo-incluye-row').classList.toggle('hidden', !this.checked); autoguardarBorradorProducto();" class="w-5 h-5 accent-indigo-600">
                             <span class="text-sm text-gray-600"><i class="fas fa-boxes-stacked text-indigo-600 mr-1"></i> Es un combo (varias plataformas juntas)</span>
                         </label>
                         <div id="new-combo-incluye-row" class="hidden mt-2">
-                            <input id="new-combo-incluye" type="text" maxlength="120" placeholder="¿Qué incluye? Ej: Netflix + Spotify + HBO Max" class="border border-gray-300 rounded-xl px-4 py-3 w-full">
+                            <input id="new-combo-incluye" type="text" maxlength="120" oninput="autoguardarBorradorProducto();" placeholder="¿Qué incluye? Ej: Netflix + Spotify + HBO Max" class="border border-gray-300 rounded-xl px-4 py-3 w-full">
                         </div>
                         <label class="mt-4 flex items-center gap-3 border border-dashed border-gray-300 rounded-xl px-4 py-3 cursor-pointer hover:bg-gray-100">
                             <i class="fas fa-image text-indigo-600"></i>
@@ -1015,8 +1017,10 @@
                             <input type="file" id="new-fotos-extra" accept="image/*" multiple class="hidden" onchange="previewFotosExtra(event)">
                         </label>
                         <div id="new-fotos-extra-preview" class="hidden mt-2 flex gap-2"></div>
-                        <textarea id="new-variantes" rows="2" placeholder="Planes opcionales, uno por línea así:&#10;1 mes|8.5&#10;3 meses|22" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-4 text-sm"></textarea>
+                        <textarea id="new-variantes" rows="2" oninput="autoguardarBorradorProducto();" placeholder="Planes opcionales, uno por línea así:&#10;1 mes|8.5&#10;3 meses|22" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-4 text-sm"></textarea>
                         <p class="text-[11px] text-gray-400 mt-1">Si vendes el mismo producto en varias duraciones/planes, escríbelos así (uno por línea): Nombre|Precio. Déjalo vacío si no aplica.</p>
+                        <button onclick="vistaPreviaProductoNuevo()" class="mt-4 w-full bg-white border border-indigo-300 text-indigo-600 py-2.5 rounded-2xl font-semibold text-sm"><i class="fas fa-eye mr-1"></i> Vista previa de la tarjeta</button>
+                        <div id="vista-previa-producto-nuevo" class="hidden mt-3 flex justify-center"></div>
                         <button onclick="agregarProducto()" class="mt-4 w-full admin-btn-primary text-white py-3.5 rounded-2xl font-semibold shadow-md">Agregar Producto</button>
                     </div>
                 </div>
@@ -1150,9 +1154,23 @@
                         <h4 id="mis-productos-titulo" class="text-base admin-section-title">Tus Productos</h4>
                         <select id="filtro-propietario-select" onchange="filtrarProductosPorPropietario(this.value)" class="hidden border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></select>
                     </div>
+                    <div class="flex items-center gap-2 flex-wrap mb-3">
+                        <input type="text" id="buscador-productos-admin" oninput="renderAdminProductos()" placeholder="Buscar por nombre..." class="border border-gray-300 rounded-xl px-3 py-2 text-sm flex-1 min-w-[160px] focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <select id="filtro-estado-productos-admin" onchange="renderAdminProductos()" class="border border-gray-300 rounded-xl px-3 py-2 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="todos">Todos los estados</option>
+                            <option value="activos">Activos</option>
+                            <option value="agotados">Agotados</option>
+                            <option value="pausados">Pausados</option>
+                            <option value="pendientes">Pendientes de aprobación</option>
+                            <option value="programados">Programados</option>
+                        </select>
+                        <span id="contador-productos-admin" class="text-xs text-gray-400"></span>
+                        <button onclick="exportarProductosCSV()" class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-file-csv mr-1"></i> Exportar productos a CSV</button>
+                    </div>
                     <div id="aviso-agotados" class="hidden mb-4"></div>
                     <div id="admin-productos" class="space-y-4"></div>
                 </div>
+
 
                 <div class="admin-tab-pane" data-tab="ventas">
                     <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
@@ -2810,6 +2828,7 @@
             const ahora = Date.now();
             return productos.filter(p => {
                 if (p.aprobado === false) return false;
+                if (p.pausado === true) return false;
                 if (p.publicarEn && p.publicarEn > ahora) return false;
                 if (vendedorFiltroActivo && p.propietario !== vendedorFiltroActivo) return false;
                 const categoriaOk = categoriaActiva === 'Todos' || (p.categoria || 'Otro') === categoriaActiva;
@@ -4367,8 +4386,12 @@
 
         function registrarNotificacionNuevoProducto(producto) {
             const vendedor = producto.propietarioNombre || 'APL market';
+            const esPrimerProducto = producto.propietario && producto.propietario !== 'principal' &&
+                productos.filter(p => p.propietario === producto.propietario).length === 1;
             notificacionesProductos.unshift({
-                mensaje: `${vendedor} agregó "${producto.nombre}"`,
+                mensaje: esPrimerProducto
+                    ? `🎉 ${vendedor} publicó su primer producto: "${producto.nombre}"`
+                    : `${vendedor} agregó "${producto.nombre}"`,
                 fecha: Date.now()
             });
             notificacionesProductos = notificacionesProductos.slice(0, 20);
@@ -4727,6 +4750,26 @@
                 listaAMostrar = productos.filter(p => p.propietario === miUid);
             }
 
+            const textoBusqueda = (document.getElementById('buscador-productos-admin')?.value || '').trim().toLowerCase();
+            if (textoBusqueda) {
+                listaAMostrar = listaAMostrar.filter(p => (p.nombre || '').toLowerCase().includes(textoBusqueda));
+            }
+            const estadoFiltro = document.getElementById('filtro-estado-productos-admin')?.value || 'todos';
+            const ahoraFiltro = Date.now();
+            if (estadoFiltro === 'activos') {
+                listaAMostrar = listaAMostrar.filter(p => p.pausado !== true && !(p.stock !== null && p.stock !== undefined && p.stock <= 0) && p.aprobado !== false);
+            } else if (estadoFiltro === 'agotados') {
+                listaAMostrar = listaAMostrar.filter(p => p.stock !== null && p.stock !== undefined && p.stock <= 0);
+            } else if (estadoFiltro === 'pausados') {
+                listaAMostrar = listaAMostrar.filter(p => p.pausado === true);
+            } else if (estadoFiltro === 'pendientes') {
+                listaAMostrar = listaAMostrar.filter(p => p.aprobado === false);
+            } else if (estadoFiltro === 'programados') {
+                listaAMostrar = listaAMostrar.filter(p => p.publicarEn && p.publicarEn > ahoraFiltro);
+            }
+            const contador = document.getElementById('contador-productos-admin');
+            if (contador) contador.textContent = `${listaAMostrar.length} producto${listaAMostrar.length === 1 ? '' : 's'}`;
+
             const avisoAgotados = document.getElementById('aviso-agotados');
             if (avisoAgotados) {
                 const agotados = listaAMostrar.filter(p => p.stock !== null && p.stock !== undefined && p.stock <= 0);
@@ -4801,11 +4844,16 @@
                         ? `<button onclick="toggleAnimacion3DProducto('${producto.id}', false)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-cube mr-1"></i>Quitar animación 3D</button>`
                         : `<button onclick="toggleAnimacion3DProducto('${producto.id}', true)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-cube mr-1"></i>Activar animación 3D</button>`)
                     : '';
+                const estaPausado = producto.pausado === true;
+                const badgePausado = estaPausado ? '<span class="bg-gray-200 text-gray-600 text-[10px] font-semibold px-2 py-0.5 rounded-full ml-2"><i class="fas fa-pause"></i> Pausado</span>' : '';
+                const botonPausar = estaPausado
+                    ? `<button onclick="togglePausarProducto('${producto.id}', false)" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-play mr-1"></i>Reanudar</button>`
+                    : `<button onclick="togglePausarProducto('${producto.id}', true)" class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-pause mr-1"></i>Pausar</button>`;
                 div.innerHTML = `
                     <div class="flex items-center gap-3 mb-3">
                         <img src="${producto.imagenMiniatura || producto.imagen}" loading="lazy" decoding="async" class="w-14 h-14 rounded-xl object-cover bg-gray-100">
                         <div class="flex-1">
-                            <p class="font-medium text-slate-800">${producto.nombre}${badgePendiente}${badgeStock}${badgeOferta}${badgeDescuento}${badgeEntrega}${badgeProgramado}</p>
+                            <p class="font-medium text-slate-800">${producto.nombre}${badgePendiente}${badgeStock}${badgeOferta}${badgeDescuento}${badgeEntrega}${badgeProgramado}${badgePausado}</p>
                             <p class="text-indigo-600 font-bold">S/ ${producto.precio}</p>
                             ${etiquetaDueno}
                         </div>
@@ -4825,6 +4873,7 @@
                         </summary>
                         <div class="mt-2 space-y-2">
                             <div class="flex items-center gap-2 flex-wrap">
+                                ${botonPausar}
                                 ${botonOferta}
                                 ${botonEntregaDemorada}
                                 <button onclick="toggleDestacarProducto('${producto.id}', ${!producto.destacado})" class="${producto.destacado ? 'bg-amber-500 hover:bg-amber-600' : 'bg-slate-500 hover:bg-slate-600'} text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-star mr-1"></i>${producto.destacado ? 'Quitar destacado' : 'Destacar'}</button>
@@ -5563,6 +5612,38 @@
             } catch (err) {
                 mostrarAviso('No se pudo marcar como entregado: ' + (err.message || err.code || 'error desconocido'));
             }
+        }
+
+        function exportarProductosCSV() {
+            const miUid = auth.currentUser && auth.currentUser.uid;
+            let lista = esSuperAdmin
+                ? (filtroPropietarioId === 'todos' ? productos : productos.filter(p => p.propietario === filtroPropietarioId))
+                : productos.filter(p => p.propietario === miUid);
+            if (lista.length === 0) {
+                mostrarAviso('No tienes productos para exportar todavía.');
+                return;
+            }
+            const filas = [['Nombre', 'Precio', 'Categoría', 'Stock', 'Estado', 'Clics de compra', 'Vendedor']];
+            lista.forEach(p => {
+                const estado = p.pausado ? 'Pausado' : (p.aprobado === false ? 'Pendiente' : (p.stock !== null && p.stock !== undefined && p.stock <= 0 ? 'Agotado' : 'Activo'));
+                filas.push([
+                    p.nombre || '',
+                    p.precio || '',
+                    p.categoria || '',
+                    (p.stock === null || p.stock === undefined) ? 'Sin control' : p.stock,
+                    estado,
+                    p.clicsCompra || 0,
+                    p.propietarioNombre || ''
+                ]);
+            });
+            const csv = filas.map(fila => fila.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `productos_apl_market_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         function exportarVentasCSV() {
@@ -6498,16 +6579,34 @@
             const publicarEnValor = document.getElementById('new-publicar-en').value;
             const publicarEn = publicarEnValor ? new Date(publicarEnValor).getTime() : null;
             const categoriaSelect = document.getElementById('new-categoria').value;
-            const categoria = categoriaSelect === 'Otro'
-                ? (document.getElementById('new-categoria-otro').value.trim() || 'Otro')
-                : categoriaSelect;
+            const categoriaOtroTexto = document.getElementById('new-categoria-otro').value.trim();
+            const categoria = categoriaSelect === 'Otro' ? categoriaOtroTexto : categoriaSelect;
             const animacion3D = document.getElementById('new-animacion3d').checked;
             const esCombo = document.getElementById('new-es-combo').checked;
             const comboIncluye = esCombo ? document.getElementById('new-combo-incluye').value.trim() : '';
-            if (!nombre || !precio) {
-                mostrarAviso("Por favor completa nombre y precio.");
+
+            // ---- Validaciones claras, una por una ----
+            if (!nombre) {
+                mostrarAviso("Ponle un nombre al producto antes de publicarlo.");
+                document.getElementById('new-name').focus();
                 return;
             }
+            if (!document.getElementById('new-price').value || isNaN(precio) || precio <= 0) {
+                mostrarAviso("El precio debe ser un número mayor a 0.");
+                document.getElementById('new-price').focus();
+                return;
+            }
+            if (categoriaSelect === 'Otro' && !categoriaOtroTexto) {
+                mostrarAviso("Escribe el nombre de la categoría en el campo \"Otro\".");
+                document.getElementById('new-categoria-otro').focus();
+                return;
+            }
+            if (esCombo && !comboIncluye) {
+                mostrarAviso("Escribe qué incluye el combo (ej: Netflix + Spotify).");
+                document.getElementById('new-combo-incluye').focus();
+                return;
+            }
+
             const variantesTexto = document.getElementById('new-variantes').value.trim();
             const variantes = variantesTexto
                 ? variantesTexto.split('\n').map(linea => {
@@ -6516,6 +6615,22 @@
                     return (nombreVar && !isNaN(precioNum)) ? { nombre: nombreVar, precio: precioNum } : null;
                 }).filter(Boolean)
                 : [];
+
+            // ---- Alerta si el precio se sale mucho del promedio de esa categoría ----
+            const preciosCategoria = productos.filter(p => p.categoria === categoria && p.precio > 0).map(p => p.precio);
+            if (preciosCategoria.length >= 3) {
+                const promedio = preciosCategoria.reduce((a, b) => a + b, 0) / preciosCategoria.length;
+                if (precio < promedio * 0.3 || precio > promedio * 3) {
+                    mostrarConfirmacion(
+                        `El precio (S/ ${precio}) está muy alejado del promedio en "${categoria}" (≈ S/ ${promedio.toFixed(2)}). ¿Deseas publicarlo igual?`,
+                        () => guardarProductoEnFirestore()
+                    );
+                    return;
+                }
+            }
+            await guardarProductoEnFirestore();
+
+            async function guardarProductoEnFirestore() {
             const propietario = esSuperAdmin ? 'principal' : (auth.currentUser && auth.currentUser.uid);
             const propietarioNombre = esSuperAdmin ? 'Tienda principal' : (miNombreAdmin || 'Administrador');
             const propietarioWhatsapp = esSuperAdmin ? WHATSAPP_NUMBER : normalizarWhatsapp(miWhatsappAdmin);
@@ -6544,6 +6659,8 @@
                     animacion3D: animacion3D,
                     esCombo: esCombo,
                     comboIncluye: comboIncluye,
+                    pausado: false,
+                    historialPrecios: [{ precio: precio, fecha: Date.now() }],
                     propietario: propietario,
                     propietarioNombre: propietarioNombre,
                     propietarioWhatsapp: propietarioWhatsapp,
@@ -6556,8 +6673,11 @@
                     creado: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 registrarAuditoria('Creó producto', nombre);
+                localStorage.removeItem('sct_borrador_producto');
                 if (!esSuperAdmin) {
                     mostrarAviso('¡Publicado! Tu producto queda pendiente de aprobación del dueño de la tienda antes de que los clientes lo vean. Te avisamos apenas se apruebe.');
+                } else {
+                    mostrarAviso('¡Producto publicado con éxito!');
                 }
             } catch (err) {
                 console.error(err);
@@ -6593,6 +6713,8 @@
             document.getElementById('new-fotos-extra-label').textContent = 'Fotos adicionales (opcional, máx. 2)';
             nuevasFotosExtraBase64 = [];
             document.getElementById('new-variantes').value = '';
+            document.getElementById('new-name').focus();
+            }
         }
 
         function eliminarProducto(id) {
@@ -6604,7 +6726,12 @@
                     return;
                 }
             }
-            mostrarConfirmacion("¿Eliminar este producto?", async () => {
+            const productoAEliminar = productos.find(p => p.id === id);
+            const tieneVentas = productoAEliminar && productoAEliminar.clicsCompra > 0;
+            const mensaje = tieneVentas
+                ? `Este producto tiene ${productoAEliminar.clicsCompra} clic${productoAEliminar.clicsCompra === 1 ? '' : 's'} de "Comprar" registrado${productoAEliminar.clicsCompra === 1 ? '' : 's'}. ¿Seguro que quieres eliminarlo? Se perderá ese historial.`
+                : "¿Eliminar este producto?";
+            mostrarConfirmacion(mensaje, async () => {
                 try {
                     const producto = productos.find(p => p.id === id);
                     await db.collection('productos').doc(id).delete();
@@ -6612,6 +6739,22 @@
                 } catch (err) {
                     mostrarAviso('No se pudo eliminar el producto.');
                 }
+            });
+        }
+
+        function togglePausarProducto(id, pausar) {
+            const producto = productos.find(p => p.id === id);
+            if (!esSuperAdmin) {
+                const miUid = auth.currentUser && auth.currentUser.uid;
+                if (!producto || producto.propietario !== miUid) {
+                    mostrarAviso('Solo puedes pausar tus propios productos.');
+                    return;
+                }
+            }
+            db.collection('productos').doc(id).update({ pausado: !!pausar }).then(() => {
+                registrarAuditoria(pausar ? 'Pausó producto' : 'Reanudó producto', producto ? producto.nombre : id);
+            }).catch(() => {
+                mostrarAviso('No se pudo actualizar el producto.');
             });
         }
 
@@ -6837,7 +6980,122 @@
             if (tab === 'fidelizacion') renderFidelizacion();
             if (tab === 'seguridad') cargarTabSeguridad();
             if (tab === 'pendientes') renderPendientes();
+            if (tab === 'agregar') {
+                const miUid = esSuperAdmin ? 'principal' : (auth.currentUser && auth.currentUser.uid);
+                const vacaciones = estadoVacacionesVendedor(miUid);
+                const avisoSoloLectura = document.getElementById('aviso-solo-lectura-agregar');
+                const formulario = document.getElementById('formulario-agregar-producto');
+                if (avisoSoloLectura && formulario) {
+                    avisoSoloLectura.classList.toggle('hidden', !vacaciones);
+                    formulario.classList.toggle('opacity-40', !!vacaciones);
+                    formulario.classList.toggle('pointer-events-none', !!vacaciones);
+                }
+                restaurarBorradorProducto();
+            }
         }
+
+        // ---- Borrador automático del formulario "Agregar producto" (evita perder lo escrito si se cierra por error) ----
+        function autoguardarBorradorProducto() {
+            const borrador = {
+                nombre: document.getElementById('new-name')?.value || '',
+                precio: document.getElementById('new-price')?.value || '',
+                descripcion: document.getElementById('new-desc')?.value || '',
+                stock: document.getElementById('new-stock')?.value || '',
+                categoria: document.getElementById('new-categoria')?.value || '',
+                categoriaOtro: document.getElementById('new-categoria-otro')?.value || '',
+                esCombo: document.getElementById('new-es-combo')?.checked || false,
+                comboIncluye: document.getElementById('new-combo-incluye')?.value || '',
+                entregaDemorada: document.getElementById('new-entrega-demorada')?.checked || false,
+                publicarEn: document.getElementById('new-publicar-en')?.value || '',
+                variantes: document.getElementById('new-variantes')?.value || ''
+            };
+            localStorage.setItem('sct_borrador_producto', JSON.stringify(borrador));
+        }
+
+        function restaurarBorradorProducto() {
+            const guardado = localStorage.getItem('sct_borrador_producto');
+            if (!guardado) return;
+            try {
+                const b = JSON.parse(guardado);
+                if (!b.nombre && !b.precio && !b.descripcion) return;
+                if (document.getElementById('new-name').value || document.getElementById('new-price').value) return; // no pisar algo que ya se está escribiendo
+                document.getElementById('new-name').value = b.nombre || '';
+                document.getElementById('new-price').value = b.precio || '';
+                document.getElementById('new-desc').value = b.descripcion || '';
+                document.getElementById('new-stock').value = b.stock || '';
+                if (b.categoria) document.getElementById('new-categoria').value = b.categoria;
+                document.getElementById('new-categoria-otro').value = b.categoriaOtro || '';
+                document.getElementById('new-categoria-otro').classList.toggle('hidden', b.categoria !== 'Otro');
+                document.getElementById('new-animacion3d-row').classList.toggle('hidden', b.categoria !== 'Ropa' && b.categoria !== 'Zapatillas');
+                document.getElementById('new-es-combo').checked = !!b.esCombo;
+                document.getElementById('new-combo-incluye').value = b.comboIncluye || '';
+                document.getElementById('new-combo-incluye-row').classList.toggle('hidden', !b.esCombo);
+                document.getElementById('new-entrega-demorada').checked = !!b.entregaDemorada;
+                document.getElementById('new-publicar-en').value = b.publicarEn || '';
+                document.getElementById('new-variantes').value = b.variantes || '';
+                sugerirCategoriaProducto();
+                mostrarAviso('Recuperamos el borrador de un producto que estabas escribiendo.');
+            } catch (err) { /* borrador corrupto, se ignora */ }
+        }
+
+        // ---- Sugerencia automática de categoría según palabras clave en el nombre ----
+        function sugerirCategoriaProducto() {
+            const nombre = (document.getElementById('new-name')?.value || '').toLowerCase();
+            const sugerenciaEl = document.getElementById('sugerencia-categoria');
+            if (!nombre || !sugerenciaEl) { if (sugerenciaEl) sugerenciaEl.classList.add('hidden'); return; }
+            const mapa = [
+                { categoria: 'Streaming', claves: ['netflix', 'disney', 'hbo', 'max', 'spotify', 'youtube', 'prime video', 'crunchyroll', 'paramount', 'streaming', 'iptv'] },
+                { categoria: 'Videojuegos', claves: ['xbox', 'playstation', 'psn', 'steam', 'fortnite', 'roblox', 'nintendo', 'valorant', 'videojuego'] },
+                { categoria: 'Zapatillas', claves: ['zapatilla', 'nike', 'adidas', 'puma', 'sneaker'] },
+                { categoria: 'Ropa', claves: ['polo', 'casaca', 'pantalón', 'pantalon', 'camisa', 'ropa', 'chompa', 'buzo'] },
+                { categoria: 'Electrónica', claves: ['celular', 'laptop', 'audífono', 'audifono', 'cargador', 'tv', 'televisor', 'cable', 'memoria'] },
+                { categoria: 'Hogar', claves: ['cocina', 'mueble', 'sábana', 'sabana', 'hogar', 'decoración', 'decoracion'] },
+                { categoria: 'Vehículos', claves: ['carro', 'moto', 'auto', 'llanta', 'vehículo', 'vehiculo'] },
+                { categoria: 'Servicios', claves: ['servicio', 'asesoría', 'asesoria', 'clases', 'diseño', 'diseno'] }
+            ];
+            const coincidencia = mapa.find(m => m.claves.some(c => nombre.includes(c)));
+            const categoriaActualSelect = document.getElementById('new-categoria').value;
+            if (coincidencia && coincidencia.categoria !== categoriaActualSelect) {
+                sugerenciaEl.innerHTML = `Parece "${coincidencia.categoria}" → <button type="button" onclick="document.getElementById('new-categoria').value='${coincidencia.categoria}'; document.getElementById('new-categoria').dispatchEvent(new Event('change')); document.getElementById('sugerencia-categoria').classList.add('hidden');" class="underline font-semibold">usar esta categoría</button>`;
+                sugerenciaEl.classList.remove('hidden');
+            } else {
+                sugerenciaEl.classList.add('hidden');
+            }
+        }
+
+        // ---- Vista previa de la tarjeta antes de publicar ----
+        function vistaPreviaProductoNuevo() {
+            const nombre = document.getElementById('new-name').value.trim();
+            const precio = parseFloat(document.getElementById('new-price').value);
+            if (!nombre || !precio) {
+                mostrarAviso('Completa al menos el nombre y el precio para ver la vista previa.');
+                return;
+            }
+            const categoriaSelect = document.getElementById('new-categoria').value;
+            const categoria = categoriaSelect === 'Otro' ? (document.getElementById('new-categoria-otro').value.trim() || 'Otro') : categoriaSelect;
+            const productoFalso = {
+                id: '__preview__',
+                nombre: nombre,
+                precio: precio,
+                categoria: categoria,
+                imagen: nuevaFotoBase64 || 'https://picsum.photos/id/237/400/300',
+                imagenMiniatura: nuevaFotoBase64 || null,
+                animacion3D: document.getElementById('new-animacion3d').checked,
+                esCombo: document.getElementById('new-es-combo').checked,
+                comboIncluye: document.getElementById('new-combo-incluye').value.trim(),
+                propietarioNombre: esSuperAdmin ? 'Tienda principal' : (miNombreAdmin || 'Administrador'),
+                propietario: esSuperAdmin ? 'principal' : (auth.currentUser && auth.currentUser.uid),
+                clicsCompra: 0
+            };
+            const contenedor = document.getElementById('vista-previa-producto-nuevo');
+            contenedor.innerHTML = '';
+            const tarjeta = crearTarjetaProductoCliente(productoFalso);
+            tarjeta.style.width = '140px';
+            tarjeta.style.pointerEvents = 'none'; // es solo una vista previa, no debe abrir el detalle
+            contenedor.appendChild(tarjeta);
+            contenedor.classList.remove('hidden');
+        }
+
 
         async function toggleSuscripcionAdmin(activo) {
             if (!esSuperAdmin) {
