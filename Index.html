@@ -1358,8 +1358,15 @@
 
                     <!-- Hilo de mensajes -->
                     <div id="chat-hilo-wrap" class="hidden">
+                        <p id="chat-codigo-referencia" class="text-[11px] text-gray-400 mb-2"></p>
                         <div id="chat-mensajes-lista" class="admin-card p-4 mb-3 space-y-2 overflow-y-auto" style="max-height: 50vh;"></div>
+                        <div id="chat-grabando-aviso" class="hidden mb-2 text-xs text-red-500 font-semibold"><i class="fas fa-circle animate-pulse mr-1"></i> Grabando audio... toca de nuevo para enviar</div>
                         <div class="flex items-center gap-2">
+                            <label class="w-11 h-11 rounded-xl shrink-0 bg-gray-100 hover:bg-gray-200 flex items-center justify-center cursor-pointer text-gray-500" title="Enviar foto">
+                                <i class="fas fa-image"></i>
+                                <input type="file" accept="image/*" class="hidden" onchange="adjuntarFotoChat(event)">
+                            </label>
+                            <button type="button" id="btn-grabar-audio-chat" onclick="toggleGrabacionAudioChat()" class="w-11 h-11 rounded-xl shrink-0 bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500" title="Grabar audio"><i class="fas fa-microphone"></i></button>
                             <input id="chat-input-mensaje" type="text" placeholder="Escribe un mensaje..." onkeydown="if(event.key==='Enter'){enviarMensajeChatInterno();}" class="border border-gray-300 rounded-xl px-4 py-2.5 text-sm flex-1">
                             <button onclick="enviarMensajeChatInterno()" class="admin-btn-primary text-white w-11 h-11 rounded-xl shrink-0"><i class="fas fa-paper-plane"></i></button>
                         </div>
@@ -7258,7 +7265,7 @@
                 const conChat = adminsActivos.filter(a => a.chatHabilitado || a.chatSolicitado);
                 const valorActual = select.value;
                 select.innerHTML = '<option value="">Elige un administrador...</option>' + conChat.map(a =>
-                    `<option value="${a.id}">${(a.nombre || 'Administrador')}${a.chatHabilitado ? '' : ' (pidió chat, sin activar)'}</option>`
+                    `<option value="${a.id}">${(a.nombre || 'Administrador')} #${codigoCortoAdmin(a.id)}${a.chatHabilitado ? '' : ' (pidió chat, sin activar)'}</option>`
                 ).join('');
                 if (valorActual) select.value = valorActual;
                 if (chatAdminSeleccionadoId) {
@@ -7298,6 +7305,8 @@
             }
             hilo.classList.remove('hidden');
             sinSeleccion.classList.add('hidden');
+            const codigoRef = document.getElementById('chat-codigo-referencia');
+            if (codigoRef) codigoRef.textContent = `N° de resguardo de esta conversación: #${codigoCortoAdmin(chatAdminSeleccionadoId)}`;
             const lista = document.getElementById('chat-mensajes-lista');
             lista.innerHTML = '<p class="text-xs text-gray-400">Cargando mensajes...</p>';
             chatMensajesUnsub = db.collection('administradores').doc(chatAdminSeleccionadoId)
@@ -7310,9 +7319,12 @@
                         lista.innerHTML = mensajes.map(m => {
                             const esMio = esSuperAdmin ? m.autor === 'superadmin' : m.autor === 'admin';
                             const fechaTexto = m.fecha && m.fecha.toDate ? m.fecha.toDate().toLocaleString('es-PE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+                            const contenidoTexto = m.texto ? `<p>${m.texto.replace(/</g, '&lt;')}</p>` : '';
+                            const contenidoImagen = m.imagen ? `<img src="${m.imagen}" class="rounded-lg max-w-full mt-1 cursor-pointer" onclick="window.open('${m.imagen}', '_blank')">` : '';
+                            const contenidoAudio = m.audio ? `<audio controls src="${m.audio}" class="mt-1 max-w-full" style="height:34px;"></audio>` : '';
                             return `<div class="flex ${esMio ? 'justify-end' : 'justify-start'}">
                                 <div class="${esMio ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-slate-800'} rounded-2xl px-3.5 py-2 max-w-[75%] text-sm">
-                                    <p>${(m.texto || '').replace(/</g, '&lt;')}</p>
+                                    ${contenidoTexto}${contenidoImagen}${contenidoAudio}
                                     <p class="${esMio ? 'text-indigo-200' : 'text-gray-400'} text-[10px] mt-0.5">${fechaTexto}</p>
                                 </div>
                             </div>`;
@@ -7328,30 +7340,98 @@
                 });
         }
 
-        async function enviarMensajeChatInterno() {
-            const input = document.getElementById('chat-input-mensaje');
-            const texto = input.value.trim();
-            if (!texto) return;
+        // Envía el mensaje: puede traer texto, una imagen en base64 y/o un audio en base64.
+        // Se usa tanto para el botón de enviar texto como para fotos/audios adjuntos.
+        async function enviarMensajeChatDatos(datos) {
             const destinoId = esSuperAdmin ? chatAdminSeleccionadoId : (auth.currentUser && auth.currentUser.uid);
             if (!destinoId) {
                 mostrarAviso('Elige primero con qué administrador quieres chatear.');
-                return;
+                return false;
             }
-            input.value = '';
             const campoNoLeido = esSuperAdmin ? 'noLeidoAdmin' : 'noLeidoSuperAdmin';
             try {
                 await db.collection('administradores').doc(destinoId).collection('chatMensajes').add({
                     autor: esSuperAdmin ? 'superadmin' : 'admin',
-                    texto: texto,
-                    fecha: firebase.firestore.FieldValue.serverTimestamp()
+                    fecha: firebase.firestore.FieldValue.serverTimestamp(),
+                    ...datos
                 });
                 await db.collection('administradores').doc(destinoId).set({
                     [campoNoLeido]: true,
                     chatUltimoMensajeFecha: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
+                return true;
             } catch (err) {
-                mostrarAviso('No se pudo enviar el mensaje: ' + (err.message || err.code || 'error desconocido'));
-                input.value = texto;
+                mostrarAviso('No se pudo enviar: ' + (err.message || err.code || 'error desconocido'));
+                return false;
+            }
+        }
+
+        async function enviarMensajeChatInterno() {
+            const input = document.getElementById('chat-input-mensaje');
+            const texto = input.value.trim();
+            if (!texto) return;
+            input.value = '';
+            const ok = await enviarMensajeChatDatos({ texto: texto });
+            if (!ok) input.value = texto;
+        }
+
+        // ---- Adjuntar foto al chat (se comprime igual que las fotos de producto) ----
+        async function adjuntarFotoChat(event) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            try {
+                const dataUrl = await comprimirImagen(file, 700, 0.6);
+                await enviarMensajeChatDatos({ imagen: dataUrl });
+            } catch (err) {
+                mostrarAviso('No se pudo procesar la foto.');
+            }
+        }
+
+        // ---- Grabar y enviar audio (nota de voz) ----
+        let grabadorAudioChat = null;
+        let fragmentosAudioChat = [];
+
+        async function toggleGrabacionAudioChat() {
+            const boton = document.getElementById('btn-grabar-audio-chat');
+            const aviso = document.getElementById('chat-grabando-aviso');
+            if (grabadorAudioChat && grabadorAudioChat.state === 'recording') {
+                grabadorAudioChat.stop();
+                return;
+            }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                mostrarAviso('Tu navegador no permite grabar audio. Prueba desde el celular con Chrome o Safari actualizado.');
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                fragmentosAudioChat = [];
+                grabadorAudioChat = new MediaRecorder(stream);
+                grabadorAudioChat.ondataavailable = (e) => { if (e.data.size > 0) fragmentosAudioChat.push(e.data); };
+                grabadorAudioChat.onstop = async () => {
+                    stream.getTracks().forEach(t => t.stop());
+                    boton.classList.remove('bg-red-500', 'text-white');
+                    boton.innerHTML = '<i class="fas fa-microphone"></i>';
+                    aviso.classList.add('hidden');
+                    const blob = new Blob(fragmentosAudioChat, { type: grabadorAudioChat.mimeType || 'audio/webm' });
+                    if (blob.size > 900 * 1024) {
+                        mostrarAviso('El audio quedó muy pesado (más de 15-20 segundos). Intenta un mensaje más corto.');
+                        return;
+                    }
+                    const base64 = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                    await enviarMensajeChatDatos({ audio: base64 });
+                };
+                grabadorAudioChat.start();
+                boton.classList.add('bg-red-500', 'text-white');
+                boton.innerHTML = '<i class="fas fa-stop"></i>';
+                aviso.classList.remove('hidden');
+            } catch (err) {
+                mostrarAviso('No se pudo acceder al micrófono. Revisa los permisos del navegador.');
             }
         }
 
