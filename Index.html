@@ -462,6 +462,45 @@
         }
         .admin-stat-icon { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; display:flex; align-items:center; justify-content:center; font-size: 1rem; }
 
+        /* ---- Liquid glass: solo para tarjetas destacadas (banners/hero), no para listas
+               densas, por costo de rendimiento del filtro SVG en varias tarjetas a la vez ---- */
+        .admin-card-liquid {
+            position: relative;
+            border-radius: 1.25rem;
+            isolation: isolate;
+            overflow: hidden;
+        }
+        .admin-card-liquid::before {
+            content: '';
+            position: absolute; inset: 0; z-index: 0;
+            border-radius: inherit;
+            box-shadow: inset 0 0 16px -4px rgba(255,255,255,0.55);
+            pointer-events: none;
+        }
+        .admin-card-liquid::after {
+            content: '';
+            position: absolute; inset: 0; z-index: -1;
+            border-radius: inherit;
+            background: rgba(255,255,255,0.14);
+            backdrop-filter: blur(16px) saturate(170%);
+            -webkit-backdrop-filter: blur(16px) saturate(170%);
+            filter: url(#glass-distortion);
+            -webkit-filter: url(#glass-distortion);
+            pointer-events: none;
+        }
+        .admin-card.admin-card-liquid {
+            background: transparent;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            border: 1px solid rgba(255,255,255,0.4);
+        }
+        #admin-modal-panel.dark-panel .admin-card.admin-card-liquid {
+            background: transparent !important;
+            border-color: rgba(122,122,166,0.32) !important;
+        }
+        .admin-card-liquid > * { position: relative; z-index: 10; }
+        #admin-modal-panel.dark-panel .admin-card-liquid::after { background: rgba(20,19,42,0.35); }
+
         /* Tabs */
         .admin-tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid rgba(226,232,240,0.8); margin-bottom: 1.5rem; position: sticky; top: 0; z-index: 20; background: rgba(248,250,255,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding-top: 0.25rem; }
         #admin-modal-panel.dark-panel .admin-tabs { border-color: #3a3a5c; background: rgba(23,23,43,0.85); }
@@ -679,6 +718,18 @@
     -->
 </head>
 <body class="font-sans">
+
+    <!-- Filtro SVG para el efecto "liquid glass" (solo se usa en tarjetas destacadas del panel admin, por rendimiento) -->
+    <svg width="0" height="0" style="position: absolute;">
+      <defs>
+        <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.008 0.008" numOctaves="2" seed="92" result="noise" />
+          <feGaussianBlur in="noise" stdDeviation="2" result="blurred" />
+          <feDisplacementMap in="SourceGraphic" in2="blurred" scale="70" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </defs>
+    </svg>
+
 
     <header class="hero-colorful text-slate-800 sticky top-0 z-50 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex justify-between items-center gap-2">
@@ -1093,7 +1144,7 @@
                         </div>
                         <div id="checklist-primeros-pasos-lista" class="space-y-1.5 text-sm"></div>
                     </div>
-                    <div id="perfil-admin-card" class="admin-card p-5 mb-6">
+                    <div id="perfil-admin-card" class="admin-card admin-card-liquid p-5 mb-6">
                         <div class="flex items-center gap-4">
                             <div id="perfil-admin-avatar-wrap" class="relative shrink-0">
                                 <div id="perfil-admin-avatar" role="img" aria-label="Foto de perfil" class="w-14 h-14 rounded-full text-white flex items-center justify-center font-bold text-lg bg-indigo-600 overflow-hidden">A</div>
