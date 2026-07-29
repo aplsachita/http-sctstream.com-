@@ -1517,10 +1517,22 @@
                 <img id="cliente-foto-grande" class="w-16 h-16 rounded-full mx-auto mb-3 object-cover">
                 <h3 id="cliente-nombre-grande" class="text-lg font-bold mb-1"></h3>
                 <p id="cliente-correo-grande" class="text-gray-400 text-xs mb-4"></p>
+                <button onclick="cerrarMiCuentaCliente(); abrirMisComprasCliente();" class="border-2 border-slate-300 text-slate-700 py-3 rounded-xl font-semibold w-full mb-2 hover:bg-slate-50"><i class="fas fa-bag-shopping mr-1 text-indigo-500"></i> Mis compras</button>
                 <button onclick="cerrarMiCuentaCliente(); abrirMisPuntos();" class="border-2 border-slate-300 text-slate-700 py-3 rounded-xl font-semibold w-full mb-2 hover:bg-slate-50"><i class="fas fa-star mr-1 text-amber-400"></i> Ver mis puntos</button>
                 <button onclick="cerrarSesionCliente()" class="text-red-500 text-sm mt-2">Cerrar sesión</button>
             </div>
             <button onclick="cerrarMiCuentaCliente()" class="text-gray-400 text-sm mt-4 block mx-auto">Cerrar</button>
+        </div>
+    </div>
+
+    <div id="mis-compras-cliente-modal" class="hidden modal-overlay" onclick="if (event.target === this) cerrarMisComprasCliente()">
+        <div class="bg-white rounded-3xl max-w-sm w-full mx-4 p-6 max-h-[85vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-1">
+                <h3 class="text-lg font-bold"><i class="fas fa-bag-shopping mr-1 text-indigo-500"></i> Mis compras</h3>
+                <button onclick="cerrarMisComprasCliente()" class="text-gray-400 text-xl leading-none">&times;</button>
+            </div>
+            <p class="text-gray-400 text-xs mb-4">Todo lo que has pedido desde que creaste tu cuenta.</p>
+            <div id="mis-compras-cliente-lista" class="space-y-3"></div>
         </div>
     </div>
 
@@ -2368,6 +2380,7 @@
             db.collection('pedidos').add({
                 productoId: producto.id || null,
                 productoNombre: producto.nombre,
+                productoImagen: producto.imagenMiniatura || producto.imagen || null,
                 precio: precioFinalProducto(producto),
                 propietario: producto.propietario || 'principal',
                 propietarioNombre: producto.propietarioNombre || 'Tienda principal',
@@ -2377,6 +2390,7 @@
                 referidoPor: sessionStorage.getItem('sct_ref') || null,
                 origenTrafico: origenTraficoActual(),
                 clienteTelefono: null,
+                clienteUid: (esClienteConectado && auth.currentUser) ? auth.currentUser.uid : null,
                 fechaVencimiento: null,
                 creado: firebase.firestore.FieldValue.serverTimestamp(),
                 vendidoEn: null
@@ -4164,6 +4178,7 @@
             db.collection('pedidos').add({
                 productoId: item.productoId,
                 productoNombre: item.nombre + (item.varianteNombre ? ` (${item.varianteNombre})` : ''),
+                productoImagen: item.imagen || null,
                 precio: item.precio,
                 propietario: item.propietario,
                 propietarioNombre: item.propietarioNombre,
@@ -4173,6 +4188,7 @@
                 referidoPor: sessionStorage.getItem('sct_ref') || null,
                 origenTrafico: origenTraficoActual(),
                 clienteTelefono: null,
+                clienteUid: (esClienteConectado && auth.currentUser) ? auth.currentUser.uid : null,
                 fechaVencimiento: null,
                 creado: firebase.firestore.FieldValue.serverTimestamp(),
                 vendidoEn: null
@@ -7118,6 +7134,58 @@
         }
         function cerrarMiCuentaCliente() {
             document.getElementById('cuenta-cliente-modal').classList.add('hidden');
+        }
+
+        // ---- Interfaz de cliente: historial de lo que ha comprado/pedido ----
+        async function abrirMisComprasCliente() {
+            if (!esClienteConectado || !auth.currentUser) {
+                mostrarAviso('Crea tu cuenta o inicia sesión primero para ver tus compras.');
+                abrirMiCuentaCliente();
+                return;
+            }
+            const modal = document.getElementById('mis-compras-cliente-modal');
+            const lista = document.getElementById('mis-compras-cliente-lista');
+            modal.classList.remove('hidden');
+            lista.innerHTML = '<p class="text-sm text-gray-400 text-center py-6">Cargando tus compras...</p>';
+            try {
+                const snap = await db.collection('pedidos')
+                    .where('clienteUid', '==', auth.currentUser.uid)
+                    .orderBy('creado', 'desc')
+                    .limit(50)
+                    .get();
+                if (snap.empty) {
+                    lista.innerHTML = '<p class="text-sm text-gray-400 text-center py-6">Todavía no has pedido nada. Cuando compres algo, aparecerá aquí.</p>';
+                    return;
+                }
+                lista.innerHTML = snap.docs.map(d => {
+                    const p = d.data();
+                    const fecha = p.creado && p.creado.toDate ? p.creado.toDate().toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+                    const esVendido = p.estado === 'vendido';
+                    const badge = esVendido
+                        ? `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">${p.entregado ? 'Entregado' : 'Confirmado'}</span>`
+                        : `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full">Esperando confirmación</span>`;
+                    const imagen = p.productoImagen
+                        ? `<img src="${p.productoImagen}" class="w-12 h-12 rounded-lg object-cover shrink-0">`
+                        : `<div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 shrink-0"><i class="fas fa-box"></i></div>`;
+                    return `<div class="flex items-center gap-3 border border-gray-100 rounded-xl p-3">
+                        ${imagen}
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-semibold text-slate-800 truncate">${p.productoNombre || 'Producto'}</p>
+                            <p class="text-xs text-gray-400">${p.propietarioNombre || ''} · ${fecha}</p>
+                            <div class="mt-1 flex items-center gap-2">
+                                <span class="text-sm font-bold text-slate-700">S/ ${p.precio || 0}</span>
+                                ${badge}
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (err) {
+                console.error(err);
+                lista.innerHTML = '<p class="text-sm text-red-500 text-center py-6">No se pudo cargar tu historial. Intenta de nuevo en un momento.</p>';
+            }
+        }
+        function cerrarMisComprasCliente() {
+            document.getElementById('mis-compras-cliente-modal').classList.add('hidden');
         }
 
         async function iniciarSesionClienteConGoogle() {
