@@ -110,6 +110,28 @@
             100% { transform: translateY(0); opacity: 1; }
         }
         .panelc-tab.activo { color: #fff; background: rgba(255,255,255,0.14); }
+
+        /* Glassmorphism para el panel de cliente: tarjetas, barra inferior y encabezado */
+        .glass-card {
+            background: rgba(255,255,255,0.10);
+            backdrop-filter: blur(16px) saturate(160%);
+            -webkit-backdrop-filter: blur(16px) saturate(160%);
+            border: 1px solid rgba(255,255,255,0.18);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+        }
+        .glass-card-fuerte {
+            background: rgba(255,255,255,0.16);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.25);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.22);
+        }
+        #panel-cliente-app .fixed.bottom-0 {
+            background: rgba(255,255,255,0.10) !important;
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-top: 1px solid rgba(255,255,255,0.18) !important;
+        }
         .panelc-refresh-spinner { animation: girarRefresh 0.7s linear infinite; }
         @keyframes girarRefresh { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
@@ -1524,13 +1546,13 @@
 
         <!-- Barra superior -->
         <div class="flex items-center gap-3 px-4 pt-5 pb-3 text-white">
-            <button onclick="cerrarPanelClienteCompleto()" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center"><i class="fas fa-arrow-left"></i></button>
+            <button onclick="cerrarPanelClienteCompleto()" class="w-9 h-9 rounded-full glass-card flex items-center justify-center"><i class="fas fa-arrow-left"></i></button>
             <p id="panel-cliente-titulo-superior" class="font-semibold">Mi cuenta</p>
         </div>
 
         <!-- Pantalla: sin sesión (crear cuenta / iniciar sesión) -->
         <div id="panelc-sin-sesion" class="px-6 pt-6 text-center text-white">
-            <div class="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-5">
+            <div class="w-20 h-20 rounded-full glass-card flex items-center justify-center mx-auto mb-5">
                 <i class="fas fa-bag-shopping text-3xl text-violet-200"></i>
             </div>
             <h2 class="text-2xl font-bold mb-2">Tu espacio en APL market</h2>
@@ -7239,11 +7261,11 @@
                     <span class="inline-block text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/10 ${nivelColor}"><i class="fas fa-medal mr-1"></i>Nivel ${nivel}</span>
                 </div>
                 <div class="grid grid-cols-2 gap-3 mt-6">
-                    <button onclick="cambiarTabPanelCliente('compras')" class="bg-white/10 rounded-2xl p-4 text-left text-white">
+                    <button onclick="cambiarTabPanelCliente('compras')" class="glass-card rounded-2xl p-4 text-left text-white">
                         <p class="text-2xl font-bold">${totalCompras !== null ? totalCompras : '—'}</p>
                         <p class="text-xs text-violet-200">Compras realizadas</p>
                     </button>
-                    <button onclick="cambiarTabPanelCliente('puntos')" class="bg-white/10 rounded-2xl p-4 text-left text-white">
+                    <button onclick="cambiarTabPanelCliente('puntos')" class="glass-card rounded-2xl p-4 text-left text-white">
                         <p class="text-2xl font-bold"><i class="fas fa-star text-amber-300 text-lg"></i></p>
                         <p class="text-xs text-violet-200">Ver mis puntos</p>
                     </button>
@@ -7340,7 +7362,7 @@
                         return `
                         <button onclick='abrirDetalleCompraCliente(${JSON.stringify(p).replace(/'/g, "&apos;")})' class="w-full text-left relative">
                             <span class="absolute -left-[26px] top-2 w-2.5 h-2.5 rounded-full bg-violet-400"></span>
-                            <div class="flex items-center gap-3 bg-white/10 rounded-xl p-3">
+                            <div class="flex items-center gap-3 glass-card rounded-xl p-3">
                                 ${imagen}
                                 <div class="min-w-0 flex-1">
                                     <p class="text-sm font-semibold text-white truncate">${p.productoNombre || 'Producto'}</p>
@@ -7440,7 +7462,7 @@
                 let nivel = 'Bronce';
                 if (compras >= 10) nivel = 'Oro'; else if (compras >= 3) nivel = 'Plata';
                 resultEl.innerHTML = `
-                    <div class="bg-white/10 rounded-2xl p-5 text-center text-white">
+                    <div class="glass-card-fuerte rounded-2xl p-5 text-center text-white">
                         <p class="text-3xl font-bold">${puntos}</p>
                         <p class="text-xs text-violet-200 mb-3">puntos acumulados</p>
                         <span class="inline-block text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/10"><i class="fas fa-medal mr-1"></i>Nivel ${nivel}</span>
