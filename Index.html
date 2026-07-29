@@ -862,6 +862,7 @@
                     <button type="button" id="tab-btn-pendientes" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('pendientes')"><i class="fas fa-clock-rotate-left mr-1.5"></i>Pendientes<span id="badge-pendientes" class="hidden ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full"></span></button>
                     <button type="button" id="tab-btn-solicitudes" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('solicitudes')"><i class="fas fa-user-clock mr-1.5"></i>Solicitudes</button>
                     <button type="button" id="tab-btn-administradores" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('administradores')"><i class="fas fa-users mr-1.5"></i>Administradores</button>
+                    <button type="button" id="tab-btn-chat" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('chat')"><i class="fas fa-comments mr-1.5"></i>Chat<span id="badge-chat" class="hidden ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full"></span></button>
                     <button type="button" id="tab-btn-seguridad" class="admin-tab-btn" onclick="cambiarTabAdmin('seguridad')"><i class="fas fa-shield-halved mr-1.5"></i>Seguridad</button>
                 </div>
 
@@ -1168,7 +1169,25 @@
                         <button onclick="exportarProductosCSV()" class="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-file-csv mr-1"></i> Exportar productos a CSV</button>
                     </div>
                     <div id="aviso-agotados" class="hidden mb-4"></div>
+
+                    <div id="grafico-categorias-wrap" class="hidden admin-card p-4 mb-4">
+                        <button type="button" onclick="document.getElementById('grafico-categorias-cuerpo').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-90');" class="w-full flex items-center justify-between text-sm font-semibold text-slate-700">
+                            <span><i class="fas fa-chart-simple mr-1 text-indigo-500"></i> Productos por categoría</span>
+                            <i class="fas fa-chevron-right text-xs transition-transform"></i>
+                        </button>
+                        <div id="grafico-categorias-cuerpo" class="hidden mt-3 space-y-2"></div>
+                    </div>
+
+                    <div id="calendario-programados-wrap" class="hidden admin-card p-4 mb-4">
+                        <button type="button" onclick="document.getElementById('calendario-programados-cuerpo').classList.toggle('hidden'); this.querySelector('i').classList.toggle('rotate-90');" class="w-full flex items-center justify-between text-sm font-semibold text-slate-700">
+                            <span><i class="fas fa-calendar-days mr-1 text-violet-500"></i> Calendario de productos programados</span>
+                            <i class="fas fa-chevron-right text-xs transition-transform"></i>
+                        </button>
+                        <div id="calendario-programados-cuerpo" class="hidden mt-3 space-y-3"></div>
+                    </div>
+
                     <div id="admin-productos" class="space-y-4"></div>
+
                 </div>
 
 
@@ -1316,6 +1335,36 @@
                         </div>
                         <div id="admins-activos-lista" class="space-y-4"></div>
                     </div>
+                </div>
+
+                <div class="admin-tab-pane" data-tab="chat">
+                    <h4 class="mb-1 text-base admin-section-title"><i class="fas fa-comments mr-1"></i> Chat interno</h4>
+                    <p class="text-xs text-gray-400 mb-4">Conversación privada entre el súper admin y un administrador. No la ven los clientes.</p>
+
+                    <!-- Vista del admin normal cuando el chat NO está habilitado todavía -->
+                    <div id="chat-bloqueado-normal" class="hidden admin-card p-5 text-center">
+                        <i class="fas fa-lock text-2xl text-gray-300 mb-2"></i>
+                        <p class="text-sm text-gray-500 mb-3">Todavía no tienes el chat activado. Pídeselo al súper admin y te avisamos apenas lo active.</p>
+                        <button id="btn-solicitar-chat" onclick="solicitarChatInterno()" class="admin-btn-primary text-white px-4 py-2.5 rounded-xl text-sm font-semibold">Solicitar activar chat</button>
+                        <p id="chat-solicitud-enviada-texto" class="hidden text-xs text-emerald-600 mt-2"><i class="fas fa-check"></i> Solicitud enviada, espera a que el súper admin la active.</p>
+                    </div>
+
+                    <!-- Selector de conversación, solo para el súper admin -->
+                    <div id="chat-selector-superadmin" class="hidden mb-4">
+                        <select id="chat-select-admin" onchange="seleccionarChatAdmin(this.value)" class="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Elige un administrador...</option>
+                        </select>
+                    </div>
+
+                    <!-- Hilo de mensajes -->
+                    <div id="chat-hilo-wrap" class="hidden">
+                        <div id="chat-mensajes-lista" class="admin-card p-4 mb-3 space-y-2 overflow-y-auto" style="max-height: 50vh;"></div>
+                        <div class="flex items-center gap-2">
+                            <input id="chat-input-mensaje" type="text" placeholder="Escribe un mensaje..." onkeydown="if(event.key==='Enter'){enviarMensajeChatInterno();}" class="border border-gray-300 rounded-xl px-4 py-2.5 text-sm flex-1">
+                            <button onclick="enviarMensajeChatInterno()" class="admin-btn-primary text-white w-11 h-11 rounded-xl shrink-0"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                    <p id="chat-sin-seleccion-texto" class="hidden text-sm text-gray-400">Elige un administrador arriba para ver la conversación.</p>
                 </div>
 
                 <div class="admin-tab-pane" data-tab="seguridad">
@@ -4439,6 +4488,70 @@
             }
         }
 
+        // Gráfico simple (barras con CSS, sin librerías) de cuántos productos hay por categoría,
+        // para el propietario que se está viendo en la pestaña "Productos".
+        function renderGraficoCategoriasAdmin(lista) {
+            const wrap = document.getElementById('grafico-categorias-wrap');
+            const cuerpo = document.getElementById('grafico-categorias-cuerpo');
+            if (!wrap || !cuerpo) return;
+            if (!lista || lista.length === 0) {
+                wrap.classList.add('hidden');
+                return;
+            }
+            wrap.classList.remove('hidden');
+            const conteo = {};
+            lista.forEach(p => {
+                const cat = p.categoria || 'Otro';
+                conteo[cat] = (conteo[cat] || 0) + 1;
+            });
+            const ordenado = Object.entries(conteo).sort((a, b) => b[1] - a[1]);
+            const max = ordenado[0][1];
+            const colores = ['bg-indigo-600', 'bg-sky-500', 'bg-emerald-500', 'bg-amber-500', 'bg-pink-500', 'bg-violet-500', 'bg-teal-500', 'bg-red-500'];
+            cuerpo.innerHTML = ordenado.map(([cat, total], i) => `
+                <div class="flex items-center gap-3">
+                    <span class="text-xs text-gray-500 w-24 truncate">${cat}</span>
+                    <div class="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                        <div class="h-full ${colores[i % colores.length]}" style="width:${Math.max(8, (total / max) * 100)}%"></div>
+                    </div>
+                    <span class="text-xs font-semibold text-gray-600 w-6 text-right">${total}</span>
+                </div>
+            `).join('');
+        }
+
+        // Vista tipo calendario (agrupado por día) de los productos con publicación programada a futuro.
+        function renderCalendarioProgramadosAdmin(lista) {
+            const wrap = document.getElementById('calendario-programados-wrap');
+            const cuerpo = document.getElementById('calendario-programados-cuerpo');
+            if (!wrap || !cuerpo) return;
+            const ahora = Date.now();
+            const programados = (lista || []).filter(p => p.publicarEn && p.publicarEn > ahora).sort((a, b) => a.publicarEn - b.publicarEn);
+            if (programados.length === 0) {
+                wrap.classList.add('hidden');
+                return;
+            }
+            wrap.classList.remove('hidden');
+            const grupos = {};
+            programados.forEach(p => {
+                const fecha = new Date(p.publicarEn);
+                const clave = fecha.toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'short' });
+                if (!grupos[clave]) grupos[clave] = [];
+                grupos[clave].push(p);
+            });
+            cuerpo.innerHTML = Object.entries(grupos).map(([dia, items]) => `
+                <div>
+                    <p class="text-xs font-bold text-violet-600 uppercase mb-1">${dia}</p>
+                    <div class="space-y-1">
+                        ${items.map(p => `
+                            <div class="flex items-center justify-between bg-violet-50 rounded-lg px-3 py-1.5">
+                                <span class="text-sm text-slate-700 truncate">${p.nombre}</span>
+                                <span class="text-[11px] text-violet-500 shrink-0 ml-2">${new Date(p.publicarEn).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
         function actualizarStatsCategorias() {
             const cont = document.getElementById('stats-categorias-lista');
             if (!cont) return;
@@ -4749,6 +4862,9 @@
             } else {
                 listaAMostrar = productos.filter(p => p.propietario === miUid);
             }
+            const listaCompletaPropietario = listaAMostrar;
+            renderGraficoCategoriasAdmin(listaCompletaPropietario);
+            renderCalendarioProgramadosAdmin(listaCompletaPropietario);
 
             const textoBusqueda = (document.getElementById('buscador-productos-admin')?.value || '').trim().toLowerCase();
             if (textoBusqueda) {
@@ -6992,6 +7108,7 @@
                 }
                 restaurarBorradorProducto();
             }
+            if (tab === 'chat') abrirTabChatInterno();
         }
 
         // ---- Borrador automático del formulario "Agregar producto" (evita perder lo escrito si se cierra por error) ----
@@ -7097,6 +7214,160 @@
         }
 
 
+        // ============================================================
+        // CHAT INTERNO — conversación privada entre el súper admin y un
+        // administrador. Solo el súper admin puede activarlo por admin,
+        // y solo si ese admin lo solicita primero.
+        // ============================================================
+        let chatAdminSeleccionadoId = null;
+        let chatMensajesUnsub = null;
+
+        async function toggleChatAdmin(adminId, activar) {
+            if (!esSuperAdmin) return;
+            try {
+                await db.collection('administradores').doc(adminId).set({
+                    chatHabilitado: activar,
+                    chatSolicitado: false
+                }, { merge: true });
+                mostrarAviso(activar ? 'Chat activado para este admin.' : 'Chat desactivado para este admin.');
+            } catch (err) {
+                mostrarAviso('No se pudo actualizar el chat: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
+        async function solicitarChatInterno() {
+            if (esSuperAdmin || !auth.currentUser) return;
+            try {
+                await db.collection('administradores').doc(auth.currentUser.uid).set({ chatSolicitado: true }, { merge: true });
+                document.getElementById('btn-solicitar-chat').classList.add('hidden');
+                document.getElementById('chat-solicitud-enviada-texto').classList.remove('hidden');
+            } catch (err) {
+                mostrarAviso('No se pudo enviar la solicitud: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
+        function abrirTabChatInterno() {
+            const bloqueado = document.getElementById('chat-bloqueado-normal');
+            const selector = document.getElementById('chat-selector-superadmin');
+            const hilo = document.getElementById('chat-hilo-wrap');
+            const sinSeleccion = document.getElementById('chat-sin-seleccion-texto');
+            if (esSuperAdmin) {
+                bloqueado.classList.add('hidden');
+                selector.classList.remove('hidden');
+                const select = document.getElementById('chat-select-admin');
+                const conChat = adminsActivos.filter(a => a.chatHabilitado || a.chatSolicitado);
+                const valorActual = select.value;
+                select.innerHTML = '<option value="">Elige un administrador...</option>' + conChat.map(a =>
+                    `<option value="${a.id}">${(a.nombre || 'Administrador')}${a.chatHabilitado ? '' : ' (pidió chat, sin activar)'}</option>`
+                ).join('');
+                if (valorActual) select.value = valorActual;
+                if (chatAdminSeleccionadoId) {
+                    hilo.classList.remove('hidden');
+                    sinSeleccion.classList.add('hidden');
+                } else {
+                    hilo.classList.add('hidden');
+                    sinSeleccion.classList.remove('hidden');
+                }
+            } else {
+                selector.classList.add('hidden');
+                sinSeleccion.classList.add('hidden');
+                const miUid = auth.currentUser && auth.currentUser.uid;
+                if (miEstadoChatDatos.chatHabilitado) {
+                    bloqueado.classList.add('hidden');
+                    hilo.classList.remove('hidden');
+                    seleccionarChatAdmin(miUid);
+                } else {
+                    hilo.classList.add('hidden');
+                    bloqueado.classList.remove('hidden');
+                    document.getElementById('btn-solicitar-chat').classList.toggle('hidden', !!miEstadoChatDatos.chatSolicitado);
+                    document.getElementById('chat-solicitud-enviada-texto').classList.toggle('hidden', !miEstadoChatDatos.chatSolicitado);
+                }
+            }
+            actualizarBadgeChat();
+        }
+
+        function seleccionarChatAdmin(adminId) {
+            chatAdminSeleccionadoId = adminId || null;
+            const hilo = document.getElementById('chat-hilo-wrap');
+            const sinSeleccion = document.getElementById('chat-sin-seleccion-texto');
+            if (chatMensajesUnsub) { chatMensajesUnsub(); chatMensajesUnsub = null; }
+            if (!chatAdminSeleccionadoId) {
+                hilo.classList.add('hidden');
+                if (esSuperAdmin) sinSeleccion.classList.remove('hidden');
+                return;
+            }
+            hilo.classList.remove('hidden');
+            sinSeleccion.classList.add('hidden');
+            const lista = document.getElementById('chat-mensajes-lista');
+            lista.innerHTML = '<p class="text-xs text-gray-400">Cargando mensajes...</p>';
+            chatMensajesUnsub = db.collection('administradores').doc(chatAdminSeleccionadoId)
+                .collection('chatMensajes').orderBy('fecha', 'asc').limit(200)
+                .onSnapshot(snapshot => {
+                    const mensajes = snapshot.docs.map(d => d.data());
+                    if (mensajes.length === 0) {
+                        lista.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">Todavía no hay mensajes. ¡Escribe el primero!</p>';
+                    } else {
+                        lista.innerHTML = mensajes.map(m => {
+                            const esMio = esSuperAdmin ? m.autor === 'superadmin' : m.autor === 'admin';
+                            const fechaTexto = m.fecha && m.fecha.toDate ? m.fecha.toDate().toLocaleString('es-PE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+                            return `<div class="flex ${esMio ? 'justify-end' : 'justify-start'}">
+                                <div class="${esMio ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-slate-800'} rounded-2xl px-3.5 py-2 max-w-[75%] text-sm">
+                                    <p>${(m.texto || '').replace(/</g, '&lt;')}</p>
+                                    <p class="${esMio ? 'text-indigo-200' : 'text-gray-400'} text-[10px] mt-0.5">${fechaTexto}</p>
+                                </div>
+                            </div>`;
+                        }).join('');
+                    }
+                    lista.scrollTop = lista.scrollHeight;
+                    // Marca como leído del lado de quien está mirando ahora
+                    const campoLeido = esSuperAdmin ? 'noLeidoSuperAdmin' : 'noLeidoAdmin';
+                    db.collection('administradores').doc(chatAdminSeleccionadoId).set({ [campoLeido]: false }, { merge: true }).catch(() => {});
+                    actualizarBadgeChat();
+                }, () => {
+                    lista.innerHTML = '<p class="text-xs text-red-500">No se pudo cargar el chat (faltan permisos en Firestore).</p>';
+                });
+        }
+
+        async function enviarMensajeChatInterno() {
+            const input = document.getElementById('chat-input-mensaje');
+            const texto = input.value.trim();
+            if (!texto) return;
+            const destinoId = esSuperAdmin ? chatAdminSeleccionadoId : (auth.currentUser && auth.currentUser.uid);
+            if (!destinoId) {
+                mostrarAviso('Elige primero con qué administrador quieres chatear.');
+                return;
+            }
+            input.value = '';
+            const campoNoLeido = esSuperAdmin ? 'noLeidoAdmin' : 'noLeidoSuperAdmin';
+            try {
+                await db.collection('administradores').doc(destinoId).collection('chatMensajes').add({
+                    autor: esSuperAdmin ? 'superadmin' : 'admin',
+                    texto: texto,
+                    fecha: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                await db.collection('administradores').doc(destinoId).set({
+                    [campoNoLeido]: true,
+                    chatUltimoMensajeFecha: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+            } catch (err) {
+                mostrarAviso('No se pudo enviar el mensaje: ' + (err.message || err.code || 'error desconocido'));
+                input.value = texto;
+            }
+        }
+
+        function actualizarBadgeChat() {
+            const badge = document.getElementById('badge-chat');
+            if (!badge) return;
+            let hayNoLeidos = false;
+            if (esSuperAdmin) {
+                hayNoLeidos = adminsActivos.some(a => a.noLeidoSuperAdmin);
+            } else {
+                hayNoLeidos = !!miEstadoChatDatos.noLeidoAdmin;
+            }
+            badge.classList.toggle('hidden', !hayNoLeidos);
+            if (hayNoLeidos) badge.textContent = '•';
+        }
+
         async function toggleSuscripcionAdmin(activo) {
             if (!esSuperAdmin) {
                 mostrarAviso('Solo el súper admin puede activar o desactivar esto.');
@@ -7161,6 +7432,8 @@
             document.getElementById('tab-btn-solicitudes').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('tab-btn-pendientes').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('tab-btn-administradores').classList.toggle('hidden', !esSuperAdmin);
+            document.getElementById('tab-btn-chat').classList.remove('hidden');
+            actualizarBadgeChat();
             document.getElementById('referidos-admin-toggle').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('puntos-admin-toggle').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('suscripcion-admin-toggle').classList.toggle('hidden', !esSuperAdmin);
@@ -8226,6 +8499,7 @@
                     renderAdminsActivos();
                     actualizarResumenSuperAdmin();
                     actualizarPerfilAdminCard();
+                    actualizarBadgeChat();
                 }, err => console.error('Error leyendo administradores activos:', err));
         }
 
@@ -8415,6 +8689,7 @@
                                 <span class="bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-semibold">${numProductos} producto${numProductos === 1 ? '' : 's'}</span>
                                 <span class="${conectado ? 'badge-en-linea' : 'badge-desconectado'} text-[10px] px-2 py-0.5 rounded-full font-semibold"><span class="estado-punto ${conectado ? 'en-linea' : 'desconectado'}"></span>${conectado ? 'En línea' : 'Desconectado'}</span>
                                 ${badgeSuscripcion}
+                                ${adm.chatHabilitado ? '<span class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-comments"></i> Chat activo</span>' : (adm.chatSolicitado ? '<span class="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-comments"></i> Pidió chat</span>' : '')}
                             </div>
                             <p class="text-sm text-gray-500 break-all mt-1">Correo: <span class="dato-sensible">${adm.correo || 'No especificó'}</span></p>
                             <p class="text-sm text-gray-500">WhatsApp: <span class="dato-sensible">${adm.whatsapp || 'No especificó'}</span></p>
@@ -8442,6 +8717,7 @@
                             <option value="revision_calidad">🔍 Aviso de revisión de calidad</option>
                         </select>` : ''}
                         <button onclick="eliminarAdministrador('${adm.id}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-xl text-xs font-semibold">Eliminar</button>
+                        <button onclick="toggleChatAdmin('${adm.id}', ${!adm.chatHabilitado})" class="${adm.chatHabilitado ? 'bg-gray-200 hover:bg-gray-300 text-gray-700' : 'bg-emerald-600 hover:bg-emerald-700 text-white'} px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-comments mr-1"></i>${adm.chatHabilitado ? 'Desactivar chat' : 'Activar chat'}</button>
                     </div>
                 `;
                 cont.appendChild(div);
@@ -8660,6 +8936,7 @@
             });
         }
 
+        let miEstadoChatDatos = {};
         function escucharMiEstado() {
             const uid = auth.currentUser && auth.currentUser.uid;
             if (!uid || esSuperAdmin) return;
@@ -8675,6 +8952,9 @@
                            doc.data().sesionRevocadaEn.toDate().getTime() > miSesionIniciadaEn) {
                     mostrarAviso('El dueño de la tienda cerró tu sesión de forma remota. Ingresa tu PIN para volver a entrar.');
                     cerrarSesion();
+                } else {
+                    miEstadoChatDatos = doc.data();
+                    actualizarBadgeChat();
                 }
             });
         }
