@@ -4651,6 +4651,33 @@
             return id.slice(-4).toUpperCase();
         }
 
+        // ID numérico legible: el súper admin siempre es 0; cada admin normal recibe
+        // un número secuencial (1, 2, 3...) asignado la primera vez que se aprueba.
+        // Si un admin todavía no tiene numeroId (cuentas creadas antes de este cambio),
+        // se muestra su código corto de siempre como respaldo.
+        function numeroIdAdmin(adminObjOrId) {
+            let adm = adminObjOrId;
+            if (typeof adminObjOrId === 'string') {
+                adm = adminsActivos.find(a => a.id === adminObjOrId);
+                if (!adm && !esSuperAdmin && auth.currentUser && adminObjOrId === auth.currentUser.uid) {
+                    adm = { id: adminObjOrId, numeroId: miEstadoChatDatos.numeroId };
+                }
+            }
+            if (adm && adm.numeroId !== undefined && adm.numeroId !== null) return adm.numeroId;
+            const id = adm ? adm.id : adminObjOrId;
+            return codigoCortoAdmin(id);
+        }
+
+        async function asignarNumeroIdAdmin() {
+            const ref = db.collection('configuracion').doc('principal');
+            return await db.runTransaction(async (t) => {
+                const doc = await t.get(ref);
+                const actual = (doc.exists && doc.data().siguienteNumeroAdmin) || 1;
+                t.set(ref, { siguienteNumeroAdmin: actual + 1 }, { merge: true });
+                return actual;
+            });
+        }
+
         function colorSolidoDesdeNombre(nombre) {
             const texto = nombre || 'A';
             let hash = 0;
@@ -4839,7 +4866,7 @@
             adminsActivos.forEach(adm => {
                 const opt = document.createElement('option');
                 opt.value = adm.id;
-                opt.textContent = `${adm.nombre || 'Administrador'} #${codigoCortoAdmin(adm.id)} (${contarProductosDe(adm.id)})`;
+                opt.textContent = `${adm.nombre || 'Administrador'} #${numeroIdAdmin(adm)} (${contarProductosDe(adm.id)})`;
                 select.appendChild(opt);
             });
             const existeValorPrevio = Array.from(select.options).some(o => o.value === valorPrevio);
@@ -7265,7 +7292,7 @@
                 const conChat = adminsActivos.filter(a => a.chatHabilitado || a.chatSolicitado);
                 const valorActual = select.value;
                 select.innerHTML = '<option value="">Elige un administrador...</option>' + conChat.map(a =>
-                    `<option value="${a.id}">${(a.nombre || 'Administrador')} #${codigoCortoAdmin(a.id)}${a.chatHabilitado ? '' : ' (pidió chat, sin activar)'}</option>`
+                    `<option value="${a.id}">${(a.nombre || 'Administrador')} #${numeroIdAdmin(a)}${a.chatHabilitado ? '' : ' (pidió chat, sin activar)'}</option>`
                 ).join('');
                 if (valorActual) select.value = valorActual;
                 if (chatAdminSeleccionadoId) {
@@ -7306,7 +7333,7 @@
             hilo.classList.remove('hidden');
             sinSeleccion.classList.add('hidden');
             const codigoRef = document.getElementById('chat-codigo-referencia');
-            if (codigoRef) codigoRef.textContent = `N° de resguardo de esta conversación: #${codigoCortoAdmin(chatAdminSeleccionadoId)}`;
+            if (codigoRef) codigoRef.textContent = `N° de resguardo de esta conversación: #${numeroIdAdmin(chatAdminSeleccionadoId)}`;
             const lista = document.getElementById('chat-mensajes-lista');
             lista.innerHTML = '<p class="text-xs text-gray-400">Cargando mensajes...</p>';
             chatMensajesUnsub = db.collection('administradores').doc(chatAdminSeleccionadoId)
@@ -8554,8 +8581,9 @@
         async function aprobarSolicitud(id) {
             try {
                 const venceEl = Date.now() + SUSCRIPCION_ADMIN_DIAS * 24 * 60 * 60 * 1000;
-                await db.collection('administradores').doc(id).update({ aprobado: true, suscripcionVenceEl: venceEl });
-                mostrarAviso('Administrador aprobado. Su suscripción queda activa por 30 días.');
+                const numeroId = await asignarNumeroIdAdmin();
+                await db.collection('administradores').doc(id).update({ aprobado: true, suscripcionVenceEl: venceEl, numeroId: numeroId });
+                mostrarAviso(`Administrador aprobado (ID #${numeroId}). Su suscripción queda activa por 30 días.`);
             } catch (err) {
                 mostrarAviso('No se pudo aprobar: ' + (err.message || err.code || 'error desconocido'));
             }
@@ -8761,7 +8789,7 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center gap-2 flex-wrap">
-                                <p class="font-semibold text-slate-800"><span class="dato-sensible">${adm.nombre || 'Administrador'}</span> <span class="text-[10px] font-mono font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">#${codigoCortoAdmin(adm.id)}</span></p>
+                                <p class="font-semibold text-slate-800"><span class="dato-sensible">${adm.nombre || 'Administrador'}</span> <span class="text-[10px] font-mono font-normal text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">#${numeroIdAdmin(adm)}</span></p>
                                 ${adm.verificado ? '<span class="bg-sky-100 text-sky-700 text-[10px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-circle-check"></i> Verificado</span>' : ''}
                                 ${adm.mentor ? '<span class="bg-violet-100 text-violet-700 text-[10px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-chalkboard-user"></i> Mentor</span>' : ''}
                                 ${bloqueado ? '<span class="bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">BLOQUEADO</span>' : '<span class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-semibold">ACTIVO</span>'}
@@ -9428,7 +9456,9 @@
                 avatar.style.background = esSuperAdmin ? '' : colorAvatarDesdeNombre(nombre);
                 avatar.textContent = (nombre || 'A').trim().charAt(0).toUpperCase();
             }
-            rolEl.innerHTML = esSuperAdmin ? '<i class="fas fa-crown mr-1"></i>SÚPER ADMINISTRADOR' : '<i class="fas fa-user-tie mr-1"></i>ADMINISTRADOR';
+            rolEl.innerHTML = esSuperAdmin
+                ? `<i class="fas fa-crown mr-1"></i>SÚPER ADMINISTRADOR #0`
+                : `<i class="fas fa-user-tie mr-1"></i>ADMINISTRADOR #${numeroIdAdmin(auth.currentUser && auth.currentUser.uid)}`;
             rolEl.className = esSuperAdmin
                 ? 'text-[10px] px-2 py-0.5 rounded-full font-semibold'
                 : 'text-[10px] px-2 py-0.5 rounded-full font-semibold';
