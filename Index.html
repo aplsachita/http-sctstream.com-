@@ -103,6 +103,16 @@
         .tarjeta-2d-interior.tocando {
             animation: tocarAbrir2D 0.22s ease forwards;
         }
+        /* Panel de cliente: entrada deslizando desde abajo, y estado de pestaña activa */
+        #panel-cliente-app.panelc-entrando { animation: panelClienteSubir 0.32s cubic-bezier(.22,.8,.32,1); }
+        @keyframes panelClienteSubir {
+            0% { transform: translateY(30px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        .panelc-tab.activo { color: #fff; background: rgba(255,255,255,0.14); }
+        .panelc-refresh-spinner { animation: girarRefresh 0.7s linear infinite; }
+        @keyframes girarRefresh { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
         @keyframes tocarAbrir3D {
             0% { transform: rotateY(0deg) scale(1); box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
             55% { transform: rotateY(-8deg) scale(0.97); box-shadow: 0 10px 20px -6px rgba(0,0,0,0.18); }
@@ -1504,36 +1514,60 @@
         </div>
     </div>
 
-    <div id="cuenta-cliente-modal" class="hidden modal-overlay" onclick="if (event.target === this) cerrarMiCuentaCliente()">
-        <div class="bg-white rounded-3xl max-w-sm w-full mx-4 p-8 text-center">
-            <div id="cliente-sin-sesion">
-                <i class="fas fa-user-circle text-4xl text-slate-700 mb-4"></i>
-                <h3 class="text-lg font-bold mb-1">Mi cuenta</h3>
-                <p class="text-gray-500 text-sm mb-6">Crea tu cuenta de cliente para guardar tus favoritos y ver tus puntos más fácil, sin escribir tu WhatsApp cada vez.</p>
-                <button onclick="iniciarSesionClienteConGoogle()" class="flex items-center justify-center gap-2 border-2 border-gray-300 rounded-xl px-4 py-3 w-full mb-2 font-semibold text-slate-700 hover:bg-gray-50"><i class="fab fa-google text-red-500"></i> Continuar con Google</button>
-                <p class="text-[11px] text-gray-400 mt-2">Esta cuenta es solo para comprar — no da acceso a ningún panel de administración.</p>
+    <!-- ============================================================
+         PANEL DE CLIENTE — pantalla completa, con su propia identidad
+         visual (índigo/violeta) para diferenciarse del resto de la
+         tienda. Incluye: pantalla de crear cuenta, Inicio, Mis compras
+         (línea de tiempo), Puntos y Perfil, con barra inferior tipo app.
+         ============================================================ -->
+    <div id="panel-cliente-app" class="hidden fixed inset-0 z-[200]" style="background: linear-gradient(160deg, #1e1b4b 0%, #312e81 45%, #4c1d95 100%);">
+
+        <!-- Barra superior -->
+        <div class="flex items-center gap-3 px-4 pt-5 pb-3 text-white">
+            <button onclick="cerrarPanelClienteCompleto()" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center"><i class="fas fa-arrow-left"></i></button>
+            <p id="panel-cliente-titulo-superior" class="font-semibold">Mi cuenta</p>
+        </div>
+
+        <!-- Pantalla: sin sesión (crear cuenta / iniciar sesión) -->
+        <div id="panelc-sin-sesion" class="px-6 pt-6 text-center text-white">
+            <div class="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-5">
+                <i class="fas fa-bag-shopping text-3xl text-violet-200"></i>
             </div>
-            <div id="cliente-con-sesion" class="hidden">
-                <img id="cliente-foto-grande" class="w-16 h-16 rounded-full mx-auto mb-3 object-cover">
-                <h3 id="cliente-nombre-grande" class="text-lg font-bold mb-1"></h3>
-                <p id="cliente-correo-grande" class="text-gray-400 text-xs mb-4"></p>
-                <button onclick="cerrarMiCuentaCliente(); abrirMisComprasCliente();" class="border-2 border-slate-300 text-slate-700 py-3 rounded-xl font-semibold w-full mb-2 hover:bg-slate-50"><i class="fas fa-bag-shopping mr-1 text-indigo-500"></i> Mis compras</button>
-                <button onclick="cerrarMiCuentaCliente(); abrirMisPuntos();" class="border-2 border-slate-300 text-slate-700 py-3 rounded-xl font-semibold w-full mb-2 hover:bg-slate-50"><i class="fas fa-star mr-1 text-amber-400"></i> Ver mis puntos</button>
-                <button onclick="cerrarSesionCliente()" class="text-red-500 text-sm mt-2">Cerrar sesión</button>
+            <h2 class="text-2xl font-bold mb-2">Tu espacio en APL market</h2>
+            <p class="text-violet-200 text-sm mb-8 max-w-xs mx-auto">Crea tu cuenta gratis para guardar tus favoritos, ver tus puntos y seguir todas tus compras en un solo lugar.</p>
+            <button onclick="iniciarSesionClienteConGoogle()" class="flex items-center justify-center gap-2 bg-white rounded-xl px-4 py-3.5 w-full max-w-xs mx-auto font-semibold text-slate-700 shadow-lg"><i class="fab fa-google text-red-500"></i> Continuar con Google</button>
+            <p class="text-[11px] text-violet-300 mt-4">Esta cuenta es solo para comprar — no da acceso a ningún panel de administración.</p>
+        </div>
+
+        <!-- Contenido con sesión iniciada: se llena según la pestaña activa -->
+        <div id="panelc-con-sesion" class="hidden h-full flex flex-col">
+            <div id="panelc-contenido" class="flex-1 overflow-y-auto px-4 pb-24" style="-webkit-overflow-scrolling: touch;"></div>
+
+            <!-- Barra inferior tipo app -->
+            <div class="fixed bottom-0 left-0 right-0 bg-white/10 backdrop-blur-md border-t border-white/10 flex items-center justify-around py-2 px-2">
+                <button onclick="cambiarTabPanelCliente('inicio')" data-tabc="inicio" class="panelc-tab flex flex-col items-center gap-0.5 text-white/60 px-3 py-1.5 rounded-xl text-[11px]">
+                    <i class="fas fa-house text-base"></i> Inicio
+                </button>
+                <button onclick="cambiarTabPanelCliente('compras')" data-tabc="compras" class="panelc-tab flex flex-col items-center gap-0.5 text-white/60 px-3 py-1.5 rounded-xl text-[11px]">
+                    <i class="fas fa-bag-shopping text-base"></i> Compras
+                </button>
+                <button onclick="cambiarTabPanelCliente('puntos')" data-tabc="puntos" class="panelc-tab flex flex-col items-center gap-0.5 text-white/60 px-3 py-1.5 rounded-xl text-[11px]">
+                    <i class="fas fa-star text-base"></i> Puntos
+                </button>
+                <button onclick="cambiarTabPanelCliente('perfil')" data-tabc="perfil" class="panelc-tab flex flex-col items-center gap-0.5 text-white/60 px-3 py-1.5 rounded-xl text-[11px]">
+                    <i class="fas fa-user text-base"></i> Perfil
+                </button>
             </div>
-            <button onclick="cerrarMiCuentaCliente()" class="text-gray-400 text-sm mt-4 block mx-auto">Cerrar</button>
         </div>
     </div>
 
-    <div id="mis-compras-cliente-modal" class="hidden modal-overlay" onclick="if (event.target === this) cerrarMisComprasCliente()">
-        <div class="bg-white rounded-3xl max-w-sm w-full mx-4 p-6 max-h-[85vh] overflow-y-auto">
-            <div class="flex items-center justify-between mb-1">
-                <h3 class="text-lg font-bold"><i class="fas fa-bag-shopping mr-1 text-indigo-500"></i> Mis compras</h3>
-                <button onclick="cerrarMisComprasCliente()" class="text-gray-400 text-xl leading-none">&times;</button>
-            </div>
-            <p class="text-gray-400 text-xs mb-4">Todo lo que has pedido desde que creaste tu cuenta.</p>
-            <div id="mis-compras-cliente-lista" class="space-y-3"></div>
+    <!-- Detalle de una compra (se abre encima del panel de cliente) -->
+    <div id="panelc-detalle-compra" class="hidden fixed inset-0 z-[210] bg-white overflow-y-auto">
+        <div class="flex items-center gap-3 px-4 pt-5 pb-3 border-b border-gray-100">
+            <button onclick="document.getElementById('panelc-detalle-compra').classList.add('hidden')" class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center"><i class="fas fa-arrow-left"></i></button>
+            <p class="font-semibold text-slate-800">Detalle de tu compra</p>
         </div>
+        <div id="panelc-detalle-compra-contenido" class="p-5"></div>
     </div>
 
     <div id="pin-modal" class="hidden modal-overlay">
@@ -2852,6 +2886,10 @@
                         esClienteConectado = true;
                         miClienteDatos = docCliente.data();
                         actualizarIconoCuentaCliente();
+                        if (location.search.indexOf('cuenta=1') !== -1) {
+                            panelClientePushEstado = true;
+                            abrirPanelClienteCompleto('inicio');
+                        }
                     }
                 } catch (err) { console.error('No se pudo revisar la sesión de cliente:', err); }
             }
@@ -7121,71 +7159,308 @@
             }
         }
 
+        // ============================================================
+        // PANEL DE CLIENTE — pantalla completa (Inicio / Compras / Puntos / Perfil)
+        // ============================================================
+        let panelClientePushEstado = false;
+        let panelClienteTabActual = 'inicio';
+        let misComprasClienteCache = null;
+
         async function abrirMiCuentaCliente() {
-            document.getElementById('cliente-sin-sesion').classList.toggle('hidden', esClienteConectado);
-            document.getElementById('cliente-con-sesion').classList.toggle('hidden', !esClienteConectado);
-            if (esClienteConectado && miClienteDatos) {
-                document.getElementById('cliente-nombre-grande').textContent = miClienteDatos.nombre || 'Cliente';
-                document.getElementById('cliente-correo-grande').textContent = miClienteDatos.correo || '';
-                const fotoEl = document.getElementById('cliente-foto-grande');
-                fotoEl.src = miClienteDatos.foto || 'icon-192.png';
-            }
-            document.getElementById('cuenta-cliente-modal').classList.remove('hidden');
+            abrirPanelClienteCompleto('inicio');
         }
         function cerrarMiCuentaCliente() {
-            document.getElementById('cuenta-cliente-modal').classList.add('hidden');
+            cerrarPanelClienteCompleto();
         }
 
-        // ---- Interfaz de cliente: historial de lo que ha comprado/pedido ----
-        async function abrirMisComprasCliente() {
-            if (!esClienteConectado || !auth.currentUser) {
-                mostrarAviso('Crea tu cuenta o inicia sesión primero para ver tus compras.');
-                abrirMiCuentaCliente();
-                return;
+        function abrirPanelClienteCompleto(tabInicial) {
+            const panel = document.getElementById('panel-cliente-app');
+            panel.classList.remove('hidden');
+            panel.classList.add('panelc-entrando');
+            if (!panelClientePushEstado && location.search.indexOf('cuenta=1') === -1) {
+                history.pushState({ panelCliente: true }, '', location.pathname + (location.search ? location.search + '&' : '?') + 'cuenta=1');
+                panelClientePushEstado = true;
             }
-            const modal = document.getElementById('mis-compras-cliente-modal');
-            const lista = document.getElementById('mis-compras-cliente-lista');
-            modal.classList.remove('hidden');
-            lista.innerHTML = '<p class="text-sm text-gray-400 text-center py-6">Cargando tus compras...</p>';
+            document.getElementById('panelc-sin-sesion').classList.toggle('hidden', esClienteConectado);
+            document.getElementById('panelc-con-sesion').classList.toggle('hidden', !esClienteConectado);
+            if (esClienteConectado) {
+                cambiarTabPanelCliente(tabInicial || 'inicio');
+            } else {
+                document.getElementById('panel-cliente-titulo-superior').textContent = 'Mi cuenta';
+            }
+        }
+
+        function cerrarPanelClienteCompleto() {
+            document.getElementById('panel-cliente-app').classList.add('hidden');
+            document.getElementById('panelc-detalle-compra').classList.add('hidden');
+            if (panelClientePushEstado) {
+                panelClientePushEstado = false;
+                history.back();
+            }
+        }
+
+        window.addEventListener('popstate', () => {
+            const panel = document.getElementById('panel-cliente-app');
+            if (panelClientePushEstado && !panel.classList.contains('hidden')) {
+                panelClientePushEstado = false;
+                panel.classList.add('hidden');
+                document.getElementById('panelc-detalle-compra').classList.add('hidden');
+            }
+        });
+
+        function cambiarTabPanelCliente(tab) {
+            panelClienteTabActual = tab;
+            document.querySelectorAll('.panelc-tab').forEach(btn => btn.classList.toggle('activo', btn.dataset.tabc === tab));
+            const titulos = { inicio: 'Mi cuenta', compras: 'Mis compras', puntos: 'Mis puntos', perfil: 'Perfil' };
+            document.getElementById('panel-cliente-titulo-superior').textContent = titulos[tab] || 'Mi cuenta';
+            if (tab === 'inicio') renderTabInicioCliente();
+            else if (tab === 'compras') renderTabComprasCliente();
+            else if (tab === 'puntos') renderTabPuntosCliente();
+            else if (tab === 'perfil') renderTabPerfilCliente();
+        }
+
+        function renderTabInicioCliente() {
+            const cont = document.getElementById('panelc-contenido');
+            const desde = miClienteDatos && miClienteDatos.ultimaConexion; // aproximado si no hay fecha de creación
+            const totalCompras = misComprasClienteCache ? misComprasClienteCache.length : null;
+            let nivel = 'Bronce', nivelColor = 'text-amber-300';
+            if (totalCompras !== null) {
+                if (totalCompras >= 10) { nivel = 'Oro'; nivelColor = 'text-yellow-300'; }
+                else if (totalCompras >= 3) { nivel = 'Plata'; nivelColor = 'text-slate-200'; }
+            }
+            cont.innerHTML = `
+                <div class="relative mt-2 mb-6">
+                    <div class="h-24 rounded-2xl" style="background: linear-gradient(120deg,#6d28d9,#a855f7);"></div>
+                    <img src="${(miClienteDatos && miClienteDatos.foto) || 'icon-192.png'}" class="w-20 h-20 rounded-full object-cover border-4 border-[#1e1b4b] absolute -bottom-8 left-4">
+                </div>
+                <div class="pt-8 text-white">
+                    <h2 class="text-xl font-bold">${(miClienteDatos && miClienteDatos.nombre) || 'Cliente'}</h2>
+                    <p class="text-violet-300 text-xs mb-2">${(miClienteDatos && miClienteDatos.correo) || ''}</p>
+                    <span class="inline-block text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/10 ${nivelColor}"><i class="fas fa-medal mr-1"></i>Nivel ${nivel}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mt-6">
+                    <button onclick="cambiarTabPanelCliente('compras')" class="bg-white/10 rounded-2xl p-4 text-left text-white">
+                        <p class="text-2xl font-bold">${totalCompras !== null ? totalCompras : '—'}</p>
+                        <p class="text-xs text-violet-200">Compras realizadas</p>
+                    </button>
+                    <button onclick="cambiarTabPanelCliente('puntos')" class="bg-white/10 rounded-2xl p-4 text-left text-white">
+                        <p class="text-2xl font-bold"><i class="fas fa-star text-amber-300 text-lg"></i></p>
+                        <p class="text-xs text-violet-200">Ver mis puntos</p>
+                    </button>
+                </div>
+                <p class="text-violet-300 text-xs mt-8 text-center">Gracias por comprar con nosotros 💜</p>
+            `;
+            // Precarga el conteo de compras para la tarjeta de arriba, sin bloquear la vista
+            if (misComprasClienteCache === null) {
+                cargarMisComprasCliente().then(() => { if (panelClienteTabActual === 'inicio') renderTabInicioCliente(); });
+            }
+        }
+
+        async function cargarMisComprasCliente(forzar) {
+            if (misComprasClienteCache !== null && !forzar) return misComprasClienteCache;
+            if (!auth.currentUser) { misComprasClienteCache = []; return misComprasClienteCache; }
             try {
                 const snap = await db.collection('pedidos')
                     .where('clienteUid', '==', auth.currentUser.uid)
                     .orderBy('creado', 'desc')
-                    .limit(50)
+                    .limit(100)
                     .get();
-                if (snap.empty) {
-                    lista.innerHTML = '<p class="text-sm text-gray-400 text-center py-6">Todavía no has pedido nada. Cuando compres algo, aparecerá aquí.</p>';
-                    return;
-                }
-                lista.innerHTML = snap.docs.map(d => {
-                    const p = d.data();
-                    const fecha = p.creado && p.creado.toDate ? p.creado.toDate().toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-                    const esVendido = p.estado === 'vendido';
-                    const badge = esVendido
-                        ? `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full">${p.entregado ? 'Entregado' : 'Confirmado'}</span>`
-                        : `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2 py-0.5 rounded-full">Esperando confirmación</span>`;
-                    const imagen = p.productoImagen
-                        ? `<img src="${p.productoImagen}" class="w-12 h-12 rounded-lg object-cover shrink-0">`
-                        : `<div class="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-300 shrink-0"><i class="fas fa-box"></i></div>`;
-                    return `<div class="flex items-center gap-3 border border-gray-100 rounded-xl p-3">
-                        ${imagen}
-                        <div class="min-w-0 flex-1">
-                            <p class="text-sm font-semibold text-slate-800 truncate">${p.productoNombre || 'Producto'}</p>
-                            <p class="text-xs text-gray-400">${p.propietarioNombre || ''} · ${fecha}</p>
-                            <div class="mt-1 flex items-center gap-2">
-                                <span class="text-sm font-bold text-slate-700">S/ ${p.precio || 0}</span>
-                                ${badge}
-                            </div>
-                        </div>
-                    </div>`;
-                }).join('');
+                misComprasClienteCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
             } catch (err) {
                 console.error(err);
-                lista.innerHTML = '<p class="text-sm text-red-500 text-center py-6">No se pudo cargar tu historial. Intenta de nuevo en un momento.</p>';
+                misComprasClienteCache = misComprasClienteCache || [];
+            }
+            return misComprasClienteCache;
+        }
+
+        let panelcFiltroCompras = 'todas';
+        async function renderTabComprasCliente(forzar) {
+            const cont = document.getElementById('panelc-contenido');
+            cont.innerHTML = `
+                <div class="flex gap-2 mt-3 mb-4 overflow-x-auto pb-1" id="panelc-filtros-compras"></div>
+                <div id="panelc-refresh-indicador" class="hidden text-center py-2 text-violet-200 text-xs"><i class="fas fa-arrows-rotate panelc-refresh-spinner mr-1"></i>Actualizando...</div>
+                <div id="panelc-lista-compras"></div>
+            `;
+            const filtros = [
+                { id: 'todas', label: 'Todas' },
+                { id: 'interesado', label: 'Esperando confirmación' },
+                { id: 'entregadas', label: 'Entregadas' }
+            ];
+            document.getElementById('panelc-filtros-compras').innerHTML = filtros.map(f =>
+                `<button onclick="panelcFiltroCompras='${f.id}'; pintarListaComprasCliente();" class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold ${panelcFiltroCompras === f.id ? 'bg-white text-violet-700' : 'bg-white/10 text-violet-200'}">${f.label}</button>`
+            ).join('');
+
+            await cargarMisComprasCliente(forzar);
+            pintarListaComprasCliente();
+            activarPullToRefreshCompras();
+        }
+
+        function pintarListaComprasCliente() {
+            document.getElementById('panelc-filtros-compras').innerHTML =
+                [{ id: 'todas', label: 'Todas' }, { id: 'interesado', label: 'Esperando confirmación' }, { id: 'entregadas', label: 'Entregadas' }].map(f =>
+                    `<button onclick="panelcFiltroCompras='${f.id}'; pintarListaComprasCliente();" class="shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold ${panelcFiltroCompras === f.id ? 'bg-white text-violet-700' : 'bg-white/10 text-violet-200'}">${f.label}</button>`
+                ).join('');
+
+            const lista = document.getElementById('panelc-lista-compras');
+            let compras = misComprasClienteCache || [];
+            if (panelcFiltroCompras === 'interesado') compras = compras.filter(p => p.estado !== 'vendido');
+            else if (panelcFiltroCompras === 'entregadas') compras = compras.filter(p => p.estado === 'vendido' && p.entregado);
+
+            if (compras.length === 0) {
+                lista.innerHTML = `
+                    <div class="text-center py-14 text-violet-200">
+                        <i class="fas fa-bag-shopping text-4xl mb-3 opacity-50"></i>
+                        <p class="text-sm">Aún no tienes compras aquí.</p>
+                        <p class="text-xs text-violet-300 mt-1">Cuando pidas algo, aparecerá en tu línea de tiempo.</p>
+                    </div>`;
+                return;
+            }
+
+            // Agrupa por mes
+            const grupos = {};
+            compras.forEach(p => {
+                const fecha = p.creado && p.creado.toDate ? p.creado.toDate() : null;
+                const clave = fecha ? fecha.toLocaleDateString('es-PE', { month: 'long', year: 'numeric' }) : 'Fecha desconocida';
+                if (!grupos[clave]) grupos[clave] = [];
+                grupos[clave].push(p);
+            });
+
+            lista.innerHTML = Object.entries(grupos).map(([mes, items]) => `
+                <p class="text-violet-300 text-xs font-bold uppercase tracking-wide mt-5 mb-2">${mes}</p>
+                <div class="relative pl-5 border-l-2 border-white/10 space-y-4">
+                    ${items.map(p => {
+                        const fecha = p.creado && p.creado.toDate ? p.creado.toDate().toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) : '';
+                        const esVendido = p.estado === 'vendido';
+                        const badge = esVendido
+                            ? `<span class="bg-emerald-400/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full">${p.entregado ? 'Entregado' : 'Confirmado'}</span>`
+                            : `<span class="bg-amber-400/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">Esperando confirmación</span>`;
+                        const imagen = p.productoImagen
+                            ? `<img src="${p.productoImagen}" class="w-12 h-12 rounded-lg object-cover shrink-0">`
+                            : `<div class="w-12 h-12 rounded-lg bg-white/10 flex items-center justify-center text-violet-300 shrink-0"><i class="fas fa-box"></i></div>`;
+                        return `
+                        <button onclick='abrirDetalleCompraCliente(${JSON.stringify(p).replace(/'/g, "&apos;")})' class="w-full text-left relative">
+                            <span class="absolute -left-[26px] top-2 w-2.5 h-2.5 rounded-full bg-violet-400"></span>
+                            <div class="flex items-center gap-3 bg-white/10 rounded-xl p-3">
+                                ${imagen}
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-sm font-semibold text-white truncate">${p.productoNombre || 'Producto'}</p>
+                                    <p class="text-xs text-violet-300">${p.propietarioNombre || ''} · ${fecha}</p>
+                                    <div class="mt-1 flex items-center gap-2">
+                                        <span class="text-sm font-bold text-white">S/ ${p.precio || 0}</span>
+                                        ${badge}
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right text-violet-300 text-xs"></i>
+                            </div>
+                        </button>`;
+                    }).join('')}
+                </div>
+            `).join('');
+        }
+
+        function abrirDetalleCompraCliente(p) {
+            const cont = document.getElementById('panelc-detalle-compra-contenido');
+            const fecha = p.creado && p.creado.seconds ? new Date(p.creado.seconds * 1000).toLocaleDateString('es-PE', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+            const esVendido = p.estado === 'vendido';
+            const estadoTexto = esVendido ? (p.entregado ? 'Entregado' : 'Confirmado por el vendedor') : 'Esperando confirmación del vendedor';
+            const imagen = p.productoImagen
+                ? `<img src="${p.productoImagen}" class="w-full h-48 rounded-2xl object-cover mb-4">`
+                : `<div class="w-full h-48 rounded-2xl bg-gray-100 flex items-center justify-center text-gray-300 mb-4"><i class="fas fa-box text-4xl"></i></div>`;
+            cont.innerHTML = `
+                ${imagen}
+                <h2 class="text-lg font-bold text-slate-800 mb-1">${p.productoNombre || 'Producto'}</h2>
+                <p class="text-gray-400 text-sm mb-4">${fecha}</p>
+                <div class="bg-gray-50 rounded-2xl p-4 space-y-2 mb-4">
+                    <div class="flex justify-between text-sm"><span class="text-gray-500">Precio</span><span class="font-semibold text-slate-800">S/ ${p.precio || 0}</span></div>
+                    <div class="flex justify-between text-sm"><span class="text-gray-500">Vendedor</span><span class="font-semibold text-slate-800">${p.propietarioNombre || '—'}</span></div>
+                    <div class="flex justify-between text-sm"><span class="text-gray-500">Estado</span><span class="font-semibold ${esVendido ? 'text-emerald-600' : 'text-amber-600'}">${estadoTexto}</span></div>
+                </div>
+                ${p.propietarioWhatsapp || p.propietario === 'principal' ? `<button onclick="window.open('https://wa.me/${(p.propietarioWhatsapp || WHATSAPP_NUMBER).replace(/\\D/g,'')}?text=' + encodeURIComponent('Hola, tengo una consulta sobre mi compra: ' + '${(p.productoNombre || '').replace(/'/g, "\\'")}'), '_blank')" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-semibold"><i class="fab fa-whatsapp mr-1"></i> Escribir al vendedor</button>` : ''}
+            `;
+            document.getElementById('panelc-detalle-compra').classList.remove('hidden');
+        }
+
+        // Pull-to-refresh simple sobre la lista de compras
+        let ptrInicioY = null;
+        function activarPullToRefreshCompras() {
+            const cont = document.getElementById('panelc-contenido');
+            const indicador = document.getElementById('panelc-refresh-indicador');
+            if (!cont || cont.dataset.ptrListo) return;
+            cont.dataset.ptrListo = '1';
+            cont.addEventListener('touchstart', (e) => {
+                if (cont.scrollTop <= 0) ptrInicioY = e.touches[0].clientY;
+                else ptrInicioY = null;
+            }, { passive: true });
+            cont.addEventListener('touchmove', (e) => {
+                if (ptrInicioY === null || panelClienteTabActual !== 'compras') return;
+                const delta = e.touches[0].clientY - ptrInicioY;
+                if (delta > 70 && indicador) indicador.classList.remove('hidden');
+            }, { passive: true });
+            cont.addEventListener('touchend', async () => {
+                if (ptrInicioY !== null && indicador && !indicador.classList.contains('hidden') && panelClienteTabActual === 'compras') {
+                    await cargarMisComprasCliente(true);
+                    pintarListaComprasCliente();
+                }
+                if (indicador) indicador.classList.add('hidden');
+                ptrInicioY = null;
+            });
+        }
+
+        function renderTabPuntosCliente() {
+            const cont = document.getElementById('panelc-contenido');
+            cont.innerHTML = `
+                <div class="text-center text-white mt-4 mb-5">
+                    <i class="fas fa-star text-3xl text-amber-300 mb-2"></i>
+                    <p class="text-sm text-violet-200">Escribe tu WhatsApp para ver tus puntos y nivel de cliente frecuente.</p>
+                </div>
+                <input id="panelc-puntos-telefono" type="tel" placeholder="Tu WhatsApp (9 dígitos)" class="w-full rounded-xl px-4 py-3 text-center mb-3 text-slate-800">
+                <button onclick="consultarMisPuntosPanel()" class="w-full bg-white text-violet-700 font-semibold py-3 rounded-xl mb-4">Consultar</button>
+                <div id="panelc-puntos-resultado"></div>
+            `;
+        }
+
+        async function consultarMisPuntosPanel() {
+            const numero = document.getElementById('panelc-puntos-telefono').value.trim();
+            const resultEl = document.getElementById('panelc-puntos-resultado');
+            if (!esWhatsappPeruValido(numero)) {
+                resultEl.innerHTML = '<p class="text-amber-300 text-xs text-center">Escribe un WhatsApp peruano válido (9 dígitos, empieza con 9).</p>';
+                return;
+            }
+            const telefono = numero.replace(/\D/g, '').replace(/^51/, '');
+            resultEl.innerHTML = '<p class="text-violet-300 text-xs text-center">Consultando…</p>';
+            try {
+                const doc = await db.collection('clientes_publico').doc(telefono).get();
+                if (!doc.exists) {
+                    resultEl.innerHTML = '<p class="text-violet-200 text-sm text-center">Todavía no registramos compras confirmadas con este número. ¡Compra algo y empieza a sumar puntos!</p>';
+                    return;
+                }
+                const datos = doc.data();
+                const compras = datos.comprasConfirmadas || 0;
+                const puntos = datos.puntos || 0;
+                let nivel = 'Bronce';
+                if (compras >= 10) nivel = 'Oro'; else if (compras >= 3) nivel = 'Plata';
+                resultEl.innerHTML = `
+                    <div class="bg-white/10 rounded-2xl p-5 text-center text-white">
+                        <p class="text-3xl font-bold">${puntos}</p>
+                        <p class="text-xs text-violet-200 mb-3">puntos acumulados</p>
+                        <span class="inline-block text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/10"><i class="fas fa-medal mr-1"></i>Nivel ${nivel}</span>
+                        <p class="text-xs text-violet-300 mt-3">${compras} compra${compras === 1 ? '' : 's'} confirmada${compras === 1 ? '' : 's'}</p>
+                    </div>`;
+            } catch (err) {
+                resultEl.innerHTML = '<p class="text-red-300 text-xs text-center">No se pudo consultar. Intenta de nuevo.</p>';
             }
         }
-        function cerrarMisComprasCliente() {
-            document.getElementById('mis-compras-cliente-modal').classList.add('hidden');
+
+        function renderTabPerfilCliente() {
+            const cont = document.getElementById('panelc-contenido');
+            cont.innerHTML = `
+                <div class="text-center text-white mt-4">
+                    <img src="${(miClienteDatos && miClienteDatos.foto) || 'icon-192.png'}" class="w-20 h-20 rounded-full object-cover mx-auto mb-3">
+                    <h3 class="text-lg font-bold">${(miClienteDatos && miClienteDatos.nombre) || 'Cliente'}</h3>
+                    <p class="text-violet-300 text-xs mb-8">${(miClienteDatos && miClienteDatos.correo) || ''}</p>
+                    <button onclick="cerrarSesionCliente()" class="w-full bg-white/10 text-red-300 font-semibold py-3 rounded-xl">Cerrar sesión</button>
+                </div>
+            `;
         }
 
         async function iniciarSesionClienteConGoogle() {
