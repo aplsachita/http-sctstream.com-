@@ -77,9 +77,40 @@
         .tarjeta-3d-interior {
             position: relative;
             width: 100%;
-            transition: transform 0.6s cubic-bezier(.25,.8,.25,1);
             transform-style: preserve-3d;
             cursor: pointer;
+        }
+
+        /* ============================================================
+           TARJETAS MINIMALISTAS 3D / 2D — el efecto 3D solo se activa
+           al TOCAR/CLICKEAR la tarjeta para abrirla (nada de hover ni
+           inclinación permanente). Diseño limpio: borde sutil, sombra
+           ligera, sin adornos extra.
+           ============================================================ */
+        .tarjeta-3d-interior, .tarjeta-2d-interior {
+            border-radius: 1rem;
+            background: #ffffff;
+            border: 1px solid #eef0f3;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .tarjeta-2d-interior { cursor: pointer; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+
+        /* Estado "presionado" al tocar, antes de que abra el modal — muy breve, minimalista */
+        .tarjeta-3d-interior.tocando {
+            animation: tocarAbrir3D 0.32s cubic-bezier(.25,.8,.3,1) forwards;
+        }
+        .tarjeta-2d-interior.tocando {
+            animation: tocarAbrir2D 0.22s ease forwards;
+        }
+        @keyframes tocarAbrir3D {
+            0% { transform: rotateY(0deg) scale(1); box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+            55% { transform: rotateY(-8deg) scale(0.97); box-shadow: 0 10px 20px -6px rgba(0,0,0,0.18); }
+            100% { transform: rotateY(0deg) scale(0.99); box-shadow: 0 4px 10px -4px rgba(0,0,0,0.12); }
+        }
+        @keyframes tocarAbrir2D {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.96); }
+            100% { transform: scale(1); }
         }
 
         /* Fondos con efecto 3D: hero, galería y footer — solo al pasar el cursor, sin animación infinita */
@@ -2932,7 +2963,7 @@
             const card = document.createElement('div');
             const ofertaActiva = producto.ofertaHasta && producto.ofertaHasta > Date.now();
             const efecto3D = tieneEfecto3D(producto);
-            card.className = 'rounded-2xl overflow-hidden card-hover shadow-md cursor-pointer ' + (efecto3D ? 'tarjeta-3d' : '') + ' ' + (ofertaActiva ? 'oferta-relampago' : 'card-borde-animado');
+            card.className = 'rounded-2xl overflow-hidden cursor-pointer ' + (efecto3D ? 'tarjeta-3d' : '') + ' ' + (ofertaActiva ? 'oferta-relampago' : '');
             const numeroContacto = producto.propietarioWhatsapp || WHATSAPP_NUMBER;
             const tieneStock = producto.stock !== null && producto.stock !== undefined;
             const agotado = tieneStock && producto.stock <= 0;
@@ -3009,16 +3040,19 @@
                     ${botonComprarFinal}
                 </div>
             `;
-            if (efecto3D) {
-                card.innerHTML = `<div class="tarjeta-3d-interior">${contenidoFrente}</div>`;
-                activarInclinacionTarjeta(card.querySelector('.tarjeta-3d-interior'));
-            } else {
-                card.innerHTML = contenidoFrente;
-            }
+            const interiorClase = efecto3D ? 'tarjeta-3d-interior' : 'tarjeta-2d-interior';
+            card.innerHTML = `<div class="${interiorClase}">${contenidoFrente}</div>`;
+            const interior = card.querySelector('.' + interiorClase);
             card.addEventListener('click', (ev) => {
                 activarEfectoLlamas(card);
-                if (ev.target.closest('a')) return;
-                verDetalleProducto(producto.id);
+                if (ev.target.closest('a') || ev.target.closest('button')) return;
+                // El efecto (giro 3D o "presión" 2D) solo ocurre al tocar para abrir, nunca en reposo/hover
+                if (interior) {
+                    interior.classList.remove('tocando');
+                    void interior.offsetWidth; // reinicia la animación si se toca varias veces seguidas
+                    interior.classList.add('tocando');
+                }
+                setTimeout(() => verDetalleProducto(producto.id), efecto3D ? 180 : 90);
             });
             return card;
         }
