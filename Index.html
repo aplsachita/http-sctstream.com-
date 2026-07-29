@@ -1350,6 +1350,7 @@
                                 <tbody id="comparador-admins-tbody"></tbody>
                             </table>
                         </div>
+                        <button onclick="sincronizarDirectorioAdmins()" class="mb-3 text-xs text-indigo-600 underline"><i class="fas fa-rotate mr-1"></i>Sincronizar directorio de búsqueda (por si algún admin antiguo no aparece al buscarlo por ID)</button>
                         <div id="admins-activos-lista" class="space-y-4"></div>
                     </div>
                 </div>
@@ -1389,6 +1390,39 @@
                         </div>
                     </div>
                     <p id="chat-sin-seleccion-texto" class="hidden text-sm text-gray-400">Elige un administrador arriba para ver la conversación.</p>
+
+                    <div class="border-t border-gray-100 my-6 pt-5">
+                        <h4 class="mb-1 text-base admin-section-title"><i class="fas fa-user-group mr-1"></i> Chat con otros administradores</h4>
+                        <p class="text-xs text-gray-400 mb-3">Búscalo por su ID (el número #que aparece en su tarjeta de perfil) para escribirle directo. Es privado, solo lo ven ustedes dos.</p>
+
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="text-gray-400 font-mono">#</span>
+                            <input id="chatp-buscar-id" type="number" min="1" placeholder="Número de ID del admin" onkeydown="if(event.key==='Enter'){buscarAdminPorId();}" class="border border-gray-300 rounded-xl px-3 py-2 text-sm flex-1">
+                            <button onclick="buscarAdminPorId()" class="admin-btn-primary text-white px-4 py-2 rounded-xl text-sm font-semibold"><i class="fas fa-search"></i></button>
+                        </div>
+                        <div id="chatp-resultado-busqueda" class="hidden admin-card p-3 mb-4 flex items-center justify-between"></div>
+
+                        <div id="chatp-lista-conversaciones" class="space-y-2 mb-4"></div>
+
+                        <!-- Hilo de un chat privado entre dos admins -->
+                        <div id="chatp-hilo-wrap" class="hidden">
+                            <div class="flex items-center gap-2 mb-2">
+                                <button onclick="cerrarChatPrivadoAbierto()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-arrow-left"></i></button>
+                                <p id="chatp-titulo-conversacion" class="text-sm font-semibold text-slate-700"></p>
+                            </div>
+                            <div id="chatp-mensajes-lista" class="admin-card p-4 mb-3 space-y-2 overflow-y-auto" style="max-height: 50vh;"></div>
+                            <div id="chatp-grabando-aviso" class="hidden mb-2 text-xs text-red-500 font-semibold"><i class="fas fa-circle animate-pulse mr-1"></i> Grabando audio... toca de nuevo para enviar</div>
+                            <div class="flex items-center gap-2">
+                                <label class="w-11 h-11 rounded-xl shrink-0 bg-gray-100 hover:bg-gray-200 flex items-center justify-center cursor-pointer text-gray-500" title="Enviar foto">
+                                    <i class="fas fa-image"></i>
+                                    <input type="file" accept="image/*" class="hidden" onchange="adjuntarFotoChatPrivado(event)">
+                                </label>
+                                <button type="button" id="chatp-btn-grabar-audio" onclick="toggleGrabacionAudioChatPrivado()" class="w-11 h-11 rounded-xl shrink-0 bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500" title="Grabar audio"><i class="fas fa-microphone"></i></button>
+                                <input id="chatp-input-mensaje" type="text" placeholder="Escribe un mensaje..." onkeydown="if(event.key==='Enter'){enviarMensajeChatPrivado();}" class="border border-gray-300 rounded-xl px-4 py-2.5 text-sm flex-1">
+                                <button onclick="enviarMensajeChatPrivado()" class="admin-btn-primary text-white w-11 h-11 rounded-xl shrink-0"><i class="fas fa-paper-plane"></i></button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="admin-tab-pane" data-tab="seguridad">
@@ -4743,6 +4777,25 @@
             });
         }
 
+        async function sincronizarDirectorioAdmins() {
+            if (!esSuperAdmin) return;
+            let actualizados = 0;
+            try {
+                for (const adm of adminsActivos) {
+                    let numeroId = adm.numeroId;
+                    if (numeroId === undefined || numeroId === null) {
+                        numeroId = await asignarNumeroIdAdmin();
+                        await db.collection('administradores').doc(adm.id).update({ numeroId });
+                    }
+                    await db.collection('directorioAdmins').doc(adm.id).set({ numeroId, nombre: adm.nombre || 'Administrador' });
+                    actualizados++;
+                }
+                mostrarAviso(`Directorio sincronizado: ${actualizados} administrador(es) ya se pueden buscar por ID.`);
+            } catch (err) {
+                mostrarAviso('No se pudo sincronizar: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
         function colorSolidoDesdeNombre(nombre) {
             const texto = nombre || 'A';
             let hash = 0;
@@ -7383,6 +7436,12 @@
                 }
             }
             actualizarBadgeChat();
+            if (!chatPrivadoActualId) {
+                document.getElementById('chatp-hilo-wrap').classList.add('hidden');
+                document.getElementById('chatp-lista-conversaciones').classList.remove('hidden');
+                document.getElementById('chatp-buscar-id').closest('div').classList.remove('hidden');
+            }
+            renderListaConversacionesPrivadas();
         }
 
         function seleccionarChatAdmin(adminId) {
@@ -7538,6 +7597,238 @@
             }
             badge.classList.toggle('hidden', !hayNoLeidos);
             if (hayNoLeidos) badge.textContent = '•';
+        }
+
+        // ============================================================
+        // CHAT PRIVADO ENTRE ADMINISTRADORES — cualquier admin (o el
+        // súper admin) puede buscar a otro por su ID numérico y escribirle
+        // directo. Es independiente del chat con el súper admin de arriba.
+        // ============================================================
+        function chatIdPrivado(uidA, uidB) {
+            return [uidA, uidB].sort().join('_');
+        }
+
+        async function buscarAdminPorId() {
+            const input = document.getElementById('chatp-buscar-id');
+            const resultado = document.getElementById('chatp-resultado-busqueda');
+            const numero = parseInt(input.value, 10);
+            if (isNaN(numero)) {
+                mostrarAviso('Escribe un número de ID válido.');
+                return;
+            }
+            const miUid = auth.currentUser && auth.currentUser.uid;
+            resultado.classList.remove('hidden');
+            resultado.innerHTML = '<p class="text-xs text-gray-400">Buscando...</p>';
+            try {
+                const snap = await db.collection('directorioAdmins').where('numeroId', '==', numero).limit(1).get();
+                if (snap.empty) {
+                    resultado.innerHTML = `<p class="text-sm text-gray-500">No encontramos a ningún admin con el ID #${numero}. Si buscas al súper admin, usa la sección de arriba.</p>`;
+                    return;
+                }
+                const doc = snap.docs[0];
+                if (doc.id === miUid) {
+                    resultado.innerHTML = '<p class="text-sm text-gray-500">Ese ID es el tuyo 🙂</p>';
+                    return;
+                }
+                const datos = doc.data();
+                resultado.innerHTML = `
+                    <span class="text-sm font-semibold text-slate-700">${datos.nombre || 'Administrador'} <span class="text-gray-400 font-normal">#${datos.numeroId}</span></span>
+                    <button onclick="iniciarChatPrivado('${doc.id}', '${(datos.nombre || 'Administrador').replace(/'/g, "\\'")}', ${datos.numeroId})" class="admin-btn-primary text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Escribirle</button>
+                `;
+            } catch (err) {
+                resultado.innerHTML = '<p class="text-xs text-red-500">No se pudo buscar (revisa tu conexión o permisos).</p>';
+            }
+        }
+
+        async function iniciarChatPrivado(otroUid, otroNombre, otroNumeroId) {
+            const miUid = auth.currentUser && auth.currentUser.uid;
+            if (!miUid || !otroUid) return;
+            const chatId = chatIdPrivado(miUid, otroUid);
+            const miNombreParaChat = esSuperAdmin ? 'Súper admin' : (miNombreAdmin || 'Administrador');
+            try {
+                await db.collection('chatsPrivados').doc(chatId).set({
+                    participantes: [miUid, otroUid],
+                    participantesNombres: { [miUid]: miNombreParaChat, [otroUid]: otroNombre }
+                }, { merge: true });
+                abrirChatPrivado(chatId, otroUid, otroNombre, otroNumeroId);
+            } catch (err) {
+                mostrarAviso('No se pudo iniciar el chat: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
+        let chatPrivadoActualId = null;
+        let chatPrivadoOtroUid = null;
+        let chatPrivadoMensajesUnsub = null;
+
+        function abrirChatPrivado(chatId, otroUid, otroNombre, otroNumeroId) {
+            chatPrivadoActualId = chatId;
+            chatPrivadoOtroUid = otroUid;
+            document.getElementById('chatp-lista-conversaciones').classList.add('hidden');
+            document.getElementById('chatp-buscar-id').closest('div').classList.add('hidden');
+            document.getElementById('chatp-resultado-busqueda').classList.add('hidden');
+            document.getElementById('chatp-hilo-wrap').classList.remove('hidden');
+            document.getElementById('chatp-titulo-conversacion').textContent = `${otroNombre}${otroNumeroId !== undefined ? ' #' + otroNumeroId : ''}`;
+            if (chatPrivadoMensajesUnsub) { chatPrivadoMensajesUnsub(); chatPrivadoMensajesUnsub = null; }
+            const lista = document.getElementById('chatp-mensajes-lista');
+            lista.innerHTML = '<p class="text-xs text-gray-400">Cargando mensajes...</p>';
+            const miUid = auth.currentUser && auth.currentUser.uid;
+            chatPrivadoMensajesUnsub = db.collection('chatsPrivados').doc(chatId).collection('mensajes')
+                .orderBy('fecha', 'asc').limit(200)
+                .onSnapshot(snapshot => {
+                    const mensajes = snapshot.docs.map(d => d.data());
+                    if (mensajes.length === 0) {
+                        lista.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">Todavía no hay mensajes. ¡Escribe el primero!</p>';
+                    } else {
+                        lista.innerHTML = mensajes.map(m => {
+                            const esMio = m.autor === miUid;
+                            const fechaTexto = m.fecha && m.fecha.toDate ? m.fecha.toDate().toLocaleString('es-PE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+                            const contenidoTexto = m.texto ? `<p>${m.texto.replace(/</g, '&lt;')}</p>` : '';
+                            const contenidoImagen = m.imagen ? `<img src="${m.imagen}" class="rounded-lg max-w-full mt-1 cursor-pointer" onclick="window.open('${m.imagen}', '_blank')">` : '';
+                            const contenidoAudio = m.audio ? `<audio controls src="${m.audio}" class="mt-1 max-w-full" style="height:34px;"></audio>` : '';
+                            return `<div class="flex ${esMio ? 'justify-end' : 'justify-start'}">
+                                <div class="${esMio ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-slate-800'} rounded-2xl px-3.5 py-2 max-w-[75%] text-sm">
+                                    ${contenidoTexto}${contenidoImagen}${contenidoAudio}
+                                    <p class="${esMio ? 'text-indigo-200' : 'text-gray-400'} text-[10px] mt-0.5">${fechaTexto}</p>
+                                </div>
+                            </div>`;
+                        }).join('');
+                    }
+                    lista.scrollTop = lista.scrollHeight;
+                }, () => {
+                    lista.innerHTML = '<p class="text-xs text-red-500">No se pudo cargar el chat (faltan permisos en Firestore).</p>';
+                });
+        }
+
+        function cerrarChatPrivadoAbierto() {
+            if (chatPrivadoMensajesUnsub) { chatPrivadoMensajesUnsub(); chatPrivadoMensajesUnsub = null; }
+            chatPrivadoActualId = null;
+            chatPrivadoOtroUid = null;
+            document.getElementById('chatp-hilo-wrap').classList.add('hidden');
+            document.getElementById('chatp-lista-conversaciones').classList.remove('hidden');
+            document.getElementById('chatp-buscar-id').closest('div').classList.remove('hidden');
+            renderListaConversacionesPrivadas();
+        }
+
+        async function enviarMensajeChatPrivadoDatos(datos) {
+            const miUid = auth.currentUser && auth.currentUser.uid;
+            if (!chatPrivadoActualId || !miUid) return false;
+            try {
+                await db.collection('chatsPrivados').doc(chatPrivadoActualId).collection('mensajes').add({
+                    autor: miUid,
+                    fecha: firebase.firestore.FieldValue.serverTimestamp(),
+                    ...datos
+                });
+                const resumen = datos.imagen ? '📷 Foto' : (datos.audio ? '🎤 Audio' : datos.texto);
+                await db.collection('chatsPrivados').doc(chatPrivadoActualId).set({
+                    ultimoMensaje: resumen,
+                    ultimoMensajeFecha: firebase.firestore.FieldValue.serverTimestamp()
+                }, { merge: true });
+                return true;
+            } catch (err) {
+                mostrarAviso('No se pudo enviar: ' + (err.message || err.code || 'error desconocido'));
+                return false;
+            }
+        }
+
+        async function enviarMensajeChatPrivado() {
+            const input = document.getElementById('chatp-input-mensaje');
+            const texto = input.value.trim();
+            if (!texto) return;
+            input.value = '';
+            const ok = await enviarMensajeChatPrivadoDatos({ texto: texto });
+            if (!ok) input.value = texto;
+        }
+
+        async function adjuntarFotoChatPrivado(event) {
+            const file = event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            try {
+                const dataUrl = await comprimirImagen(file, 700, 0.6);
+                await enviarMensajeChatPrivadoDatos({ imagen: dataUrl });
+            } catch (err) {
+                mostrarAviso('No se pudo procesar la foto.');
+            }
+        }
+
+        let grabadorAudioChatPrivado = null;
+        let fragmentosAudioChatPrivado = [];
+        async function toggleGrabacionAudioChatPrivado() {
+            const boton = document.getElementById('chatp-btn-grabar-audio');
+            const aviso = document.getElementById('chatp-grabando-aviso');
+            if (grabadorAudioChatPrivado && grabadorAudioChatPrivado.state === 'recording') {
+                grabadorAudioChatPrivado.stop();
+                return;
+            }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                mostrarAviso('Tu navegador no permite grabar audio.');
+                return;
+            }
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                fragmentosAudioChatPrivado = [];
+                grabadorAudioChatPrivado = new MediaRecorder(stream);
+                grabadorAudioChatPrivado.ondataavailable = (e) => { if (e.data.size > 0) fragmentosAudioChatPrivado.push(e.data); };
+                grabadorAudioChatPrivado.onstop = async () => {
+                    stream.getTracks().forEach(t => t.stop());
+                    boton.classList.remove('bg-red-500', 'text-white');
+                    boton.innerHTML = '<i class="fas fa-microphone"></i>';
+                    aviso.classList.add('hidden');
+                    const blob = new Blob(fragmentosAudioChatPrivado, { type: grabadorAudioChatPrivado.mimeType || 'audio/webm' });
+                    if (blob.size > 900 * 1024) {
+                        mostrarAviso('El audio quedó muy pesado. Intenta un mensaje más corto.');
+                        return;
+                    }
+                    const base64 = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                    await enviarMensajeChatPrivadoDatos({ audio: base64 });
+                };
+                grabadorAudioChatPrivado.start();
+                boton.classList.add('bg-red-500', 'text-white');
+                boton.innerHTML = '<i class="fas fa-stop"></i>';
+                aviso.classList.remove('hidden');
+            } catch (err) {
+                mostrarAviso('No se pudo acceder al micrófono. Revisa los permisos del navegador.');
+            }
+        }
+
+        let listaConversacionesPrivadasUnsub = null;
+        function renderListaConversacionesPrivadas() {
+            const miUid = auth.currentUser && auth.currentUser.uid;
+            const cont = document.getElementById('chatp-lista-conversaciones');
+            if (!miUid || !cont) return;
+            if (listaConversacionesPrivadasUnsub) return; // ya está escuchando en vivo
+            listaConversacionesPrivadasUnsub = db.collection('chatsPrivados')
+                .where('participantes', 'array-contains', miUid)
+                .onSnapshot(snapshot => {
+                    if (chatPrivadoActualId) return; // no repintar la lista mientras hay un chat abierto
+                    let conversaciones = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    conversaciones.sort((a, b) => {
+                        const fa = a.ultimoMensajeFecha && a.ultimoMensajeFecha.toMillis ? a.ultimoMensajeFecha.toMillis() : 0;
+                        const fb = b.ultimoMensajeFecha && b.ultimoMensajeFecha.toMillis ? b.ultimoMensajeFecha.toMillis() : 0;
+                        return fb - fa;
+                    });
+                    if (conversaciones.length === 0) {
+                        cont.innerHTML = '';
+                        return;
+                    }
+                    cont.innerHTML = conversaciones.map(c => {
+                        const otroUid = (c.participantes || []).find(p => p !== miUid);
+                        const otroNombre = (c.participantesNombres && c.participantesNombres[otroUid]) || 'Administrador';
+                        const fechaTexto = c.ultimoMensajeFecha && c.ultimoMensajeFecha.toDate ? c.ultimoMensajeFecha.toDate().toLocaleDateString('es-PE', { day: 'numeric', month: 'short' }) : '';
+                        return `<button onclick="abrirChatPrivado('${c.id}', '${otroUid}', '${otroNombre.replace(/'/g, "\\'")}')" class="w-full flex items-center justify-between admin-card p-3 text-left">
+                            <span class="min-w-0">
+                                <span class="block text-sm font-semibold text-slate-700 truncate">${otroNombre}</span>
+                                <span class="block text-xs text-gray-400 truncate">${(c.ultimoMensaje || '').slice(0, 40)}</span>
+                            </span>
+                            <span class="text-[10px] text-gray-400 shrink-0 ml-2">${fechaTexto}</span>
+                        </button>`;
+                    }).join('');
+                }, () => { /* sin permisos o sin conexión, se ignora silenciosamente */ });
         }
 
         // ============================================================
@@ -8707,6 +8998,9 @@
                 const venceEl = Date.now() + SUSCRIPCION_ADMIN_DIAS * 24 * 60 * 60 * 1000;
                 const numeroId = await asignarNumeroIdAdmin();
                 await db.collection('administradores').doc(id).update({ aprobado: true, suscripcionVenceEl: venceEl, numeroId: numeroId });
+                const solicitudDoc = await db.collection('administradores').doc(id).get();
+                const nombreAdmin = (solicitudDoc.exists && solicitudDoc.data().nombre) || 'Administrador';
+                await db.collection('directorioAdmins').doc(id).set({ numeroId: numeroId, nombre: nombreAdmin });
                 mostrarAviso(`Administrador aprobado (ID #${numeroId}). Su suscripción queda activa por 30 días.`);
             } catch (err) {
                 mostrarAviso('No se pudo aprobar: ' + (err.message || err.code || 'error desconocido'));
@@ -9364,6 +9658,7 @@
                 miBioAdmin = bioCruda;
                 miEstadoAdmin = estadoCrudo;
                 if (esSuperAdmin) miWhatsappAdmin = valorCrudo;
+                if (!esSuperAdmin) db.collection('directorioAdmins').doc(uid).set({ nombre: nombreFinal }, { merge: true }).catch(() => {});
                 cerrarEditarWhatsapp();
                 actualizarPerfilAdminCard();
 
