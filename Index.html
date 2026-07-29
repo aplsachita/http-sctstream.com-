@@ -27,6 +27,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
     <style>
         .card-hover { transition: all 0.3s ease; }
@@ -651,29 +652,42 @@
                     <i class="fab fa-whatsapp"></i> <span data-i18n="nav_contacto">Contacto</span>
                 </a>
             </nav>
-            <div class="flex items-center gap-1.5 md:gap-3 shrink-0">
-                <button onclick="toggleIdioma()" id="btn-idioma" class="bg-gray-100 hover:bg-gray-200 text-slate-700 w-8 h-8 md:w-11 md:h-11 rounded-full flex items-center justify-center text-[10px] md:text-xs font-bold transition" title="Change language">ES</button>
-                <button onclick="ciclarTamanoTexto()" id="btn-tamano-texto" class="bg-gray-100 hover:bg-gray-200 text-slate-700 w-8 h-8 md:w-11 md:h-11 rounded-full flex items-center justify-center text-[10px] md:text-xs font-bold transition" title="Cambiar tamaño de letra">A+</button>
-                <button onclick="toggleModoOscuroTienda()" id="btn-modo-oscuro" class="bg-gray-100 hover:bg-gray-200 text-slate-700 w-8 h-8 md:w-11 md:h-11 rounded-full flex items-center justify-center text-xs md:text-base transition">
-                    <i class="fas fa-moon"></i>
+            <div class="flex items-center gap-1.5 md:gap-3 shrink-0 relative">
+                <button onclick="toggleMenuCabecera()" id="btn-menu-cabecera" class="relative bg-gray-100 hover:bg-gray-200 text-slate-700 w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center text-base transition">
+                    <i class="fas fa-ellipsis-vertical"></i>
+                    <span id="menu-cabecera-badge-total" class="hidden absolute -top-1 -right-1 bg-emerald-500 text-white text-[9px] font-bold w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center">0</span>
                 </button>
-                <button onclick="abrirMiCuentaCliente()" id="btn-cuenta-cliente" class="relative bg-gray-100 hover:bg-gray-200 text-slate-700 w-8 h-8 md:w-11 md:h-11 rounded-full flex items-center justify-center text-xs md:text-base transition overflow-hidden">
-                    <i id="icono-cuenta-cliente" class="fas fa-user"></i>
-                    <img id="foto-cuenta-cliente" class="hidden w-full h-full object-cover rounded-full">
-                </button>
-                <button onclick="abrirFavoritos()" class="relative bg-gray-100 hover:bg-gray-200 text-slate-700 w-8 h-8 md:w-11 md:h-11 rounded-full flex items-center justify-center text-xs md:text-base transition">
-                    <i class="fas fa-heart"></i>
-                    <span id="favoritos-badge" class="hidden absolute -top-1 -right-1 bg-emerald-500 text-white text-[9px] font-bold w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center">0</span>
-                </button>
-                <button onclick="abrirCarrito()" class="relative bg-gray-100 hover:bg-gray-200 text-slate-700 w-8 h-8 md:w-11 md:h-11 rounded-full flex items-center justify-center text-xs md:text-base transition">
-                    <i class="fas fa-cart-shopping"></i>
-                    <span id="carrito-badge" class="hidden absolute -top-1 -right-1 bg-emerald-500 text-white text-[9px] font-bold w-4 h-4 md:w-5 md:h-5 rounded-full flex items-center justify-center">0</span>
-                </button>
-                <button onclick="toggleAdmin()" class="bg-slate-800 text-white w-8 h-8 md:w-auto md:px-5 md:py-2 rounded-full font-semibold hover:bg-slate-700 transition flex items-center justify-center md:gap-2 shadow-md text-xs md:text-base">
-                    <i class="fas fa-cog"></i>
-                    <span class="hidden md:inline">RFL</span>
-                </button>
+
+                <div id="menu-cabecera-dropdown" class="hidden absolute top-full right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-[90]">
+                    <button onclick="cerrarMenuCabecera(); abrirCarrito();" class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 text-sm text-slate-700">
+                        <span class="flex items-center gap-3"><i class="fas fa-cart-shopping w-4 text-center"></i> <span data-i18n="nav_carrito">Carrito</span></span>
+                        <span id="carrito-badge" class="hidden bg-emerald-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">0</span>
+                    </button>
+                    <button onclick="cerrarMenuCabecera(); abrirFavoritos();" class="w-full flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 text-sm text-slate-700">
+                        <span class="flex items-center gap-3"><i class="fas fa-heart w-4 text-center"></i> <span data-i18n="nav_favoritos">Favoritos</span></span>
+                        <span id="favoritos-badge" class="hidden bg-emerald-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center">0</span>
+                    </button>
+                    <button onclick="cerrarMenuCabecera(); abrirMiCuentaCliente();" id="btn-cuenta-cliente" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 text-sm text-slate-700">
+                        <span class="w-4 h-4 rounded-full overflow-hidden flex items-center justify-center shrink-0"><i id="icono-cuenta-cliente" class="fas fa-user"></i><img id="foto-cuenta-cliente" class="hidden w-full h-full object-cover rounded-full"></span>
+                        <span data-i18n="nav_cuenta">Mi cuenta</span>
+                    </button>
+                    <div class="border-t border-gray-100 my-1"></div>
+                    <button onclick="toggleModoOscuroTienda()" id="btn-modo-oscuro" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 text-sm text-slate-700">
+                        <i id="icono-modo-oscuro" class="fas fa-moon w-4 text-center"></i> <span data-i18n="nav_modo_oscuro">Modo oscuro</span>
+                    </button>
+                    <button onclick="toggleIdioma()" id="btn-idioma" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 text-sm text-slate-700">
+                        <i class="fas fa-language w-4 text-center"></i> <span>Idioma (<span id="btn-idioma-texto">ES</span>)</span>
+                    </button>
+                    <button onclick="ciclarTamanoTexto()" id="btn-tamano-texto" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 text-sm text-slate-700">
+                        <i class="fas fa-text-height w-4 text-center"></i> <span data-i18n="nav_tamano_letra">Tamaño de letra</span>
+                    </button>
+                    <div class="border-t border-gray-100 my-1"></div>
+                    <button onclick="cerrarMenuCabecera(); toggleAdmin();" class="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 text-sm font-semibold text-slate-800">
+                        <i class="fas fa-cog w-4 text-center"></i> Panel RFL
+                    </button>
+                </div>
             </div>
+
         </div>
     </header>
 
@@ -1110,6 +1124,9 @@
                         </div>
                         <div id="perfil-incompleto-aviso" class="hidden mt-2 bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-xs text-amber-700"></div>
                         <p id="perfil-tiempo-respuesta" class="hidden text-[10px] text-gray-500 mt-2"></p>
+                        <button type="button" id="btn-activar-push" onclick="activarNotificacionesPush()" class="w-full mt-3 flex items-center justify-center gap-2 bg-white border border-indigo-200 text-indigo-600 py-2.5 rounded-xl text-sm font-semibold">
+                            <i class="fas fa-bell"></i> <span id="btn-activar-push-texto">Activar notificaciones en este dispositivo</span>
+                        </button>
                         <div id="perfil-resumen-ventas" class="hidden mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 gap-2 text-center">
                             <div>
                                 <p id="perfil-resumen-ventas-total" class="text-lg font-bold titulo-color">0</p>
@@ -2014,6 +2031,17 @@
         const db = firebase.firestore();
         const storage = firebase.storage();
 
+        // ---- Notificaciones push (Nivel 2: llegan aunque la app esté cerrada) ----
+        // IMPORTANTE: reemplaza esta clave por la tuya generada en
+        // Firebase Console → Configuración del proyecto → Cloud Messaging → Configuración web → "Generar par de claves"
+        const FCM_VAPID_KEY = "PEGA_AQUI_TU_VAPID_KEY";
+        let messaging = null;
+        try {
+            if (firebase.messaging && firebase.messaging.isSupported && firebase.messaging.isSupported()) {
+                messaging = firebase.messaging();
+            }
+        } catch (err) { console.warn('Firebase Messaging no disponible en este navegador:', err); }
+
         const WHATSAPP_NUMBER = "51925516886";
         let programaPuntosActivo = true;
         let suscripcionAdminActiva = true;
@@ -2029,6 +2057,11 @@
             nav_productos: 'Products',
             nav_galeria: 'Gallery',
             nav_contacto: 'Contact',
+            nav_carrito: 'Cart',
+            nav_favoritos: 'Favorites',
+            nav_cuenta: 'My account',
+            nav_modo_oscuro: 'Dark mode',
+            nav_tamano_letra: 'Text size',
             hero_titulo: 'Buy & Sell Anything at the Best Price',
             hero_subtitulo: 'Products, services and much more • List yours or find what you need',
             hero_ver_ofertas: 'View Deals',
@@ -2038,7 +2071,7 @@
         };
         let idiomaActual = localStorage.getItem('sct_idioma') || 'es';
         function aplicarIdioma() {
-            const btn = document.getElementById('btn-idioma');
+            const btn = document.getElementById('btn-idioma-texto');
             if (btn) btn.textContent = idiomaActual === 'en' ? 'EN' : 'ES';
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const clave = el.dataset.i18n;
@@ -3871,6 +3904,7 @@
             } else {
                 badge.classList.add('hidden');
             }
+            actualizarBadgeMenuCabecera();
         }
 
         function abrirAvisarStock() {
@@ -3945,12 +3979,12 @@
         function toggleModoOscuroTienda() {
             const activo = document.body.classList.toggle('tienda-oscura');
             localStorage.setItem('sct_modo_oscuro', activo ? '1' : '0');
-            document.getElementById('btn-modo-oscuro').innerHTML = activo ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+            document.getElementById('icono-modo-oscuro').className = activo ? 'fas fa-sun w-4 text-center' : 'fas fa-moon w-4 text-center';
         }
         if (localStorage.getItem('sct_modo_oscuro') === '1') {
             document.addEventListener('DOMContentLoaded', () => {
                 document.body.classList.add('tienda-oscura');
-                document.getElementById('btn-modo-oscuro').innerHTML = '<i class="fas fa-sun"></i>';
+                document.getElementById('icono-modo-oscuro').className = 'fas fa-sun w-4 text-center';
             });
         }
 
@@ -4264,6 +4298,37 @@
             if (!badge) return;
             if (favoritos.length > 0) {
                 badge.textContent = favoritos.length > 99 ? '99+' : favoritos.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+            actualizarBadgeMenuCabecera();
+        }
+
+        // Botón único de la cabecera: agrupa idioma, tamaño de letra, modo oscuro,
+        // cuenta, favoritos, carrito y el panel admin en un solo desplegable.
+        function toggleMenuCabecera() {
+            document.getElementById('menu-cabecera-dropdown').classList.toggle('hidden');
+        }
+        function cerrarMenuCabecera() {
+            document.getElementById('menu-cabecera-dropdown').classList.add('hidden');
+        }
+        document.addEventListener('click', (ev) => {
+            const menu = document.getElementById('menu-cabecera-dropdown');
+            const boton = document.getElementById('btn-menu-cabecera');
+            if (!menu || menu.classList.contains('hidden')) return;
+            if (!menu.contains(ev.target) && !boton.contains(ev.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+        function actualizarBadgeMenuCabecera() {
+            const totalCarrito = carrito.reduce((s, i) => s + i.cantidad, 0);
+            const totalFavoritos = favoritos.length;
+            const total = totalCarrito + totalFavoritos;
+            const badge = document.getElementById('menu-cabecera-badge-total');
+            if (!badge) return;
+            if (total > 0) {
+                badge.textContent = total > 99 ? '99+' : total;
                 badge.classList.remove('hidden');
             } else {
                 badge.classList.add('hidden');
@@ -7473,6 +7538,65 @@
             }
             badge.classList.toggle('hidden', !hayNoLeidos);
             if (hayNoLeidos) badge.textContent = '•';
+        }
+
+        // ============================================================
+        // NOTIFICACIONES PUSH (Nivel 2) — llegan aunque la app esté
+        // cerrada o el celular bloqueado. Requiere:
+        //  1. Que el proyecto de Firebase esté en el plan Blaze.
+        //  2. El archivo firebase-messaging-sw.js en la raíz del sitio.
+        //  3. Haber pegado tu VAPID key en FCM_VAPID_KEY (arriba en este archivo).
+        //  4. Las Cloud Functions desplegadas (carpeta /functions) que son
+        //     las que realmente EJECUTAN el envío del push.
+        // ============================================================
+        async function activarNotificacionesPush() {
+            const boton = document.getElementById('btn-activar-push');
+            const textoBoton = document.getElementById('btn-activar-push-texto');
+            if (!messaging) {
+                mostrarAviso('Tu navegador no soporta notificaciones push, o no estás en HTTPS. Prueba desde Chrome o Safari, en sctstream.xyz (no en localhost).');
+                return;
+            }
+            if (FCM_VAPID_KEY === 'PEGA_AQUI_TU_VAPID_KEY') {
+                mostrarAviso('Falta configurar la VAPID key en el código antes de poder activar esto. Avísale al desarrollador.');
+                return;
+            }
+            try {
+                const permiso = await Notification.requestPermission();
+                if (permiso !== 'granted') {
+                    mostrarAviso('No diste permiso de notificaciones. Puedes activarlo luego desde los ajustes del navegador.');
+                    return;
+                }
+                const registro = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+                const token = await messaging.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: registro });
+                if (!token) {
+                    mostrarAviso('No se pudo obtener el token de notificaciones. Intenta de nuevo.');
+                    return;
+                }
+                if (esSuperAdmin) {
+                    await db.collection('configuracion').doc('principal').set({ fcmTokenSuperAdmin: token }, { merge: true });
+                } else if (auth.currentUser) {
+                    await db.collection('administradores').doc(auth.currentUser.uid).set({ fcmToken: token }, { merge: true });
+                }
+                if (textoBoton) textoBoton.textContent = 'Notificaciones activadas ✓';
+                if (boton) { boton.classList.add('opacity-60'); boton.disabled = true; }
+                mostrarAviso('¡Listo! Ahora recibirás notificaciones en este dispositivo aunque tengas la app cerrada.');
+            } catch (err) {
+                console.error(err);
+                mostrarAviso('No se pudo activar: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
+        // Si llega un mensaje push mientras la pestaña está ABIERTA y activa,
+        // el navegador no muestra la notificación del sistema por defecto —
+        // esto la refleja igual, dentro de la propia app (bandeja/aviso).
+        if (messaging) {
+            try {
+                messaging.onMessage((payload) => {
+                    const titulo = (payload.notification && payload.notification.title) || 'APL market';
+                    const cuerpo = (payload.notification && payload.notification.body) || '';
+                    mostrarAviso(`🔔 ${titulo}: ${cuerpo}`);
+                });
+            } catch (err) { /* navegador sin soporte, se ignora */ }
         }
 
         async function toggleSuscripcionAdmin(activo) {
