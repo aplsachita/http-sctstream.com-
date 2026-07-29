@@ -445,13 +445,26 @@
         .admin-banner { background: linear-gradient(120deg, #4338ca, #6366f1); }
         .admin-btn-primary { background: #4338ca; transition: background .15s ease; }
         .admin-btn-primary:hover { background: #3730a3; }
-        .admin-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 1rem; }
-        #admin-modal-panel.dark-panel .admin-card { background: #1f1f38 !important; border-color: #3a3a5c !important; }
+        .admin-card {
+            background: rgba(255,255,255,0.62);
+            border: 1px solid rgba(255,255,255,0.7);
+            border-radius: 1rem;
+            backdrop-filter: blur(10px) saturate(150%);
+            -webkit-backdrop-filter: blur(10px) saturate(150%);
+            box-shadow: 0 6px 20px rgba(30,27,75,0.07);
+        }
+        #admin-modal-panel.dark-panel .admin-card {
+            background: rgba(31,31,56,0.62) !important;
+            border-color: rgba(122,122,166,0.28) !important;
+            backdrop-filter: blur(10px) saturate(150%);
+            -webkit-backdrop-filter: blur(10px) saturate(150%);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
         .admin-stat-icon { width: 2.5rem; height: 2.5rem; border-radius: 0.75rem; display:flex; align-items:center; justify-content:center; font-size: 1rem; }
 
         /* Tabs */
-        .admin-tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid #e2e8f0; margin-bottom: 1.5rem; }
-        #admin-modal-panel.dark-panel .admin-tabs { border-color: #3a3a5c; }
+        .admin-tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid rgba(226,232,240,0.8); margin-bottom: 1.5rem; position: sticky; top: 0; z-index: 20; background: rgba(248,250,255,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding-top: 0.25rem; }
+        #admin-modal-panel.dark-panel .admin-tabs { border-color: #3a3a5c; background: rgba(23,23,43,0.85); }
         .admin-tab-btn { flex-shrink: 0; padding: 0.65rem 1rem; font-size: 0.85rem; font-weight: 600; color: #64748b; border-bottom: 2px solid transparent; white-space: nowrap; transition: all .15s ease; background:transparent; }
         .admin-tab-btn:hover { color: #4338ca; }
         .admin-tab-btn.active { color: #4338ca; border-bottom-color: #4338ca; }
@@ -647,8 +660,8 @@
         .producto-pill { background: #eef2ff; color: #4338ca; border-radius: 9999px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
         #admin-modal-panel.dark-panel .producto-pill { background: #26264a !important; color: #c7c9ff !important; }
 
-        .admin-panel-surface { background: #ffffff; }
-        #admin-modal-panel.dark-panel .admin-panel-surface { background: #17172b !important; }
+        .admin-panel-surface { background: linear-gradient(165deg, #eef1ff 0%, #f8fafc 42%, #f3ecfe 100%); }
+        #admin-modal-panel.dark-panel .admin-panel-surface { background: linear-gradient(165deg, #14132a 0%, #1b1a35 45%, #201a3d 100%) !important; }
     </style>
     <!--
       Google Analytics (desactivado hasta que tengas tu ID):
