@@ -1092,7 +1092,7 @@
                             <input type="datetime-local" id="new-publicar-en" onchange="autoguardarBorradorProducto();" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-1 text-gray-700">
                         </label>
                         <div class="grid grid-cols-2 gap-4 mt-4">
-                            <select id="new-categoria" onchange="document.getElementById('new-categoria-otro').classList.toggle('hidden', this.value !== 'Otro'); document.getElementById('new-animacion3d-row').classList.toggle('hidden', this.value !== 'Ropa' && this.value !== 'Zapatillas'); autoguardarBorradorProducto();" class="border border-gray-300 rounded-xl px-4 py-3">
+                            <select id="new-categoria" onchange="document.getElementById('new-categoria-otro').classList.toggle('hidden', this.value !== 'Otro'); document.getElementById('new-animacion3d-row').classList.toggle('hidden', !['Ropa','Zapatillas','Impresos 3D','Diseños 2D'].includes(this.value)); document.getElementById('new-animacion3d').checked = (this.value !== 'Diseños 2D'); autoguardarBorradorProducto();" class="border border-gray-300 rounded-xl px-4 py-3">
                                 <option value="Electrónica">Electrónica</option>
                                 <option value="Ropa">Ropa</option>
                                 <option value="Zapatillas">Zapatillas</option>
@@ -1101,6 +1101,8 @@
                                 <option value="Streaming">Streaming y Software</option>
                                 <option value="Videojuegos">Videojuegos</option>
                                 <option value="Servicios">Servicios</option>
+                                <option value="Impresos 3D">Impresos 3D</option>
+                                <option value="Diseños 2D">Diseños 2D</option>
                                 <option value="Otro">Otro (escribir)</option>
                             </select>
                             <input id="new-categoria-otro" type="text" oninput="autoguardarBorradorProducto();" placeholder="Nombre de la categoría" class="hidden border border-gray-300 rounded-xl px-4 py-3">
@@ -3012,7 +3014,8 @@
         const ICONOS_CATEGORIA = {
             'Electrónica': 'fa-mobile-screen', 'Streaming': 'fa-tv', 'Ropa': 'fa-shirt', 'Zapatillas': 'fa-shoe-prints',
             'Hogar': 'fa-couch', 'Vehículos': 'fa-car', 'Videojuegos': 'fa-gamepad', 'Servicios': 'fa-handshake',
-            'Software': 'fa-laptop-code', 'Música': 'fa-music', 'Otro': 'fa-tag'
+            'Software': 'fa-laptop-code', 'Música': 'fa-music', 'Impresos 3D': 'fa-cube', 'Diseños 2D': 'fa-swatchbook',
+            'Otro': 'fa-tag'
         };
 
         function abrirMenuCategorias() {
@@ -3294,7 +3297,13 @@
                 : '';
             const esNuevo = producto.creado && producto.creado.toDate && (Date.now() - producto.creado.toDate().getTime()) < 3 * 86400000;
             const esTopVenta = idsProductosTopVentas.has(producto.id);
-            const insigniasExtra = (esNuevo ? '<span class="bg-sky-500 text-white text-[6px] font-bold px-1 py-0.5 rounded-full mr-0.5">NUEVO</span>' : '') +
+            const badgeTipoImpreso = producto.categoria === 'Impresos 3D'
+                ? '<span class="bg-indigo-600 text-white text-[6px] font-bold px-1 py-0.5 rounded-full mr-0.5"><i class="fas fa-cube"></i> 3D</span>'
+                : (producto.categoria === 'Diseños 2D'
+                    ? '<span class="bg-emerald-600 text-white text-[6px] font-bold px-1 py-0.5 rounded-full mr-0.5"><i class="fas fa-swatchbook"></i> 2D</span>'
+                    : '');
+            const insigniasExtra = badgeTipoImpreso +
+                (esNuevo ? '<span class="bg-sky-500 text-white text-[6px] font-bold px-1 py-0.5 rounded-full mr-0.5">NUEVO</span>' : '') +
                 (esTopVenta ? '<span class="bg-amber-400 text-amber-900 text-[6px] font-bold px-1 py-0.5 rounded-full"><i class="fas fa-fire"></i> TOP</span>' : '');
             const calificacionHtml = producto.calificacionCantidad > 0
                 ? `<p class="text-[7px] mb-0.5"><span class="text-amber-400">⭐</span> <span class="text-gray-600 font-semibold">${(producto.calificacionSuma / producto.calificacionCantidad).toFixed(1)}</span> <span class="text-gray-400">(${producto.calificacionCantidad})</span></p>`
@@ -5242,12 +5251,12 @@
                         : `<button onclick="toggleDescuentoProducto('${producto.id}', true)" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-tag mr-1"></i>Activar descuento (-${descuentoPct}%)</button>`)
                     : `<span class="text-xs text-gray-400">${esSuperAdmin ? 'Pon un % arriba para poder activarlo.' : 'Aún no tiene descuento asignado por el súper admin.'}</span>`;
                 const categoriaProducto = producto.categoria || 'Otro';
-                const opcionesCategoria = ['Electrónica', 'Ropa', 'Zapatillas', 'Hogar', 'Vehículos', 'Streaming', 'Videojuegos', 'Servicios', 'Otro'];
+                const opcionesCategoria = ['Electrónica', 'Ropa', 'Zapatillas', 'Hogar', 'Vehículos', 'Streaming', 'Videojuegos', 'Servicios', 'Impresos 3D', 'Diseños 2D', 'Otro'];
                 if (!opcionesCategoria.includes(categoriaProducto)) opcionesCategoria.push(categoriaProducto);
                 const selectCategoria = `<select id="categoria-input-${producto.id}" onchange="guardarCategoriaProducto('${producto.id}', this.value)" class="border border-gray-300 rounded-lg px-2 py-1.5 text-xs">
                     ${opcionesCategoria.map(c => `<option value="${c}" ${c === categoriaProducto ? 'selected' : ''}>${c}</option>`).join('')}
                 </select>`;
-                const botonAnimacion3D = (categoriaProducto === 'Ropa' || categoriaProducto === 'Zapatillas')
+                const botonAnimacion3D = ['Ropa', 'Zapatillas', 'Impresos 3D', 'Diseños 2D'].includes(categoriaProducto)
                     ? (producto.animacion3D !== false
                         ? `<button onclick="toggleAnimacion3DProducto('${producto.id}', false)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-cube mr-1"></i>Quitar animación 3D</button>`
                         : `<button onclick="toggleAnimacion3DProducto('${producto.id}', true)" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-cube mr-1"></i>Activar animación 3D</button>`)
@@ -7724,7 +7733,7 @@
                 if (b.categoria) document.getElementById('new-categoria').value = b.categoria;
                 document.getElementById('new-categoria-otro').value = b.categoriaOtro || '';
                 document.getElementById('new-categoria-otro').classList.toggle('hidden', b.categoria !== 'Otro');
-                document.getElementById('new-animacion3d-row').classList.toggle('hidden', b.categoria !== 'Ropa' && b.categoria !== 'Zapatillas');
+                document.getElementById('new-animacion3d-row').classList.toggle('hidden', !['Ropa','Zapatillas','Impresos 3D','Diseños 2D'].includes(b.categoria));
                 document.getElementById('new-es-combo').checked = !!b.esCombo;
                 document.getElementById('new-combo-incluye').value = b.comboIncluye || '';
                 document.getElementById('new-combo-incluye-row').classList.toggle('hidden', !b.esCombo);
@@ -7749,6 +7758,8 @@
                 { categoria: 'Electrónica', claves: ['celular', 'laptop', 'audífono', 'audifono', 'cargador', 'tv', 'televisor', 'cable', 'memoria'] },
                 { categoria: 'Hogar', claves: ['cocina', 'mueble', 'sábana', 'sabana', 'hogar', 'decoración', 'decoracion'] },
                 { categoria: 'Vehículos', claves: ['carro', 'moto', 'auto', 'llanta', 'vehículo', 'vehiculo'] },
+                { categoria: 'Impresos 3D', claves: ['impreso 3d', 'impresión 3d', 'impresion 3d', 'figura', 'pla', 'resina', 'filamento', 'llavero 3d'] },
+                { categoria: 'Diseños 2D', claves: ['calcomanía', 'calcomania', 'sticker', 'printable', 'poster', 'póster', 'vector', 'svg', 'estampado', 'plantilla digital'] },
                 { categoria: 'Servicios', claves: ['servicio', 'asesoría', 'asesoria', 'clases', 'diseño', 'diseno'] }
             ];
             const coincidencia = mapa.find(m => m.claves.some(c => nombre.includes(c)));
