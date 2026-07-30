@@ -11025,26 +11025,26 @@
                 catCamera.updateProjectionMatrix();
             }
 
-            catScene.add(new THREE.HemisphereLight(0xffffff, 0x2c2d52, 0.65));
-            const catKey = new THREE.DirectionalLight(0xffffff, 0.9);
+            catScene.add(new THREE.HemisphereLight(0xffffff, 0x2c2d52, 0.48));
+            const catKey = new THREE.DirectionalLight(0xffffff, 0.62);
             catKey.position.set(1.4, 2.0, 2.2);
             catScene.add(catKey);
-            const catRimA = new THREE.PointLight(0x8b7cf6, 0.7, 5);
+            const catRimA = new THREE.PointLight(0x8b7cf6, 0.4, 5);
             catRimA.position.set(-1.6, 0.7, -1.2);
             catScene.add(catRimA);
-            const catRimB = new THREE.PointLight(0x35e0c4, 0.4, 5);
+            const catRimB = new THREE.PointLight(0x35e0c4, 0.22, 5);
             catRimB.position.set(1.6, -0.5, 1.4);
             catScene.add(catRimB);
 
-            const pinkMat = new THREE.MeshStandardMaterial({ color: 0xffb9c6, roughness: 0.5, metalness: 0.05 });
-            const pupilMat = new THREE.MeshStandardMaterial({ color: 0x1a1108, roughness: 0.15, metalness: 0.1 });
-            const glintMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const pinkMat = new THREE.MeshStandardMaterial({ color: 0xffb9c6, roughness: 0.7, metalness: 0 });
+            const pupilMat = new THREE.MeshStandardMaterial({ color: 0x1a1108, roughness: 0.4, metalness: 0 });
+            const glintMat = new THREE.MeshBasicMaterial({ color: 0xe9e9ec });
 
             function buildCat(opts) {
-                const furMat = new THREE.MeshStandardMaterial({ color: opts.furColor, roughness: 0.68, metalness: 0.015 });
-                const furShade = new THREE.MeshStandardMaterial({ color: opts.furShadeColor, roughness: 0.74, metalness: 0.015 });
-                const softMat = new THREE.MeshStandardMaterial({ color: opts.bellyColor, roughness: 0.78, metalness: 0.015 });
-                const eyeMat = new THREE.MeshStandardMaterial({ color: opts.eyeColor, roughness: 0.28, metalness: 0.08, emissive: opts.eyeColor, emissiveIntensity: 0.08 });
+                const furMat = new THREE.MeshStandardMaterial({ color: opts.furColor, roughness: 0.85, metalness: 0 });
+                const furShade = new THREE.MeshStandardMaterial({ color: opts.furShadeColor, roughness: 0.88, metalness: 0 });
+                const softMat = new THREE.MeshStandardMaterial({ color: opts.bellyColor, roughness: 0.9, metalness: 0 });
+                const eyeMat = new THREE.MeshStandardMaterial({ color: opts.eyeColor, roughness: 0.45, metalness: 0, emissive: opts.eyeColor, emissiveIntensity: 0.04 });
 
                 const group = new THREE.Group();
                 const body = new THREE.Mesh(new THREE.SphereGeometry(0.58, 28, 20), furMat);
@@ -11197,8 +11197,30 @@
             const legL = mainCat.legL, legR = mainCat.legR;
             const legBackL = mainCat.legBackL, legBackR = mainCat.legBackR;
             const eyeL = mainCat.eyeL, eyeR = mainCat.eyeR;
-            catGroup.rotation.y = -0.5;
             catScene.add(catGroup);
+
+            // ---- Girar el gato con el dedo (touch) o arrastrando con el mouse ----
+            let dragRotY = -0.5, dragRotX = 0, targetRotY = -0.5, targetRotX = 0;
+            let isDragging = false, lastPX = 0, lastPY = 0;
+            canvasEl.style.cursor = 'grab';
+            canvasEl.style.touchAction = 'none';
+            canvasEl.addEventListener('pointerdown', (e) => {
+                isDragging = true;
+                lastPX = e.clientX; lastPY = e.clientY;
+                canvasEl.style.cursor = 'grabbing';
+                if (canvasEl.setPointerCapture) canvasEl.setPointerCapture(e.pointerId);
+            });
+            canvasEl.addEventListener('pointermove', (e) => {
+                if (!isDragging) return;
+                const dx = e.clientX - lastPX, dy = e.clientY - lastPY;
+                lastPX = e.clientX; lastPY = e.clientY;
+                targetRotY += dx * 0.012;
+                targetRotX = Math.max(-0.5, Math.min(0.5, targetRotX + dy * 0.008));
+            });
+            function terminarArrastreGato() { isDragging = false; canvasEl.style.cursor = 'grab'; }
+            canvasEl.addEventListener('pointerup', terminarArrastreGato);
+            canvasEl.addEventListener('pointerleave', terminarArrastreGato);
+            canvasEl.addEventListener('pointercancel', terminarArrastreGato);
 
             const shadowMesh = new THREE.Mesh(
                 new THREE.CircleGeometry(0.6, 28),
@@ -11241,6 +11263,10 @@
             function startPlayAnim() { isPlaying = true; playStart = clock.getElapsedTime(); idleAction = null; }
 
             function catTick(t) {
+                dragRotY += (targetRotY - dragRotY) * 0.15;
+                dragRotX += (targetRotX - dragRotX) * 0.15;
+                catGroup.rotation.y = dragRotY;
+                catGroup.rotation.x = dragRotX;
                 if (!reduceMotion) {
                     catGroup.position.y = Math.sin(t * 1.6) * 0.035;
                     let headRotX = 0;
