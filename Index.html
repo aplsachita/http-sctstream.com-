@@ -11013,7 +11013,7 @@
             const clock = new THREE.Clock();
             const catScene = new THREE.Scene();
             const catCamera = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
-            catCamera.position.set(0, 0.12, 3.7);
+            catCamera.position.set(0.15, 0.22, 4.15);
             catCamera.lookAt(0, -0.08, 0);
             const catRenderer = new THREE.WebGLRenderer({ canvas: canvasEl, alpha: true, antialias: true });
             catRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -11135,26 +11135,30 @@
                 });
 
                 const tailPivot = new THREE.Group();
-                tailPivot.position.set(0, -0.16, -0.52);
+                tailPivot.position.set(0, -0.14, -0.5);
                 group.add(tailPivot);
                 const tailCurve = new THREE.CatmullRomCurve3([
                     new THREE.Vector3(0, 0, 0),
-                    new THREE.Vector3(0, 0.24, -0.14),
-                    new THREE.Vector3(0.04, 0.52, -0.08),
-                    new THREE.Vector3(0.14, 0.72, 0.06)
+                    new THREE.Vector3(0.02, 0.3, -0.2),
+                    new THREE.Vector3(0.08, 0.66, -0.16),
+                    new THREE.Vector3(0.22, 0.98, 0.02),
+                    new THREE.Vector3(0.3, 1.12, 0.24)
                 ]);
-                const tailMesh = new THREE.Mesh(new THREE.TubeGeometry(tailCurve, 20, 0.05, 8, false), furShade);
+                const tailMesh = new THREE.Mesh(new THREE.TubeGeometry(tailCurve, 24, 0.055, 8, false), furShade);
                 tailPivot.add(tailMesh);
+                const tailTip = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), furShade);
+                tailTip.position.copy(tailCurve.getPoint(1));
+                tailPivot.add(tailTip);
 
                 function makeFrontLeg(sideSign) {
                     const pivot = new THREE.Group();
-                    pivot.position.set(0.28 * sideSign, -0.5, 0.4);
-                    const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.075, 0.12, 10), furMat);
-                    upper.position.set(0, -0.04, 0);
+                    pivot.position.set(0.26 * sideSign, -0.44, 0.42);
+                    const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.075, 0.3, 10), furMat);
+                    upper.position.set(0, -0.15, 0);
                     pivot.add(upper);
-                    const paw = new THREE.Mesh(new THREE.SphereGeometry(0.1, 12, 10), softMat);
-                    paw.scale.set(1, 0.6, 1.1);
-                    paw.position.set(0, -0.11, 0.03);
+                    const paw = new THREE.Mesh(new THREE.SphereGeometry(0.095, 12, 10), softMat);
+                    paw.scale.set(1, 0.65, 1.15);
+                    paw.position.set(0, -0.31, 0.035);
                     pivot.add(paw);
                     return pivot;
                 }
@@ -11163,13 +11167,26 @@
                 group.add(legL, legR);
 
                 function makeBackLeg(sideSign) {
-                    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.09, 0.14, 10), furShade);
-                    leg.position.set(0.26 * sideSign, -0.56, -0.28);
-                    return leg;
+                    const pivot = new THREE.Group();
+                    pivot.position.set(0.3 * sideSign, -0.42, -0.3);
+                    const thigh = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 10), furShade);
+                    thigh.scale.set(0.85, 1, 0.95);
+                    thigh.position.set(0, -0.03, 0);
+                    pivot.add(thigh);
+                    const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.06, 0.24, 10), furShade);
+                    shin.position.set(0, -0.24, 0.03);
+                    pivot.add(shin);
+                    const paw = new THREE.Mesh(new THREE.SphereGeometry(0.085, 12, 10), softMat);
+                    paw.scale.set(1, 0.6, 1.1);
+                    paw.position.set(0, -0.37, 0.05);
+                    pivot.add(paw);
+                    return pivot;
                 }
-                group.add(makeBackLeg(-1), makeBackLeg(1));
+                const legBackL = makeBackLeg(-1);
+                const legBackR = makeBackLeg(1);
+                group.add(legBackL, legBackR);
 
-                return { group, headGroup, earL, earR, tailPivot, legL, legR, eyeL, eyeR, body };
+                return { group, headGroup, earL, earR, tailPivot, legL, legR, legBackL, legBackR, eyeL, eyeR, body };
             }
 
             const mainCat = buildCat({ furColor: 0xfdfdfb, furShadeColor: 0xf0f0ec, bellyColor: 0xffffff, eyeColor: 0xd9a13a });
@@ -11178,7 +11195,9 @@
             const earL = mainCat.earL, earR = mainCat.earR;
             const tailPivot = mainCat.tailPivot;
             const legL = mainCat.legL, legR = mainCat.legR;
+            const legBackL = mainCat.legBackL, legBackR = mainCat.legBackR;
             const eyeL = mainCat.eyeL, eyeR = mainCat.eyeR;
+            catGroup.rotation.y = -0.5;
             catScene.add(catGroup);
 
             const shadowMesh = new THREE.Mesh(
