@@ -1703,6 +1703,7 @@
                     <button type="button" id="cliente-tab-registro" class="catlogin-tab" onclick="clienteCambiarTabEmail('registro')">Crear cuenta</button>
                 </div>
                 <input id="cliente-email-nombre" type="text" placeholder="Tu nombre" class="catlogin-input hidden">
+                <input id="cliente-email-telefono" type="tel" placeholder="Tu WhatsApp (9 dígitos)" class="catlogin-input hidden">
                 <input id="cliente-email-correo" type="email" placeholder="Tu correo" class="catlogin-input">
                 <input id="cliente-email-password" type="password" placeholder="Tu contraseña" class="catlogin-input">
                 <p id="cliente-email-error" class="hidden catlogin-error"></p>
@@ -7604,10 +7605,51 @@
                     <i class="fas fa-star text-3xl text-amber-300 mb-2"></i>
                     <p class="text-sm text-violet-200">Escribe tu WhatsApp para ver tus puntos y nivel de cliente frecuente.</p>
                 </div>
-                <input id="panelc-puntos-telefono" type="tel" placeholder="Tu WhatsApp (9 dígitos)" class="w-full rounded-xl px-4 py-3 text-center mb-3 text-slate-800">
+                <input id="panelc-puntos-telefono" type="tel" placeholder="Tu WhatsApp (9 dígitos)" class="w-full rounded-xl px-4 py-3 text-center mb-3 text-slate-800" value="${(miClienteDatos && miClienteDatos.telefono) || ''}">
                 <button onclick="consultarMisPuntosPanel()" class="w-full bg-white text-violet-700 font-semibold py-3 rounded-xl mb-4">Consultar</button>
                 <div id="panelc-puntos-resultado"></div>
+                <div class="mt-8 pb-4">
+                    <h4 class="text-white font-bold text-sm mb-3 flex items-center gap-2"><i class="fas fa-ranking-star text-amber-300"></i> Top clientes con más puntos</h4>
+                    <div id="panelc-ranking-lista"><p class="text-violet-300 text-xs text-center">Cargando ranking…</p></div>
+                </div>
             `;
+            cargarRankingClientes();
+        }
+
+        async function cargarRankingClientes() {
+            const cont = document.getElementById('panelc-ranking-lista');
+            if (!cont) return;
+            try {
+                const snap = await db.collection('clientes_publico').orderBy('puntos', 'desc').limit(15).get();
+                if (snap.empty) {
+                    cont.innerHTML = '<p class="text-violet-300 text-xs text-center">Todavía no hay clientes con puntos. ¡Sé el primero en comprar!</p>';
+                    return;
+                }
+                const miTelefono = miClienteDatos && miClienteDatos.telefono;
+                cont.innerHTML = snap.docs.map((d, i) => {
+                    const datos = d.data();
+                    const tel = d.id;
+                    const esYo = miTelefono && tel === miTelefono;
+                    const telMasked = tel.length >= 6 ? (tel.slice(0, 3) + '···' + tel.slice(-3)) : tel;
+                    const compras = datos.comprasConfirmadas || 0;
+                    const nivel = nivelDeCliente(compras);
+                    const medalla = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`;
+                    return `
+                        <div class="flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 mb-1.5 ${esYo ? 'bg-white/25 ring-1 ring-white/50' : 'bg-white/5'}">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <span class="text-sm font-bold w-7 text-center shrink-0">${medalla}</span>
+                                <div class="min-w-0 text-left">
+                                    <p class="text-sm font-semibold text-white truncate">${telMasked}${esYo ? ' <span class="text-[10px] text-amber-300">(tú)</span>' : ''}</p>
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded-full ${nivel.clase}">${nivel.texto}</span>
+                                </div>
+                            </div>
+                            <p class="text-sm font-bold text-amber-300 shrink-0">${datos.puntos || 0} pts</p>
+                        </div>`;
+                }).join('');
+            } catch (err) {
+                console.error(err);
+                cont.innerHTML = '<p class="text-red-300 text-xs text-center">No se pudo cargar el ranking.</p>';
+            }
         }
 
         async function consultarMisPuntosPanel() {
@@ -7646,12 +7688,33 @@
             const cont = document.getElementById('panelc-contenido');
             cont.innerHTML = `
                 <div class="text-center text-white mt-4">
-                    <img src="${(miClienteDatos && miClienteDatos.foto) || 'icon-192.png'}" class="w-20 h-20 rounded-full object-cover mx-auto mb-3">
+                    <div class="relative w-20 h-20 mx-auto mb-3">
+                        <img src="${(miClienteDatos && miClienteDatos.foto) || 'icon-192.png'}" class="w-20 h-20 rounded-full object-cover">
+                        <button onclick="document.getElementById('panelc-foto-input').click()" class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-white text-violet-700 flex items-center justify-center text-xs shadow-lg" title="Cambiar foto" aria-label="Cambiar foto de perfil"><i class="fas fa-camera"></i></button>
+                        <input id="panelc-foto-input" type="file" accept="image/*" class="hidden" onchange="subirFotoPerfilCliente(event)">
+                    </div>
                     <h3 class="text-lg font-bold">${(miClienteDatos && miClienteDatos.nombre) || 'Cliente'}</h3>
-                    <p class="text-violet-300 text-xs mb-8">${(miClienteDatos && miClienteDatos.correo) || ''}</p>
+                    <p class="text-violet-300 text-xs mb-1">${(miClienteDatos && miClienteDatos.correo) || ''}</p>
+                    <p class="text-violet-300 text-xs mb-8">${(miClienteDatos && miClienteDatos.telefono) ? '📱 ' + miClienteDatos.telefono : ''}</p>
                     <button onclick="cerrarSesionCliente()" class="w-full bg-white/10 text-red-300 font-semibold py-3 rounded-xl">Cerrar sesión</button>
                 </div>
             `;
+        }
+
+        async function subirFotoPerfilCliente(e) {
+            const file = e.target.files[0];
+            if (!file || !auth.currentUser) return;
+            try {
+                const fotoBase64 = await comprimirImagen(file, 300, 0.75);
+                await db.collection('clientes').doc(auth.currentUser.uid).update({ foto: fotoBase64 });
+                miClienteDatos = { ...(miClienteDatos || {}), foto: fotoBase64 };
+                actualizarIconoCuentaCliente();
+                renderTabPerfilCliente();
+                mostrarAviso('Tu foto de perfil se actualizó.');
+            } catch (err) {
+                console.error(err);
+                mostrarAviso('No se pudo actualizar tu foto: ' + (err.message || err.code || 'error desconocido'));
+            }
         }
 
         async function iniciarSesionClienteConGoogle() {
@@ -7666,7 +7729,7 @@
         // o ya tiene cuenta de administrador, no lo tratamos como cliente — lo mandamos
         // directo al inicio de sesión de administrador correspondiente. Usado tanto por
         // Google como por el login/registro con correo y contraseña.
-        async function clienteProcesarSesion(user, nombreManual) {
+        async function clienteProcesarSesion(user, nombreManual, telefonoManual) {
             if (user.email && user.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
                 mostrarAviso('Esta cuenta es la del dueño de la tienda. Usa el botón de administración (⚙️) para entrar a tu panel.');
                 await auth.signOut();
@@ -7684,9 +7747,10 @@
                 foto: user.photoURL || null,
                 ultimaConexion: firebase.firestore.FieldValue.serverTimestamp()
             };
+            if (telefonoManual) datosCliente.telefono = telefonoManual;
             await db.collection('clientes').doc(user.uid).set(datosCliente, { merge: true });
             esClienteConectado = true;
-            miClienteDatos = datosCliente;
+            miClienteDatos = { ...(miClienteDatos || {}), ...datosCliente };
             actualizarIconoCuentaCliente();
             return true;
         }
@@ -7703,6 +7767,7 @@
             document.getElementById('cliente-tab-login').classList.toggle('activo', tab === 'login');
             document.getElementById('cliente-tab-registro').classList.toggle('activo', tab === 'registro');
             document.getElementById('cliente-email-nombre').classList.toggle('hidden', tab !== 'registro');
+            document.getElementById('cliente-email-telefono').classList.toggle('hidden', tab !== 'registro');
             const submit = document.getElementById('cliente-email-submit');
             submit.textContent = tab === 'registro' ? 'Crear cuenta' : 'Entrar';
             submit.setAttribute('onclick', tab === 'registro' ? 'registrarClienteCorreo()' : 'iniciarSesionClienteCorreo()');
@@ -7743,16 +7808,24 @@
 
         async function registrarClienteCorreo() {
             const nombre = document.getElementById('cliente-email-nombre').value.trim();
+            const telefonoInput = document.getElementById('cliente-email-telefono').value.trim();
             const correo = document.getElementById('cliente-email-correo').value.trim();
             const password = document.getElementById('cliente-email-password').value;
             const errorEl = document.getElementById('cliente-email-error');
             errorEl.classList.add('hidden');
-            if (!nombre || !correo || !password) {
-                errorEl.textContent = 'Completa tu nombre, correo y contraseña.';
+            if (!nombre || !telefonoInput || !correo || !password) {
+                errorEl.textContent = 'Completa tu nombre, WhatsApp, correo y contraseña.';
                 errorEl.classList.remove('hidden');
                 catloginClienteFail();
                 return;
             }
+            if (!esWhatsappPeruValido(telefonoInput)) {
+                errorEl.textContent = 'Escribe un WhatsApp peruano válido (9 dígitos, empieza con 9).';
+                errorEl.classList.remove('hidden');
+                catloginClienteFail();
+                return;
+            }
+            const telefono = telefonoInput.replace(/\D/g, '').replace(/^51/, '');
             if (password.length < 6) {
                 errorEl.textContent = 'La contraseña debe tener al menos 6 caracteres.';
                 errorEl.classList.remove('hidden');
@@ -7760,9 +7833,16 @@
                 return;
             }
             try {
+                const yaRegistrado = await db.collection('clientes').where('telefono', '==', telefono).limit(1).get();
+                if (!yaRegistrado.empty) {
+                    errorEl.textContent = 'Ese número de WhatsApp ya tiene una cuenta creada. Inicia sesión en vez de registrarte de nuevo.';
+                    errorEl.classList.remove('hidden');
+                    catloginClienteFail();
+                    return;
+                }
                 const cred = await auth.createUserWithEmailAndPassword(correo, password);
                 await cred.user.updateProfile({ displayName: nombre });
-                const ok = await clienteProcesarSesion(cred.user, nombre);
+                const ok = await clienteProcesarSesion(cred.user, nombre, telefono);
                 if (ok) {
                     catloginClientePlay();
                     abrirPanelClienteCompleto('inicio');
