@@ -1689,14 +1689,19 @@
         </div>
     </div>
 
-    <div id="eleccion-acceso-modal" class="hidden modal-overlay" onclick="if (event.target === this) cerrarEleccionAcceso()">
-        <div class="bg-white rounded-3xl max-w-sm w-full mx-4 p-8 text-center">
-            <i class="fas fa-user-gear text-4xl text-slate-700 mb-4"></i>
-            <h3 class="text-lg font-bold mb-1">Acceso de administrador</h3>
-            <p class="text-gray-500 text-sm mb-6">¿Ya tienes cuenta o quieres crear una nueva?</p>
-            <button onclick="cerrarEleccionAcceso(); modoLoginSuperAdmin = false; abrirLogin();" class="boton-animado-morado text-white py-3 rounded-xl font-semibold w-full mb-2"><i class="fas fa-right-to-bracket mr-1"></i> Ya tengo cuenta</button>
-            <button onclick="cerrarEleccionAcceso(); abrirCuentaModal();" class="border-2 border-slate-300 text-slate-700 py-3 rounded-xl font-semibold w-full mb-2 hover:bg-slate-50">Crear cuenta nueva</button>
-            <button onclick="cerrarEleccionAcceso()" class="text-gray-400 text-sm mt-2">Cancelar</button>
+    <div id="eleccion-acceso-modal" class="hidden catlogin-overlay" onclick="if (event.target === this) cerrarEleccionAcceso()">
+        <div class="catlogin-stage">
+            <div class="catlogin-eyebrow"><span class="dot"></span>ACCESO ADMINISTRADOR</div>
+            <div class="catlogin-card" id="eleccion-acceso-card">
+                <button type="button" onclick="cerrarEleccionAcceso()" class="catlogin-close" aria-label="Cerrar">&times;</button>
+                <div class="catlogin-claws" id="eleccion-acceso-claws"><span></span><span></span><span></span></div>
+                <div class="catlogin-scene"><canvas id="catCanvasEleccion"></canvas></div>
+                <h3 class="catlogin-h1" style="text-align:center;">Acceso de administrador</h3>
+                <p class="catlogin-sub">¿Ya tienes cuenta o quieres crear una nueva?</p>
+                <button onclick="cerrarEleccionAcceso(); modoLoginSuperAdmin = false; abrirLogin();" class="catlogin-btn mb-2"><i class="fas fa-right-to-bracket mr-1"></i> Ya tengo cuenta</button>
+                <button onclick="cerrarEleccionAcceso(); abrirCuentaModal();" class="w-full py-3 rounded-xl font-semibold border-2 border-white/15 text-white/90 hover:bg-white/5" style="font-family:'Inter',sans-serif;">Crear cuenta nueva</button>
+                <p class="catlogin-foot"><button type="button" onclick="cerrarEleccionAcceso()" class="catlogin-link">Cancelar</button></p>
+            </div>
         </div>
     </div>
 
@@ -7388,6 +7393,8 @@
 
         function mostrarEleccionAcceso() {
             document.getElementById('eleccion-acceso-modal').classList.remove('hidden');
+            if (!gatoEleccion) gatoEleccion = crearGatoLogin('catCanvasEleccion');
+            if (gatoEleccion && gatoEleccion.resize) gatoEleccion.resize();
         }
         function cerrarEleccionAcceso() {
             document.getElementById('eleccion-acceso-modal').classList.add('hidden');
@@ -11303,7 +11310,7 @@
         // Fábrica reutilizable: crea un gatito animado (Three.js) dentro del
         // canvas indicado. Se usa una instancia para el login de administrador
         // y otra independiente para el de clientes.
-        let gatoAdmin = null, gatoCliente = null, gatoPin = null;
+        let gatoAdmin = null, gatoCliente = null, gatoPin = null, gatoEleccion = null;
 
         function crearGatoLogin(canvasId) {
             const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -11714,6 +11721,7 @@
             gatoAdmin = crearGatoLogin('catCanvasAdmin');
             gatoCliente = crearGatoLogin('catCanvasCliente');
             gatoPin = crearGatoLogin('catCanvasPin');
+            gatoEleccion = crearGatoLogin('catCanvasEleccion');
         });
     </script>
 </body>
