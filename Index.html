@@ -11329,11 +11329,40 @@
             const pupilMat = new THREE.MeshStandardMaterial({ color: 0x1a1108, roughness: 0.4, metalness: 0 });
             const glintMat = new THREE.MeshBasicMaterial({ color: 0xe9e9ec });
 
+            function hexNumASSCss(num) { return '#' + num.toString(16).padStart(6, '0'); }
+            function crearTexturaPelaje(colorBaseNum, colorHebraNum) {
+                const size = 160;
+                const c = document.createElement('canvas');
+                c.width = size; c.height = size;
+                const ctx = c.getContext('2d');
+                ctx.fillStyle = hexNumASSCss(colorBaseNum);
+                ctx.fillRect(0, 0, size, size);
+                ctx.strokeStyle = hexNumASSCss(colorHebraNum);
+                ctx.lineWidth = 1;
+                for (let i = 0; i < 1400; i++) {
+                    const x = Math.random() * size, y = Math.random() * size;
+                    const len = 2.5 + Math.random() * 5;
+                    const ang = (Math.random() * 0.7 - 0.35) + Math.PI / 2;
+                    ctx.globalAlpha = 0.08 + Math.random() * 0.14;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len);
+                    ctx.stroke();
+                }
+                const tex = new THREE.CanvasTexture(c);
+                tex.wrapS = THREE.RepeatWrapping;
+                tex.wrapT = THREE.RepeatWrapping;
+                tex.repeat.set(4, 4);
+                return tex;
+            }
+
             function buildCat(opts) {
-                const furMat = new THREE.MeshStandardMaterial({ color: opts.furColor, roughness: 0.85, metalness: 0 });
-                const furShade = new THREE.MeshStandardMaterial({ color: opts.furShadeColor, roughness: 0.88, metalness: 0 });
+                const furTex = crearTexturaPelaje(opts.furColor, opts.furShadeColor);
+                const furShadeTex = crearTexturaPelaje(opts.furShadeColor, opts.furColor);
+                const furMat = new THREE.MeshStandardMaterial({ map: furTex, roughness: 0.92, metalness: 0 });
+                const furShade = new THREE.MeshStandardMaterial({ map: furShadeTex, roughness: 0.94, metalness: 0 });
                 const softMat = new THREE.MeshStandardMaterial({ color: opts.bellyColor, roughness: 0.9, metalness: 0 });
-                const eyeMat = new THREE.MeshStandardMaterial({ color: opts.eyeColor, roughness: 0.45, metalness: 0, emissive: opts.eyeColor, emissiveIntensity: 0.04 });
+                const eyeMat = new THREE.MeshStandardMaterial({ color: opts.eyeColor, roughness: 0.35, metalness: 0, emissive: opts.eyeColor, emissiveIntensity: 0.03 });
 
                 const group = new THREE.Group();
                 const body = new THREE.Mesh(new THREE.SphereGeometry(0.58, 28, 20), furMat);
@@ -11342,19 +11371,20 @@
                 group.add(body);
 
                 const belly = new THREE.Mesh(new THREE.SphereGeometry(0.32, 20, 16), softMat);
-                belly.scale.set(0.8, 0.62, 0.68);
-                belly.position.set(0, -0.36, 0.4);
+                belly.scale.set(0.72, 0.55, 0.62);
+                belly.position.set(0, -0.34, 0.4);
                 group.add(belly);
 
                 const headGroup = new THREE.Group();
-                headGroup.position.set(0, 0.4, 0.32);
+                headGroup.position.set(0, 0.37, 0.3);
+                headGroup.scale.set(0.86, 0.86, 0.86);
                 group.add(headGroup);
 
                 const head = new THREE.Mesh(new THREE.SphereGeometry(0.45, 28, 20), furMat);
                 head.scale.set(1.05, 0.94, 1.0);
                 headGroup.add(head);
 
-                const earGeo = new THREE.ConeGeometry(0.145, 0.27, 5);
+                const earGeo = new THREE.ConeGeometry(0.115, 0.29, 4);
                 const earL = new THREE.Mesh(earGeo, softMat);
                 earL.position.set(-0.25, 0.36, -0.01);
                 earL.rotation.set(-0.15, 0, 0.35);
@@ -11364,7 +11394,7 @@
                 earR.rotation.z = -0.35;
                 headGroup.add(earR);
 
-                const innerEarGeo = new THREE.ConeGeometry(0.07, 0.14, 5);
+                const innerEarGeo = new THREE.ConeGeometry(0.055, 0.16, 4);
                 const innerL = new THREE.Mesh(innerEarGeo, pinkMat);
                 innerL.position.set(-0.25, 0.32, 0.045);
                 innerL.rotation.copy(earL.rotation);
@@ -11384,7 +11414,7 @@
                 nose.position.set(0, -0.03, 0.51);
                 headGroup.add(nose);
 
-                const eyeGeo = new THREE.SphereGeometry(0.062, 14, 12);
+                const eyeGeo = new THREE.SphereGeometry(0.05, 14, 12);
                 const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
                 eyeL.position.set(-0.165, 0.05, 0.375);
                 headGroup.add(eyeL);
@@ -11394,16 +11424,16 @@
 
                 const pupilGeo = new THREE.SphereGeometry(0.026, 10, 8);
                 const pupilL = new THREE.Mesh(pupilGeo, pupilMat);
-                pupilL.scale.set(0.55, 1, 0.5);
-                pupilL.position.set(-0.165, 0.05, 0.428);
+                pupilL.scale.set(0.32, 1.25, 0.32);
+                pupilL.position.set(-0.165, 0.05, 0.42);
                 headGroup.add(pupilL);
                 const pupilR = pupilL.clone();
                 pupilR.position.x = 0.165;
                 headGroup.add(pupilR);
 
-                const glintGeo = new THREE.SphereGeometry(0.015, 6, 6);
+                const glintGeo = new THREE.SphereGeometry(0.011, 6, 6);
                 const glintL = new THREE.Mesh(glintGeo, glintMat);
-                glintL.position.set(-0.13, 0.078, 0.44);
+                glintL.position.set(-0.13, 0.075, 0.435);
                 headGroup.add(glintL);
                 const glintR = glintL.clone();
                 glintR.position.x = 0.2;
