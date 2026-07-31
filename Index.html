@@ -1098,6 +1098,11 @@
                             <p class="text-[11px] text-gray-500">Clientes recurrentes</p>
                         </div>
                     </div>
+                    <div id="cobros-pendientes-wrap" class="hidden mb-8">
+                        <h4 class="mb-2 text-base admin-section-title"><i class="fas fa-crown mr-1 text-red-500"></i> Cobros de suscripción pendientes</h4>
+                        <p class="text-xs text-gray-400 mb-4">Admins con suscripción vencida o por vencer en los próximos 3 días, ordenados por urgencia. Un clic abre WhatsApp con el mensaje de cobro ya escrito.</p>
+                        <div id="cobros-pendientes-lista" class="space-y-2"></div>
+                    </div>
                     <div id="stats-interes-superadmin" class="hidden mb-8">
                         <h4 class="mb-4 text-base admin-section-title"><i class="fas fa-eye mr-1"></i> Qué está generando más interés</h4>
                         <p class="text-xs text-gray-400 -mt-3 mb-4">Basado en clics en "Comprar" de cada producto.</p>
@@ -5168,6 +5173,42 @@
             `).join('');
         }
 
+        function actualizarCobrosPendientes() {
+            const cont = document.getElementById('cobros-pendientes-lista');
+            const wrap = document.getElementById('cobros-pendientes-wrap');
+            if (!cont || !wrap) return;
+            const tresDiasMs = 3 * 24 * 60 * 60 * 1000;
+            const pendientes = adminsActivos
+                .filter(a => a.suscripcionVenceEl && a.suscripcionVenceEl < (Date.now() + tresDiasMs))
+                .sort((a, b) => a.suscripcionVenceEl - b.suscripcionVenceEl);
+
+            if (pendientes.length === 0) {
+                wrap.classList.add('hidden');
+                return;
+            }
+            wrap.classList.remove('hidden');
+            cont.innerHTML = pendientes.map(adm => {
+                const vencida = adm.suscripcionVenceEl < Date.now();
+                const dias = Math.abs(Math.ceil((adm.suscripcionVenceEl - Date.now()) / (24 * 60 * 60 * 1000)));
+                const etiqueta = vencida
+                    ? `Venció hace ${dias} día${dias === 1 ? '' : 's'}`
+                    : `Vence en ${dias} día${dias === 1 ? '' : 's'}`;
+                const mensaje = `Hola ${adm.nombre || ''}! Tu suscripción de admin en APL market ${vencida ? 'ya venció' : 'vence pronto'}. Yapea/Plinea S/ ${adm.suscripcionMonto || SUSCRIPCION_ADMIN_MONTO} al ${YAPE_NUMERO_MOSTRAR} y me avisas para renovarla 🙌`;
+                const botonWhatsapp = adm.whatsapp
+                    ? `<a href="https://wa.me/${normalizarWhatsapp(adm.whatsapp)}?text=${encodeURIComponent(mensaje)}" target="_blank" class="bg-sky-500 hover:bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap"><i class="fab fa-whatsapp mr-1"></i>Cobrar por WhatsApp</a>`
+                    : `<span class="text-xs text-gray-400">Sin WhatsApp guardado</span>`;
+                return `
+                    <div class="${vencida ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200'} border rounded-xl p-3 flex items-center justify-between gap-3 flex-wrap">
+                        <div>
+                            <p class="text-sm font-semibold ${vencida ? 'text-red-700' : 'text-amber-700'}">${adm.nombre || 'Administrador'}</p>
+                            <p class="text-xs ${vencida ? 'text-red-500' : 'text-amber-600'}">${etiqueta}</p>
+                        </div>
+                        ${botonWhatsapp}
+                    </div>
+                `;
+            }).join('');
+        }
+
         function actualizarStatsOrigen() {
             const cont = document.getElementById('stats-origen-lista');
             if (!cont) return;
@@ -5222,6 +5263,7 @@
             actualizarStatsCategorias();
             actualizarStatsOrigen();
             actualizarPanelRiesgo();
+            actualizarCobrosPendientes();
             actualizarStatsInteres();
             actualizarStatsSalud();
             dibujarGraficaVentas();
