@@ -1532,8 +1532,14 @@
                         <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
                             <h4 class="text-base admin-section-title">Cuentas de clientes <span id="clientes-total-badge" class="text-xs font-normal text-gray-400"></span></h4>
                             <div class="flex items-center gap-2 flex-wrap">
-                                <input id="buscar-cliente-input" type="text" placeholder="🔍 Buscar por nombre, correo o WhatsApp..." oninput="renderClientesLista()" class="border border-gray-300 rounded-xl px-3 py-2 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                                <button onclick="exportarClientesCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-file-csv mr-1"></i>Exportar a CSV</button>
+                                <input id="buscar-cliente-lista-input" type="text" placeholder="🔍 Buscar por nombre, correo o WhatsApp..." oninput="renderClientesLista()" class="border border-gray-300 rounded-xl px-3 py-2 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <select id="filtro-clientes-select" onchange="renderClientesLista()" class="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="todos">Todos</option>
+                                    <option value="con-compras">Con compras confirmadas</option>
+                                    <option value="sin-compras">Sin compras aún</option>
+                                    <option value="bloqueados">Bloqueados</option>
+                                </select>
+                                <button onclick="exportarClientesListaCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-file-csv mr-1"></i>Exportar a CSV</button>
                             </div>
                         </div>
                         <div id="clientes-lista" class="space-y-3"></div>
@@ -7758,12 +7764,19 @@
                 await auth.signOut();
                 return false;
             }
+            const docClienteExistente = await db.collection('clientes').doc(user.uid).get();
+            if (docClienteExistente.exists && docClienteExistente.data().bloqueado) {
+                mostrarAviso('Esta cuenta fue bloqueada. Escríbenos si crees que es un error.');
+                await auth.signOut();
+                return false;
+            }
             const datosCliente = {
                 nombre: user.displayName || nombreManual || 'Cliente',
                 correo: user.email || null,
                 foto: user.photoURL || null,
                 ultimaConexion: firebase.firestore.FieldValue.serverTimestamp()
             };
+            if (!docClienteExistente.exists) datosCliente.creado = firebase.firestore.FieldValue.serverTimestamp();
             if (telefonoManual) datosCliente.telefono = telefonoManual;
             await db.collection('clientes').doc(user.uid).set(datosCliente, { merge: true });
             esClienteConectado = true;
@@ -9778,7 +9791,20 @@
                 }, err => console.error('Error leyendo clientes:', err));
         }
 
-        function renderClientesLista() {
+        let clientesComprasCache = {};
+        async function precargarComprasClientes(telefonos) {
+            const faltantes = [...new Set(telefonos.filter(Boolean))].filter(t => !(t in clientesComprasCache));
+            if (faltantes.length === 0) return false;
+            await Promise.all(faltantes.map(async t => {
+                try {
+                    const doc = await db.collection('clientes_publico').doc(t).get();
+                    clientesComprasCache[t] = doc.exists ? (doc.data().comprasConfirmadas || 0) : 0;
+                } catch (e) { clientesComprasCache[t] = 0; }
+            }));
+            return true;
+        }
+
+        async function renderClientesLista() {
             const cont = document.getElementById('clientes-lista');
             const badge = document.getElementById('clientes-total-badge');
             if (!cont) return;
@@ -9787,8 +9813,15 @@
                 cont.innerHTML = '<p class="text-gray-400 text-sm">Todavía no hay cuentas de clientes creadas.</p>';
                 return;
             }
-            const busqueda = (document.getElementById('buscar-cliente-input')?.value || '').trim().toLowerCase();
-            const listaOrdenada = [...clientesLista]
+            const busqueda = (document.getElementById('buscar-cliente-lista-input')?.value || '').trim().toLowerCase();
+            const filtro = document.getElementById('filtro-clientes-select')?.value || 'todos';
+
+            if (filtro === 'con-compras' || filtro === 'sin-compras') {
+                const huboCambios = await precargarComprasClientes(clientesLista.map(c => c.telefono));
+                if (huboCambios) { renderClientesLista(); return; }
+            }
+
+            let listaOrdenada = [...clientesLista]
                 .sort((a, b) => {
                     const fa = (a.ultimaConexion && a.ultimaConexion.toMillis) ? a.ultimaConexion.toMillis() : 0;
                     const fb = (b.ultimaConexion && b.ultimaConexion.toMillis) ? b.ultimaConexion.toMillis() : 0;
@@ -9798,6 +9831,10 @@
                     (c.nombre || '').toLowerCase().includes(busqueda) ||
                     (c.correo || '').toLowerCase().includes(busqueda) ||
                     (c.telefono || '').includes(busqueda));
+
+            if (filtro === 'bloqueados') listaOrdenada = listaOrdenada.filter(c => c.bloqueado);
+            if (filtro === 'con-compras') listaOrdenada = listaOrdenada.filter(c => c.telefono && (clientesComprasCache[c.telefono] || 0) > 0);
+            if (filtro === 'sin-compras') listaOrdenada = listaOrdenada.filter(c => !c.telefono || !(clientesComprasCache[c.telefono] > 0));
 
             if (listaOrdenada.length === 0) {
                 cont.innerHTML = '<p class="text-gray-400 text-sm">No encontramos clientes con esos datos.</p>';
@@ -9813,31 +9850,38 @@
                 const whatsappHtml = c.telefono
                     ? `<a href="https://wa.me/${normalizarWhatsapp(c.telefono)}" target="_blank" class="text-emerald-600"><i class="fab fa-whatsapp mr-1"></i>${c.telefono}</a>`
                     : '<span class="text-gray-400">Sin WhatsApp</span>';
+                const badgeBloqueado = c.bloqueado ? `<span class="bg-red-100 text-red-700 text-[10px] px-2 py-0.5 rounded-full font-semibold">Bloqueado</span>` : '';
+                const nombreEscapado = (c.nombre || '').replace(/'/g, "\\'");
                 return `
-                    <div class="admin-card p-4 flex items-center gap-3 flex-wrap">
+                    <div class="admin-card p-4 flex items-center gap-3 flex-wrap ${c.bloqueado ? 'border-l-4 border-l-red-400' : ''}">
                         ${foto}
                         <div class="flex-1 min-w-[160px]">
-                            <p class="font-semibold text-slate-700 text-sm">${c.nombre || 'Cliente'}</p>
+                            <p class="font-semibold text-slate-700 text-sm">${c.nombre || 'Cliente'} ${badgeBloqueado}</p>
                             <p class="text-xs text-gray-400">${c.correo || 'Sin correo'}</p>
                         </div>
                         <div class="text-xs text-gray-500">${whatsappHtml}</div>
                         <div class="text-xs text-gray-400">Última conexión: ${ultimaConexion}</div>
+                        <div class="flex gap-1.5">
+                            <button onclick="toggleBloqueoCliente('${c.id}', ${!!c.bloqueado})" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-2.5 py-1 rounded-lg text-[11px] font-semibold">${c.bloqueado ? 'Desbloquear' : 'Bloquear'}</button>
+                            <button onclick="eliminarCuentaCliente('${c.id}', '${nombreEscapado}')" class="bg-red-100 hover:bg-red-200 text-red-700 px-2.5 py-1 rounded-lg text-[11px] font-semibold">Eliminar</button>
+                        </div>
                     </div>
                 `;
             }).join('');
         }
 
-        function exportarClientesCSV() {
+        function exportarClientesListaCSV() {
             if (!esSuperAdmin) return;
             if (clientesLista.length === 0) {
                 mostrarAviso('Todavía no hay clientes para exportar.');
                 return;
             }
-            const filas = [['Nombre', 'Correo', 'WhatsApp', 'Última conexión']];
+            const filas = [['Nombre', 'Correo', 'WhatsApp', 'Última conexión', 'Bloqueado']];
             clientesLista.forEach(c => {
                 filas.push([
                     c.nombre || '', c.correo || '', c.telefono || '',
-                    (c.ultimaConexion && c.ultimaConexion.toDate) ? c.ultimaConexion.toDate().toLocaleString('es-PE') : ''
+                    (c.ultimaConexion && c.ultimaConexion.toDate) ? c.ultimaConexion.toDate().toLocaleString('es-PE') : '',
+                    c.bloqueado ? 'Sí' : 'No'
                 ]);
             });
             const csv = filas.map(fila => fila.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -9846,6 +9890,31 @@
             enlace.href = URL.createObjectURL(blob);
             enlace.download = `clientes_apl_market_${Date.now()}.csv`;
             enlace.click();
+        }
+
+        async function toggleBloqueoCliente(id, bloqueadoActual) {
+            if (!esSuperAdmin) return;
+            const accion = bloqueadoActual ? 'desbloquear' : 'bloquear';
+            mostrarConfirmacion(`¿Seguro que quieres ${accion} esta cuenta de cliente?`, async () => {
+                try {
+                    await db.collection('clientes').doc(id).update({ bloqueado: !bloqueadoActual });
+                    mostrarAviso(bloqueadoActual ? 'Cuenta desbloqueada.' : 'Cuenta bloqueada. Ya no podrá iniciar sesión.');
+                } catch (err) {
+                    mostrarAviso('No se pudo actualizar: ' + (err.message || err.code || 'error desconocido'));
+                }
+            });
+        }
+
+        async function eliminarCuentaCliente(id, nombre) {
+            if (!esSuperAdmin) return;
+            mostrarConfirmacion(`¿Eliminar la cuenta de "${nombre || 'este cliente'}"? Esta acción no se puede deshacer.`, async () => {
+                try {
+                    await db.collection('clientes').doc(id).delete();
+                    mostrarAviso('Cuenta de cliente eliminada.');
+                } catch (err) {
+                    mostrarAviso('No se pudo eliminar: ' + (err.message || err.code || 'error desconocido'));
+                }
+            });
         }
 
         async function renderMentoresDisponibles() {
