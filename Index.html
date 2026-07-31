@@ -1768,20 +1768,25 @@
         <div id="panelc-detalle-compra-contenido" class="p-5"></div>
     </div>
 
-    <div id="pin-modal" class="hidden modal-overlay">
-        <div class="bg-white rounded-3xl max-w-sm w-full mx-4 p-8 text-center">
-            <i class="fas fa-lock text-4xl text-purple-600 mb-4"></i>
-            <p id="pin-modal-titulo" class="text-lg text-gray-700 mb-4">Ingresa el PIN para administrar la página</p>
-            <input id="pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)" class="border-2 border-gray-300 rounded-xl px-4 py-3 text-center text-2xl tracking-widest w-full mb-2" placeholder="••••••">
-            <p id="pin-error" class="hidden text-red-500 text-sm mb-4">PIN incorrecto, intenta de nuevo.</p>
-            <div class="flex gap-4 justify-center mt-4">
-                <button class="bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-semibold" onclick="cerrarPin()">Cancelar</button>
-                <button class="boton-animado-morado text-white px-6 py-3 rounded-xl font-semibold" onclick="verificarPin()">Entrar</button>
+    <div id="pin-modal" class="hidden catlogin-overlay">
+        <div class="catlogin-stage">
+            <div class="catlogin-eyebrow"><span class="dot"></span>ACCESO CON PIN</div>
+            <div class="catlogin-card" id="pin-modal-card">
+                <button type="button" onclick="cerrarPin()" class="catlogin-close" aria-label="Cerrar">&times;</button>
+                <div class="catlogin-claws" id="pin-modal-claws"><span></span><span></span><span></span></div>
+                <div class="catlogin-scene"><canvas id="catCanvasPin"></canvas></div>
+                <p id="pin-modal-titulo" class="catlogin-h1" style="text-align:center;">Ingresa el PIN para administrar la página</p>
+                <input id="pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)" onkeydown="if(event.key==='Enter') verificarPin()" class="catlogin-input text-center text-2xl tracking-widest" placeholder="••••••" style="margin-bottom:8px;">
+                <p id="pin-error" class="hidden catlogin-error text-center"></p>
+                <div class="flex gap-3 justify-center mt-2">
+                    <button class="bg-white/10 hover:bg-white/15 text-white px-6 py-3 rounded-xl font-semibold text-sm" onclick="cerrarPin()">Cancelar</button>
+                    <button class="catlogin-btn" style="width:auto;padding:12px 28px;" onclick="verificarPin()">Entrar</button>
+                </div>
+                <div id="pin-personal-extra" class="hidden mt-4 text-center">
+                    <button onclick="olvidePinPersonal()" class="catlogin-link">¿Olvidaste tu PIN? Pide al dueño que lo reinicie</button>
+                </div>
+                <p class="catlogin-foot"><button type="button" onclick="abrirLoginDesdePin()" class="catlogin-link">¿Entras desde otro celular? Inicia sesión con tu correo</button></p>
             </div>
-            <div id="pin-personal-extra" class="hidden mt-4">
-                <button onclick="olvidePinPersonal()" class="text-purple-500 text-sm underline">¿Olvidaste tu PIN? Pide al dueño que lo reinicie</button>
-            </div>
-            <button onclick="abrirLoginDesdePin()" class="text-purple-400 text-xs underline mt-3 block mx-auto">¿Entras desde otro celular? Inicia sesión con tu correo</button>
         </div>
     </div>
 
@@ -9244,6 +9249,7 @@
 
         function mostrarErrorPinConLimite() {
             registrarIntentoFallidoPin();
+            catloginPinFail();
             const segundosBloqueo = estadoBloqueoPin();
             const errorEl = document.getElementById('pin-error');
             if (segundosBloqueo > 0) {
@@ -9299,6 +9305,8 @@
             }
 
             document.getElementById('pin-modal').classList.remove('hidden');
+            if (!gatoPin) gatoPin = crearGatoLogin('catCanvasPin');
+            if (gatoPin && gatoPin.resize) gatoPin.resize();
             setTimeout(() => document.getElementById('pin-input').focus(), 100);
         }
 
@@ -9321,6 +9329,7 @@
             if (modoPinPersonal) {
                 if (valor === personalPinValorActual) {
                     limpiarIntentosPin();
+                    catloginPinPlay();
                     cerrarPin();
                     esSuperAdmin = false;
                     finalizarLogin(auth.currentUser && auth.currentUser.uid, miNombreAdmin);
@@ -9332,6 +9341,7 @@
 
             if (valor === SUPER_PIN) {
                 limpiarIntentosPin();
+                catloginPinPlay();
                 cerrarPin();
                 const yaEsCuentaSuperAdmin = auth.currentUser && auth.currentUser.email &&
                     auth.currentUser.email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase();
@@ -9352,6 +9362,7 @@
             }
 
             limpiarIntentosPin();
+            catloginPinPlay();
             cerrarPin();
 
             if (auth.currentUser && !esSuperAdmin) {
@@ -11292,7 +11303,7 @@
         // Fábrica reutilizable: crea un gatito animado (Three.js) dentro del
         // canvas indicado. Se usa una instancia para el login de administrador
         // y otra independiente para el de clientes.
-        let gatoAdmin = null, gatoCliente = null;
+        let gatoAdmin = null, gatoCliente = null, gatoPin = null;
 
         function crearGatoLogin(canvasId) {
             const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -11684,12 +11695,25 @@
             if (!gatoCliente) gatoCliente = crearGatoLogin('catCanvasCliente');
             if (gatoCliente) gatoCliente.triggerPlay();
         }
+        function catloginPinFail() {
+            if (!gatoPin) gatoPin = crearGatoLogin('catCanvasPin');
+            if (gatoPin) gatoPin.triggerScratch();
+            const card = document.getElementById('pin-modal-card');
+            const claws = document.getElementById('pin-modal-claws');
+            if (card) { card.classList.remove('is-shaking'); void card.offsetWidth; card.classList.add('is-shaking'); }
+            if (claws) { claws.classList.remove('show'); void claws.offsetWidth; claws.classList.add('show'); }
+        }
+        function catloginPinPlay() {
+            if (!gatoPin) gatoPin = crearGatoLogin('catCanvasPin');
+            if (gatoPin) gatoPin.triggerPlay();
+        }
 
         // Crea los gatitos apenas cargue la página (los canvas ya existen en el DOM,
         // aunque sus modales estén ocultos — el tamaño usa un valor de respaldo).
         window.addEventListener('load', () => {
             gatoAdmin = crearGatoLogin('catCanvasAdmin');
             gatoCliente = crearGatoLogin('catCanvasCliente');
+            gatoPin = crearGatoLogin('catCanvasPin');
         });
     </script>
 </body>
