@@ -1045,6 +1045,7 @@
                     <button type="button" id="tab-btn-pendientes" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('pendientes')"><i class="fas fa-clock-rotate-left mr-1.5"></i>Pendientes<span id="badge-pendientes" class="hidden ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full"></span></button>
                     <button type="button" id="tab-btn-solicitudes" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('solicitudes')"><i class="fas fa-user-clock mr-1.5"></i>Solicitudes</button>
                     <button type="button" id="tab-btn-administradores" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('administradores')"><i class="fas fa-users mr-1.5"></i>Administradores</button>
+                    <button type="button" id="tab-btn-clientes" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('clientes')"><i class="fas fa-user-group mr-1.5"></i>Clientes</button>
                     <button type="button" id="tab-btn-chat" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('chat')"><i class="fas fa-comments mr-1.5"></i>Chat<span id="badge-chat" class="hidden ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full"></span></button>
                     <button type="button" id="tab-btn-seguridad" class="admin-tab-btn" onclick="cambiarTabAdmin('seguridad')"><i class="fas fa-shield-halved mr-1.5"></i>Seguridad</button>
                 </div>
@@ -1523,6 +1524,19 @@
                         </div>
                         <button onclick="sincronizarDirectorioAdmins()" class="mb-3 text-xs text-indigo-600 underline"><i class="fas fa-rotate mr-1"></i>Sincronizar directorio de búsqueda (por si algún admin antiguo no aparece al buscarlo por ID)</button>
                         <div id="admins-activos-lista" class="space-y-4"></div>
+                    </div>
+                </div>
+
+                <div class="admin-tab-pane" data-tab="clientes">
+                    <div id="clientes-container">
+                        <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+                            <h4 class="text-base admin-section-title">Cuentas de clientes <span id="clientes-total-badge" class="text-xs font-normal text-gray-400"></span></h4>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <input id="buscar-cliente-input" type="text" placeholder="🔍 Buscar por nombre, correo o WhatsApp..." oninput="renderClientesLista()" class="border border-gray-300 rounded-xl px-3 py-2 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <button onclick="exportarClientesCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-file-csv mr-1"></i>Exportar a CSV</button>
+                            </div>
+                        </div>
+                        <div id="clientes-lista" class="space-y-3"></div>
                     </div>
                 </div>
 
@@ -2829,6 +2843,8 @@
         let miUidPendiente = null;
         let adminsActivos = [];
         let adminsActivosUnsub = null;
+        let clientesLista = [];
+        let clientesListaUnsub = null;
         let heartbeatInterval = null;
         const UMBRAL_CONECTADO_MS = 90 * 1000; // 90 segundos sin señal = desconectado
         let miEstadoUnsub = null;
@@ -7310,6 +7326,7 @@
             if (solicitudesUnsub) { solicitudesUnsub(); solicitudesUnsub = null; }
             if (miSolicitudUnsub) { miSolicitudUnsub(); miSolicitudUnsub = null; }
             if (adminsActivosUnsub) { adminsActivosUnsub(); adminsActivosUnsub = null; }
+            if (clientesListaUnsub) { clientesListaUnsub(); clientesListaUnsub = null; }
             if (miEstadoUnsub) { miEstadoUnsub(); miEstadoUnsub = null; }
             if (pedidosUnsub) { pedidosUnsub(); pedidosUnsub = null; }
             pedidos = [];
@@ -8667,6 +8684,7 @@
             document.getElementById('tab-btn-solicitudes').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('tab-btn-pendientes').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('tab-btn-administradores').classList.toggle('hidden', !esSuperAdmin);
+            document.getElementById('tab-btn-clientes').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('tab-btn-chat').classList.remove('hidden');
             actualizarBadgeChat();
             document.getElementById('referidos-admin-toggle').classList.toggle('hidden', !esSuperAdmin);
@@ -8699,6 +8717,7 @@
             if (esSuperAdmin) {
                 escucharSolicitudes();
                 escucharAdminsActivos();
+                escucharClientes();
                 actualizarResumenSuperAdmin();
             } else {
                 escucharMiEstado();
@@ -9748,6 +9767,85 @@
                     actualizarPerfilAdminCard();
                     actualizarBadgeChat();
                 }, err => console.error('Error leyendo administradores activos:', err));
+        }
+
+        function escucharClientes() {
+            if (clientesListaUnsub) return;
+            clientesListaUnsub = db.collection('clientes')
+                .onSnapshot(snapshot => {
+                    clientesLista = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                    renderClientesLista();
+                }, err => console.error('Error leyendo clientes:', err));
+        }
+
+        function renderClientesLista() {
+            const cont = document.getElementById('clientes-lista');
+            const badge = document.getElementById('clientes-total-badge');
+            if (!cont) return;
+            if (badge) badge.textContent = clientesLista.length > 0 ? `(${clientesLista.length})` : '';
+            if (clientesLista.length === 0) {
+                cont.innerHTML = '<p class="text-gray-400 text-sm">Todavía no hay cuentas de clientes creadas.</p>';
+                return;
+            }
+            const busqueda = (document.getElementById('buscar-cliente-input')?.value || '').trim().toLowerCase();
+            const listaOrdenada = [...clientesLista]
+                .sort((a, b) => {
+                    const fa = (a.ultimaConexion && a.ultimaConexion.toMillis) ? a.ultimaConexion.toMillis() : 0;
+                    const fb = (b.ultimaConexion && b.ultimaConexion.toMillis) ? b.ultimaConexion.toMillis() : 0;
+                    return fb - fa;
+                })
+                .filter(c => !busqueda ||
+                    (c.nombre || '').toLowerCase().includes(busqueda) ||
+                    (c.correo || '').toLowerCase().includes(busqueda) ||
+                    (c.telefono || '').includes(busqueda));
+
+            if (listaOrdenada.length === 0) {
+                cont.innerHTML = '<p class="text-gray-400 text-sm">No encontramos clientes con esos datos.</p>';
+                return;
+            }
+
+            cont.innerHTML = listaOrdenada.map(c => {
+                const inicial = (c.nombre || 'C').trim().charAt(0).toUpperCase();
+                const foto = c.foto
+                    ? `<img src="${c.foto}" class="w-11 h-11 rounded-full object-cover flex-shrink-0">`
+                    : `<div class="w-11 h-11 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold flex-shrink-0">${inicial}</div>`;
+                const ultimaConexion = (c.ultimaConexion && c.ultimaConexion.toDate) ? formatFechaCorta(c.ultimaConexion) : '—';
+                const whatsappHtml = c.telefono
+                    ? `<a href="https://wa.me/${normalizarWhatsapp(c.telefono)}" target="_blank" class="text-emerald-600"><i class="fab fa-whatsapp mr-1"></i>${c.telefono}</a>`
+                    : '<span class="text-gray-400">Sin WhatsApp</span>';
+                return `
+                    <div class="admin-card p-4 flex items-center gap-3 flex-wrap">
+                        ${foto}
+                        <div class="flex-1 min-w-[160px]">
+                            <p class="font-semibold text-slate-700 text-sm">${c.nombre || 'Cliente'}</p>
+                            <p class="text-xs text-gray-400">${c.correo || 'Sin correo'}</p>
+                        </div>
+                        <div class="text-xs text-gray-500">${whatsappHtml}</div>
+                        <div class="text-xs text-gray-400">Última conexión: ${ultimaConexion}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function exportarClientesCSV() {
+            if (!esSuperAdmin) return;
+            if (clientesLista.length === 0) {
+                mostrarAviso('Todavía no hay clientes para exportar.');
+                return;
+            }
+            const filas = [['Nombre', 'Correo', 'WhatsApp', 'Última conexión']];
+            clientesLista.forEach(c => {
+                filas.push([
+                    c.nombre || '', c.correo || '', c.telefono || '',
+                    (c.ultimaConexion && c.ultimaConexion.toDate) ? c.ultimaConexion.toDate().toLocaleString('es-PE') : ''
+                ]);
+            });
+            const csv = filas.map(fila => fila.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const enlace = document.createElement('a');
+            enlace.href = URL.createObjectURL(blob);
+            enlace.download = `clientes_apl_market_${Date.now()}.csv`;
+            enlace.click();
         }
 
         async function renderMentoresDisponibles() {
