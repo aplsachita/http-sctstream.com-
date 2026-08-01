@@ -11319,8 +11319,8 @@
 
             const clock = new THREE.Clock();
             const catScene = new THREE.Scene();
-            const catCamera = new THREE.PerspectiveCamera(30, 1, 0.1, 20);
-            catCamera.position.set(0.15, 0.22, 4.15);
+            const catCamera = new THREE.PerspectiveCamera(36, 1, 0.1, 20);
+            catCamera.position.set(0.15, 0.22, 3.55);
             catCamera.lookAt(0, -0.08, 0);
             const catRenderer = new THREE.WebGLRenderer({ canvas: canvasEl, alpha: true, antialias: true });
             catRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -11332,14 +11332,17 @@
                 catCamera.updateProjectionMatrix();
             }
 
-            catScene.add(new THREE.HemisphereLight(0xffffff, 0x2c2d52, 0.48));
-            const catKey = new THREE.DirectionalLight(0xffffff, 0.62);
+            catScene.add(new THREE.HemisphereLight(0xffffff, 0x2c2d52, 0.42));
+            const catKey = new THREE.DirectionalLight(0xffffff, 0.7);
             catKey.position.set(1.4, 2.0, 2.2);
             catScene.add(catKey);
-            const catRimA = new THREE.PointLight(0x8b7cf6, 0.4, 5);
+            const catFill = new THREE.DirectionalLight(0xdfe4ff, 0.22);
+            catFill.position.set(-1.2, 0.6, 1.8);
+            catScene.add(catFill);
+            const catRimA = new THREE.PointLight(0x8b7cf6, 0.55, 5);
             catRimA.position.set(-1.6, 0.7, -1.2);
             catScene.add(catRimA);
-            const catRimB = new THREE.PointLight(0x35e0c4, 0.22, 5);
+            const catRimB = new THREE.PointLight(0x35e0c4, 0.32, 5);
             catRimB.position.set(1.6, -0.5, 1.4);
             catScene.add(catRimB);
 
@@ -11373,22 +11376,49 @@
                 tex.repeat.set(4, 4);
                 return tex;
             }
+            function crearMapaRelievePelaje() {
+                const size = 160;
+                const c = document.createElement('canvas');
+                c.width = size; c.height = size;
+                const ctx = c.getContext('2d');
+                ctx.fillStyle = '#808080';
+                ctx.fillRect(0, 0, size, size);
+                ctx.lineWidth = 1;
+                for (let i = 0; i < 1700; i++) {
+                    const x = Math.random() * size, y = Math.random() * size;
+                    const len = 2 + Math.random() * 5;
+                    const ang = (Math.random() * 0.7 - 0.35) + Math.PI / 2;
+                    const tono = Math.random() < 0.5 ? 55 + Math.random() * 45 : 150 + Math.random() * 60;
+                    ctx.strokeStyle = `rgb(${tono},${tono},${tono})`;
+                    ctx.globalAlpha = 0.3;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + Math.cos(ang) * len, y + Math.sin(ang) * len);
+                    ctx.stroke();
+                }
+                const tex = new THREE.CanvasTexture(c);
+                tex.wrapS = THREE.RepeatWrapping;
+                tex.wrapT = THREE.RepeatWrapping;
+                tex.repeat.set(4, 4);
+                return tex;
+            }
 
             function buildCat(opts) {
                 const furTex = crearTexturaPelaje(opts.furColor, opts.furShadeColor);
                 const furShadeTex = crearTexturaPelaje(opts.furShadeColor, opts.furColor);
-                const furMat = new THREE.MeshStandardMaterial({ map: furTex, roughness: 0.92, metalness: 0 });
-                const furShade = new THREE.MeshStandardMaterial({ map: furShadeTex, roughness: 0.94, metalness: 0 });
-                const softMat = new THREE.MeshStandardMaterial({ color: opts.bellyColor, roughness: 0.9, metalness: 0 });
+                const furBump = crearMapaRelievePelaje();
+                const furMat = new THREE.MeshStandardMaterial({ map: furTex, bumpMap: furBump, bumpScale: 0.02, roughness: 0.92, metalness: 0 });
+                const furShade = new THREE.MeshStandardMaterial({ map: furShadeTex, bumpMap: furBump, bumpScale: 0.02, roughness: 0.94, metalness: 0 });
+                const softMat = new THREE.MeshStandardMaterial({ color: opts.bellyColor, bumpMap: furBump, bumpScale: 0.008, roughness: 0.9, metalness: 0 });
                 const eyeMat = new THREE.MeshStandardMaterial({ color: opts.eyeColor, roughness: 0.35, metalness: 0, emissive: opts.eyeColor, emissiveIntensity: 0.03 });
 
                 const group = new THREE.Group();
-                const body = new THREE.Mesh(new THREE.SphereGeometry(0.58, 28, 20), furMat);
+                const body = new THREE.Mesh(new THREE.SphereGeometry(0.58, 36, 26), furMat);
                 body.scale.set(0.88, 0.82, 1.32);
                 body.position.set(0, -0.2, 0.0);
                 group.add(body);
 
-                const belly = new THREE.Mesh(new THREE.SphereGeometry(0.32, 20, 16), softMat);
+                const belly = new THREE.Mesh(new THREE.SphereGeometry(0.32, 24, 18), softMat);
                 belly.scale.set(0.72, 0.55, 0.62);
                 belly.position.set(0, -0.34, 0.4);
                 group.add(belly);
@@ -11398,7 +11428,7 @@
                 headGroup.scale.set(0.86, 0.86, 0.86);
                 group.add(headGroup);
 
-                const head = new THREE.Mesh(new THREE.SphereGeometry(0.45, 28, 20), furMat);
+                const head = new THREE.Mesh(new THREE.SphereGeometry(0.45, 36, 26), furMat);
                 head.scale.set(1.05, 0.94, 1.0);
                 headGroup.add(head);
 
@@ -11422,7 +11452,7 @@
                 innerR.rotation.copy(earR.rotation);
                 headGroup.add(innerR);
 
-                const snout = new THREE.Mesh(new THREE.SphereGeometry(0.175, 16, 12), softMat);
+                const snout = new THREE.Mesh(new THREE.SphereGeometry(0.175, 22, 16), softMat);
                 snout.scale.set(1.05, 0.7, 0.9);
                 snout.position.set(0, -0.11, 0.37);
                 headGroup.add(snout);
@@ -11481,22 +11511,29 @@
                     new THREE.Vector3(0.22, 0.98, 0.02),
                     new THREE.Vector3(0.3, 1.12, 0.24)
                 ]);
-                const tailMesh = new THREE.Mesh(new THREE.TubeGeometry(tailCurve, 24, 0.055, 8, false), furShade);
+                const tailMesh = new THREE.Mesh(new THREE.TubeGeometry(tailCurve, 28, 0.055, 10, false), furShade);
                 tailPivot.add(tailMesh);
-                const tailTip = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), furShade);
+                const tailTip = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 10), furShade);
                 tailTip.position.copy(tailCurve.getPoint(1));
                 tailPivot.add(tailTip);
 
                 function makeFrontLeg(sideSign) {
                     const pivot = new THREE.Group();
                     pivot.position.set(0.26 * sideSign, -0.44, 0.42);
-                    const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.075, 0.3, 10), furMat);
+                    const upper = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.075, 0.3, 14), furMat);
                     upper.position.set(0, -0.15, 0);
                     pivot.add(upper);
-                    const paw = new THREE.Mesh(new THREE.SphereGeometry(0.095, 12, 10), softMat);
+                    const paw = new THREE.Mesh(new THREE.SphereGeometry(0.095, 14, 12), softMat);
                     paw.scale.set(1, 0.65, 1.15);
                     paw.position.set(0, -0.31, 0.035);
                     pivot.add(paw);
+                    const dedoGeo = new THREE.SphereGeometry(0.026, 8, 6);
+                    [-0.045, 0, 0.045].forEach(dx => {
+                        const dedo = new THREE.Mesh(dedoGeo, softMat);
+                        dedo.scale.set(1, 0.75, 1.15);
+                        dedo.position.set(dx, -0.355, 0.115);
+                        pivot.add(dedo);
+                    });
                     return pivot;
                 }
                 const legL = makeFrontLeg(-1);
@@ -11506,17 +11543,24 @@
                 function makeBackLeg(sideSign) {
                     const pivot = new THREE.Group();
                     pivot.position.set(0.3 * sideSign, -0.42, -0.3);
-                    const thigh = new THREE.Mesh(new THREE.SphereGeometry(0.16, 14, 10), furShade);
+                    const thigh = new THREE.Mesh(new THREE.SphereGeometry(0.16, 18, 14), furShade);
                     thigh.scale.set(0.85, 1, 0.95);
                     thigh.position.set(0, -0.03, 0);
                     pivot.add(thigh);
-                    const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.06, 0.24, 10), furShade);
+                    const shin = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.06, 0.24, 14), furShade);
                     shin.position.set(0, -0.24, 0.03);
                     pivot.add(shin);
-                    const paw = new THREE.Mesh(new THREE.SphereGeometry(0.085, 12, 10), softMat);
+                    const paw = new THREE.Mesh(new THREE.SphereGeometry(0.085, 14, 12), softMat);
                     paw.scale.set(1, 0.6, 1.1);
                     paw.position.set(0, -0.37, 0.05);
                     pivot.add(paw);
+                    const dedoGeo = new THREE.SphereGeometry(0.024, 8, 6);
+                    [-0.04, 0, 0.04].forEach(dx => {
+                        const dedo = new THREE.Mesh(dedoGeo, softMat);
+                        dedo.scale.set(1, 0.7, 1.1);
+                        dedo.position.set(dx, -0.4, 0.125);
+                        pivot.add(dedo);
+                    });
                     return pivot;
                 }
                 const legBackL = makeBackLeg(-1);
