@@ -7815,6 +7815,7 @@
         let misComprasClienteCache = null;
 
         async function abrirMiCuentaCliente() {
+            resetearGatosTapados();
             abrirPanelClienteCompleto('inicio');
         }
         function cerrarMiCuentaCliente() {
@@ -7843,6 +7844,7 @@
         function cerrarPanelClienteCompleto() {
             document.getElementById('panel-cliente-app').classList.add('hidden');
             document.getElementById('panelc-detalle-compra').classList.add('hidden');
+            resetearGatosTapados();
             if (panelClientePushEstado) {
                 panelClientePushEstado = false;
                 history.back();
@@ -8295,6 +8297,7 @@
         }
 
         function clienteCambiarTabEmail(tab) {
+            resetearGatosTapados();
             document.getElementById('cliente-tab-login').classList.toggle('activo', tab === 'login');
             document.getElementById('cliente-tab-registro').classList.toggle('activo', tab === 'registro');
             document.getElementById('cliente-email-nombre').classList.toggle('hidden', tab !== 'registro');
@@ -9481,6 +9484,7 @@
                 adminDesbloqueado = true;
                 abrirPanelAdmin();
                 activarAperturaPagina3D('admin-modal');
+                resetearGatosTapados();
                 registrarSesion(idDoc, nombre);
                 if (alTerminar) alTerminar();
             };
@@ -9823,6 +9827,7 @@
         }
 
         async function abrirPin() {
+            resetearGatosTapados();
             document.getElementById('pin-input').value = '';
             document.getElementById('pin-input').disabled = false;
             document.getElementById('pin-error').classList.add('hidden');
@@ -9871,6 +9876,7 @@
 
         function cerrarPin() {
             document.getElementById('pin-modal').classList.add('hidden');
+            resetearGatosTapados();
         }
 
         function olvidePinPersonal() {
@@ -10132,6 +10138,7 @@
         }
 
         function abrirLogin() {
+            resetearGatosTapados();
             document.getElementById('login-correo').value = '';
             document.getElementById('login-password').value = '';
             document.getElementById('login-error').classList.add('hidden');
@@ -10151,6 +10158,7 @@
         function cerrarLogin() {
             modoLoginSuperAdmin = false;
             document.getElementById('login-modal').classList.add('hidden');
+            resetearGatosTapados();
         }
 
         async function procesarLoginExitoso(cred, correo, errorEl) {
@@ -12353,6 +12361,15 @@
             if (card) { card.classList.remove('is-shaking'); void card.offsetWidth; card.classList.add('is-shaking'); }
             if (claws) { claws.classList.remove('show'); void claws.offsetWidth; claws.classList.add('show'); }
         }
+        // Apaga la pose de "taparse los ojos" en los 3 gatos, por si el campo de
+        // contraseña perdió el foco sin disparar 'blur' (cambio de pestaña, cierre
+        // de modal, etc.) y la patita se quedó pegada arriba.
+        function resetearGatosTapados() {
+            if (gatoAdmin) gatoAdmin.triggerCoverEyes(false);
+            if (gatoCliente) gatoCliente.triggerCoverEyes(false);
+            if (gatoPin) gatoPin.triggerCoverEyes(false);
+        }
+
         function catloginPinPlay() {
             if (!gatoPin) gatoPin = crearGatoLogin('catCanvasPin');
             if (gatoPin) gatoPin.triggerPlay();
