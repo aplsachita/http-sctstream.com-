@@ -1170,6 +1170,12 @@
                         <h4 class="mb-2 text-sm font-semibold text-gray-600"><i class="fas fa-chalkboard-user mr-1 text-violet-500"></i> Admins con experiencia a quienes preguntar</h4>
                         <div id="mentores-disponibles-lista" class="space-y-2"></div>
                     </div>
+                    <div id="editar-faq-wrap" class="hidden mt-6 admin-card p-4">
+                        <h4 class="text-sm font-bold text-slate-800 mb-1"><i class="fas fa-circle-question mr-1 text-indigo-500"></i> Editar Centro de ayuda / FAQ</h4>
+                        <p class="text-xs text-gray-400 mb-3">Una pregunta por línea, con la respuesta separada por "|". Ej: ¿Hacen envíos a provincia?|Sí, a todo el Perú vía Shalom u Olva.</p>
+                        <textarea id="faq-editor-textarea" rows="6" placeholder="¿Cómo pago?|Aceptamos Yape, Plin y transferencia." class="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full mb-2"></textarea>
+                        <button onclick="guardarFAQ()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold">Guardar preguntas frecuentes</button>
+                    </div>
                 </div>
 
                 <div class="admin-tab-pane" data-tab="agregar">
@@ -1424,6 +1430,10 @@
                         <button onclick="abrirTodosLosClientes()" class="bg-slate-600 hover:bg-slate-700 text-white px-4 rounded-xl text-sm font-semibold" title="Ver todos mis clientes" aria-label="Ver todos mis clientes"><i class="fas fa-users"></i></button>
                     </div>
                     <div id="ventas-urgentes-container" class="hidden mb-4"></div>
+                    <div id="ofertas-recibidas-container" class="hidden mb-6">
+                        <h4 class="mb-2 text-base admin-section-title"><i class="fas fa-hand-holding-dollar mr-1"></i> Ofertas recibidas</h4>
+                        <div id="ofertas-recibidas-lista" class="space-y-2"></div>
+                    </div>
                     <div id="avisos-stock-container" class="hidden mb-4"></div>
                     <div id="ventas-lista"></div>
                 </div>
@@ -2057,6 +2067,8 @@
                 <p id="detalle-desc-cantidad" class="hidden text-amber-600 text-[11px] font-semibold mb-1.5"><i class="fas fa-layer-group mr-1"></i></p>
                 <p id="detalle-precio" class="text-xl font-bold titulo-color mb-1"></p>
                 <p id="detalle-precio-usd" class="text-gray-400 text-[10px] mb-1"></p>
+                <button type="button" id="detalle-historial-precio-toggle" onclick="document.getElementById('detalle-historial-precio-lista').classList.toggle('hidden')" class="hidden text-[10px] text-indigo-500 font-semibold mb-1"><i class="fas fa-chart-line mr-1"></i>Ver historial de precio</button>
+                <div id="detalle-historial-precio-lista" class="hidden text-[10px] text-gray-500 mb-2 space-y-0.5"></div>
                 <p id="detalle-stock" class="hidden mb-2"></p>
                 <p id="detalle-entrega" class="hidden mb-3 text-orange-600 text-xs font-semibold bg-orange-50 border border-orange-200 rounded-xl px-2.5 py-1.5"><i class="fas fa-clock mr-1"></i> Este producto tarda hasta 24 horas en entregarse.</p>
                 <p id="detalle-vacaciones" class="hidden mb-3 text-amber-700 text-xs font-semibold bg-amber-50 border border-amber-200 rounded-xl px-2.5 py-1.5"><i class="fas fa-umbrella-beach mr-1"></i></p>
@@ -2101,8 +2113,21 @@
                 <button id="detalle-avisar-stock" onclick="abrirAvisarStock()" class="hidden block w-full text-center bg-amber-100 text-amber-700 py-2.5 rounded-xl font-semibold mb-2 text-sm"><i class="fas fa-bell mr-1"></i> Avísame cuando haya stock</button>
                 <button id="detalle-agregar-carrito" onclick="agregarAlCarritoDesdeDetalle()" class="block w-full text-center bg-purple-100 text-purple-700 py-2.5 rounded-xl font-semibold mb-2 text-sm"><i class="fas fa-cart-plus mr-1"></i> Agregar al carrito</button>
                 <a id="detalle-whatsapp" href="#" target="_blank" class="block text-center boton-animado text-white py-2.5 rounded-xl font-semibold shadow mb-2 text-sm">Comprar por WhatsApp</a>
+                <button id="detalle-hacer-oferta" onclick="abrirOfertaModal()" class="hidden block w-full text-center bg-white border border-indigo-200 text-indigo-600 py-2.5 rounded-xl font-semibold mb-2 text-sm"><i class="fas fa-hand-holding-dollar mr-1"></i> Hacer una oferta</button>
                 <button onclick="cerrarDetalleProducto()" class="text-gray-400 text-xs">Cerrar</button>
             </div>
+        </div>
+    </div>
+
+    <div id="oferta-modal" class="hidden modal-overlay" onclick="if (event.target === this) document.getElementById('oferta-modal').classList.add('hidden')">
+        <div class="bg-white rounded-3xl max-w-sm w-full mx-4 p-6 text-center">
+            <i class="fas fa-hand-holding-dollar text-3xl text-indigo-500 mb-3"></i>
+            <h3 class="text-lg font-bold text-slate-800 mb-1">Hacer una oferta</h3>
+            <p id="oferta-producto-info" class="text-sm text-gray-500 mb-4"></p>
+            <input id="oferta-precio-input" type="number" min="1" placeholder="¿Cuánto ofreces? (S/)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mb-3 text-center">
+            <input id="oferta-telefono-input" type="tel" inputmode="numeric" placeholder="Tu WhatsApp (ej: 925516886)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mb-3">
+            <button onclick="enviarOferta()" class="boton-animado text-white py-3 rounded-xl font-semibold w-full mb-2">Enviar oferta</button>
+            <button onclick="document.getElementById('oferta-modal').classList.add('hidden')" class="text-gray-400 text-sm">Cancelar</button>
         </div>
     </div>
 
@@ -2267,6 +2292,17 @@
                 <p id="footer-suscripcion-msg" class="hidden text-xs mt-2 text-center"></p>
             </div>
             <button id="footer-btn-mis-puntos" onclick="abrirMisPuntos()" class="mt-4 text-sm underline opacity-80"><i class="fas fa-star mr-1"></i> Consulta tus puntos y tu nivel</button>
+            <button onclick="abrirCentroAyuda()" class="mt-2 block mx-auto text-sm underline opacity-80"><i class="fas fa-circle-question mr-1"></i> Centro de ayuda / Preguntas frecuentes</button>
+
+    <div id="centro-ayuda-modal" class="hidden modal-overlay" onclick="if (event.target === this) document.getElementById('centro-ayuda-modal').classList.add('hidden')">
+        <div class="bg-white rounded-3xl max-w-md w-full mx-4 max-h-[85vh] overflow-y-auto p-6 text-left">
+            <h3 class="text-lg font-bold text-slate-800 mb-1 text-center"><i class="fas fa-circle-question text-indigo-500 mr-1"></i> Centro de ayuda</h3>
+            <p class="text-xs text-gray-400 mb-4 text-center">Respuestas rápidas a lo más preguntado. Si no encuentras lo que buscas, escríbenos por WhatsApp.</p>
+            <div id="centro-ayuda-lista" class="space-y-2 mb-2"></div>
+            <a href="https://wa.me/51925516886" target="_blank" class="block text-center bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 rounded-xl font-semibold text-sm mt-4"><i class="fab fa-whatsapp mr-1"></i> Seguimos por WhatsApp</a>
+            <button onclick="document.getElementById('centro-ayuda-modal').classList.add('hidden')" class="text-gray-400 text-xs mt-3 block mx-auto">Cerrar</button>
+        </div>
+    </div>
 
     <div id="mis-puntos-modal" class="hidden modal-overlay" onclick="if (event.target === this) cerrarMisPuntos()">
         <div class="bg-white rounded-3xl max-w-sm w-full mx-4 p-8 text-center">
@@ -2819,6 +2855,40 @@
         }
         function cerrarMisPuntos() {
             document.getElementById('mis-puntos-modal').classList.add('hidden');
+        }
+
+        // ---- Centro de ayuda / FAQ ----
+        const FAQ_POR_DEFECTO = [
+            { pregunta: '¿Cómo compro?', respuesta: 'Elige el producto, toca "Comprar por WhatsApp" y coordina el pago directo con el vendedor.' },
+            { pregunta: '¿Qué métodos de pago aceptan?', respuesta: 'Depende del vendedor: usualmente Yape, Plin y transferencia bancaria.' },
+            { pregunta: '¿Hacen envíos a provincia?', respuesta: 'Sí, muchos vendedores envían a todo el Perú. Pregúntale directamente por WhatsApp.' }
+        ];
+        function abrirCentroAyuda() {
+            const lista = (configuracionPrincipalPublica.faqLista && configuracionPrincipalPublica.faqLista.length > 0)
+                ? configuracionPrincipalPublica.faqLista
+                : FAQ_POR_DEFECTO;
+            document.getElementById('centro-ayuda-lista').innerHTML = lista.map(f => `
+                <details class="border border-gray-200 rounded-xl overflow-hidden">
+                    <summary class="px-3 py-2.5 text-sm font-semibold text-slate-700 cursor-pointer select-none bg-gray-50">${f.pregunta}</summary>
+                    <p class="px-3 pb-3 pt-1 text-gray-600 text-xs leading-snug">${f.respuesta}</p>
+                </details>
+            `).join('');
+            document.getElementById('centro-ayuda-modal').classList.remove('hidden');
+        }
+        async function guardarFAQ() {
+            if (!esSuperAdmin) return;
+            const texto = document.getElementById('faq-editor-textarea').value.trim();
+            const lista = texto.split('\n').map(linea => {
+                const [pregunta, ...resto] = linea.split('|');
+                const respuesta = resto.join('|').trim();
+                return (pregunta && pregunta.trim() && respuesta) ? { pregunta: pregunta.trim(), respuesta } : null;
+            }).filter(Boolean);
+            try {
+                await db.collection('configuracion').doc('principal').set({ faqLista: lista }, { merge: true });
+                mostrarAviso('Preguntas frecuentes actualizadas.');
+            } catch (err) {
+                mostrarAviso('No se pudo guardar: ' + (err.message || err.code || 'error desconocido'));
+            }
         }
         async function consultarMisPuntos() {
             const numero = document.getElementById('mis-puntos-telefono').value.trim();
@@ -4011,6 +4081,20 @@
 
             actualizarPrecioYBotonDetalle(producto, agotado, numeroContacto);
 
+            const historialToggle = document.getElementById('detalle-historial-precio-toggle');
+            const historialLista = document.getElementById('detalle-historial-precio-lista');
+            historialLista.classList.add('hidden');
+            const historial = (producto.historialPrecios || []).slice().sort((a, b) => b.fecha - a.fecha);
+            if (historial.length > 1) {
+                historialToggle.classList.remove('hidden');
+                historialLista.innerHTML = historial.slice(0, 8).map(h => {
+                    const fecha = new Date(h.fecha).toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' });
+                    return `<p>${fecha}: S/ ${h.precio}</p>`;
+                }).join('');
+            } else {
+                historialToggle.classList.add('hidden');
+            }
+
             const stockEl = document.getElementById('detalle-stock');
             if (tieneStock) {
                 stockEl.textContent = agotado ? 'Agotado' : `Quedan ${producto.stock} disponibles`;
@@ -4077,6 +4161,8 @@
             usdEl.textContent = `≈ US$ ${(precioSoles / TASA_CAMBIO_USD_APROX).toFixed(2)} (aprox.)`;
             const botonWhatsapp = document.getElementById('detalle-whatsapp');
             const botonAvisar = document.getElementById('detalle-avisar-stock');
+            const botonOferta = document.getElementById('detalle-hacer-oferta');
+            if (botonOferta) botonOferta.classList.toggle('hidden', !!agotado);
             const vacaciones = estadoVacacionesVendedor(producto.propietario);
             const bannerVacaciones = document.getElementById('detalle-vacaciones');
             if (vacaciones) {
@@ -4287,6 +4373,58 @@
 
         function cerrarAvisarStock() {
             document.getElementById('avisar-stock-modal').classList.add('hidden');
+        }
+
+        // ---- Hacer una oferta: el cliente propone un precio distinto ----
+        function abrirOfertaModal() {
+            const producto = productos.find(p => p.id === productoDetalleActualId);
+            if (!producto) return;
+            document.getElementById('oferta-producto-info').textContent = `${producto.nombre} · Precio actual: S/ ${producto.precio}`;
+            document.getElementById('oferta-precio-input').value = '';
+            document.getElementById('oferta-telefono-input').value = clienteWhatsappGuardado() || '';
+            document.getElementById('oferta-modal').classList.remove('hidden');
+        }
+
+        function clienteWhatsappGuardado() {
+            try { return (miClienteDatos && miClienteDatos.whatsapp) || localStorage.getItem('sct_ultimo_whatsapp_cliente') || ''; } catch (err) { return ''; }
+        }
+
+        async function enviarOferta() {
+            const producto = productos.find(p => p.id === productoDetalleActualId);
+            if (!producto) return;
+            const precioOfrecido = parseFloat(document.getElementById('oferta-precio-input').value);
+            const telefonoInput = document.getElementById('oferta-telefono-input').value;
+            if (isNaN(precioOfrecido) || precioOfrecido <= 0) {
+                mostrarAviso('Escribe cuánto quieres ofrecer.');
+                return;
+            }
+            if (!esWhatsappPeruValido(telefonoInput)) {
+                mostrarAviso('Escribe un WhatsApp peruano válido: 9 dígitos, empezando con 9 (ej: 987654321).');
+                return;
+            }
+            if (precioOfrecido >= producto.precio) {
+                mostrarAviso('Tu oferta debe ser menor al precio actual del producto. Si quieres pagar el precio de lista, usa "Comprar por WhatsApp".');
+                return;
+            }
+            const telefono = telefonoInput.replace(/\D/g, '');
+            try {
+                await db.collection('ofertas').add({
+                    productoId: producto.id,
+                    productoNombre: producto.nombre,
+                    precioOriginal: producto.precio,
+                    precioOfrecido: precioOfrecido,
+                    clienteTelefono: telefono,
+                    clienteUid: auth.currentUser ? auth.currentUser.uid : null,
+                    vendedorId: producto.propietario || 'principal',
+                    vendedorNombre: producto.propietarioNombre || '',
+                    estado: 'pendiente',
+                    creado: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                document.getElementById('oferta-modal').classList.add('hidden');
+                mostrarAviso('¡Oferta enviada! El vendedor te escribirá si la acepta.');
+            } catch (err) {
+                mostrarAviso('No se pudo enviar la oferta: ' + (err.message || err.code || 'error desconocido'));
+            }
         }
 
         async function confirmarAvisarStock() {
@@ -5679,6 +5817,8 @@
                     datos.precioAnterior = producto.precio;
                     datos.precioBajoEn = firebase.firestore.FieldValue.serverTimestamp();
                 }
+                // Guarda el historial completo de precios (para el gráfico que ve el cliente)
+                datos.historialPrecios = firebase.firestore.FieldValue.arrayUnion({ precio: nuevoPrecio, fecha: Date.now() });
                 await db.collection('productos').doc(id).update(datos);
                 registrarAuditoria('Cambió precio', `${producto.nombre}: S/${producto.precio} → S/${nuevoPrecio}`);
                 mostrarAviso('Precio actualizado.');
@@ -8187,6 +8327,7 @@
             }
             if (tab === 'chat') abrirTabChatInterno();
             if (tab === 'reclamos') renderReclamosAdmin();
+            if (tab === 'ventas') renderOfertasRecibidas();
         }
 
         // ---- Borrador automático del formulario "Agregar producto" (evita perder lo escrito si se cierra por error) ----
@@ -8610,6 +8751,49 @@
             }
         }
 
+        // ---- Ofertas de clientes, vistas por el vendedor en su pestaña de Ventas ----
+        async function renderOfertasRecibidas() {
+            const wrap = document.getElementById('ofertas-recibidas-container');
+            const cont = document.getElementById('ofertas-recibidas-lista');
+            if (!wrap || !cont) return;
+            const miUid = esSuperAdmin ? 'principal' : (auth.currentUser && auth.currentUser.uid);
+            if (!miUid) { wrap.classList.add('hidden'); return; }
+            try {
+                const snap = await db.collection('ofertas').where('vendedorId', '==', miUid).where('estado', '==', 'pendiente').orderBy('creado', 'desc').limit(30).get();
+                if (snap.empty) { wrap.classList.add('hidden'); return; }
+                wrap.classList.remove('hidden');
+                cont.innerHTML = snap.docs.map(d => {
+                    const o = { id: d.id, ...d.data() };
+                    return `
+                    <div class="admin-card p-3 flex items-center justify-between gap-2 flex-wrap">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-700">${o.productoNombre || 'Producto'}</p>
+                            <p class="text-xs text-gray-500">Ofrece S/ ${o.precioOfrecido} <span class="text-gray-400">(precio: S/ ${o.precioOriginal})</span> · <span class="dato-sensible">${o.clienteTelefono || ''}</span></p>
+                        </div>
+                        <div class="flex gap-1.5">
+                            <button onclick="responderOferta('${o.id}', true)" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Aceptar</button>
+                            <button onclick="responderOferta('${o.id}', false)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold">Rechazar</button>
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (err) { console.error('No se pudieron cargar las ofertas:', err); }
+        }
+
+        async function responderOferta(id, aceptar) {
+            try {
+                const ofertaDoc = await db.collection('ofertas').doc(id).get();
+                const o = ofertaDoc.data();
+                await db.collection('ofertas').doc(id).update({ estado: aceptar ? 'aceptada' : 'rechazada' });
+                mostrarAviso(aceptar ? 'Oferta aceptada. Escríbele al cliente para cerrar la venta.' : 'Oferta rechazada.');
+                if (aceptar && o && o.clienteTelefono) {
+                    window.open(`https://wa.me/${o.clienteTelefono}?text=${encodeURIComponent(`Hola! Acepté tu oferta de S/ ${o.precioOfrecido} por "${o.productoNombre}". ¿Cómo coordinamos el pago?`)}`, '_blank');
+                }
+                renderOfertasRecibidas();
+            } catch (err) {
+                mostrarAviso('No se pudo responder la oferta: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
         // ============================================================
         // CHAT PRIVADO ENTRE ADMINISTRADORES — cualquier admin (o el
         // súper admin) puede buscar a otro por su ID numérico y escribirle
@@ -8962,6 +9146,14 @@
             document.getElementById('resumen-vacio-normal').classList.toggle('hidden', esSuperAdmin);
             document.getElementById('mentores-disponibles-wrap').classList.toggle('hidden', esSuperAdmin);
             if (!esSuperAdmin) renderMentoresDisponibles();
+            const editarFaqWrap = document.getElementById('editar-faq-wrap');
+            if (editarFaqWrap) {
+                editarFaqWrap.classList.toggle('hidden', !esSuperAdmin);
+                if (esSuperAdmin) {
+                    const faqActual = (configuracionPrincipalPublica.faqLista || []).map(f => `${f.pregunta}|${f.respuesta}`).join('\n');
+                    document.getElementById('faq-editor-textarea').value = faqActual;
+                }
+            }
             document.getElementById('tab-btn-solicitudes').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('tab-btn-pendientes').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('tab-btn-administradores').classList.toggle('hidden', !esSuperAdmin);
@@ -11495,6 +11687,8 @@
                 ['vista-rapida-modal', cerrarVistaRapida],
                 ['qr-producto-modal', () => document.getElementById('qr-producto-modal').classList.add('hidden')],
                 ['reclamo-modal', () => document.getElementById('reclamo-modal').classList.add('hidden')],
+                ['oferta-modal', () => document.getElementById('oferta-modal').classList.add('hidden')],
+                ['centro-ayuda-modal', () => document.getElementById('centro-ayuda-modal').classList.add('hidden')],
                 ['seguimiento-modal', cerrarSeguimientoPedido],
                 ['favoritos-modal', cerrarFavoritos],
                 ['carrito-modal', cerrarCarrito],
