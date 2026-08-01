@@ -771,6 +771,14 @@
         .catlogin-foot{ text-align:center; margin-top:16px; font-size:12.5px; color:#8d93b8; }
         .catlogin-close{ position:absolute; top:-10px; right:-10px; width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14); color:#eef0fb; cursor:pointer; z-index:8; }
         @media(max-width:420px){ .catlogin-card{ padding:22px 20px; } }
+
+        /* ---- Animación 3D al abrir la página tras un login exitoso ---- */
+        @keyframes aperturaPagina3D {
+            0% { transform: perspective(1300px) rotateX(-10deg) translateY(24px) scale(0.94); opacity: 0; }
+            60% { transform: perspective(1300px) rotateX(2deg) translateY(-4px) scale(1.01); opacity: 1; }
+            100% { transform: perspective(1300px) rotateX(0deg) translateY(0) scale(1); opacity: 1; }
+        }
+        .apertura-3d { animation: aperturaPagina3D 0.7s cubic-bezier(.22,1,.36,1); transform-origin: top center; }
     </style>
     <!--
       Google Analytics (desactivado hasta que tengas tu ID):
@@ -1438,10 +1446,6 @@
                         <button onclick="abrirTodosLosClientes()" class="bg-slate-600 hover:bg-slate-700 text-white px-4 rounded-xl text-sm font-semibold" title="Ver todos mis clientes" aria-label="Ver todos mis clientes"><i class="fas fa-users"></i></button>
                     </div>
                     <div id="ventas-urgentes-container" class="hidden mb-4"></div>
-                    <div id="ofertas-recibidas-container" class="hidden mb-6">
-                        <h4 class="mb-2 text-base admin-section-title"><i class="fas fa-hand-holding-dollar mr-1"></i> Ofertas recibidas</h4>
-                        <div id="ofertas-recibidas-lista" class="space-y-2"></div>
-                    </div>
                     <div id="avisos-stock-container" class="hidden mb-4"></div>
                     <div id="ventas-lista"></div>
                 </div>
@@ -1780,7 +1784,7 @@
                 <input id="cliente-email-nombre" type="text" placeholder="Tu nombre" class="catlogin-input hidden">
                 <input id="cliente-email-telefono" type="tel" placeholder="Tu WhatsApp (9 dígitos)" class="catlogin-input hidden">
                 <input id="cliente-email-correo" type="email" placeholder="Tu correo" class="catlogin-input">
-                <input id="cliente-email-password" type="password" placeholder="Tu contraseña" class="catlogin-input">
+                <input id="cliente-email-password" type="password" placeholder="Tu contraseña" class="catlogin-input" onfocus="if(gatoCliente) gatoCliente.triggerCoverEyes(true)" onblur="if(gatoCliente) gatoCliente.triggerCoverEyes(false)">
                 <p id="cliente-email-error" class="hidden catlogin-error"></p>
                 <button id="cliente-email-submit" onclick="iniciarSesionClienteCorreo()" class="catlogin-btn">Entrar</button>
             </div>
@@ -1847,7 +1851,7 @@
                 <div class="catlogin-claws" id="pin-modal-claws"><span></span><span></span><span></span></div>
                 <div class="catlogin-scene"><canvas id="catCanvasPin"></canvas></div>
                 <p id="pin-modal-titulo" class="catlogin-h1" style="text-align:center;">Ingresa el PIN para administrar la página</p>
-                <input id="pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)" onkeydown="if(event.key==='Enter') verificarPin()" class="catlogin-input text-center text-2xl tracking-widest" placeholder="••••••" style="margin-bottom:8px;">
+                <input id="pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="10" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10)" onkeydown="if(event.key==='Enter') verificarPin()" onfocus="if(gatoPin) gatoPin.triggerCoverEyes(true)" onblur="if(gatoPin) gatoPin.triggerCoverEyes(false)" class="catlogin-input text-center text-2xl tracking-widest" placeholder="••••••" style="margin-bottom:8px;">
                 <p id="pin-error" class="hidden catlogin-error text-center"></p>
                 <div class="flex gap-3 justify-center mt-2">
                     <button class="bg-white/10 hover:bg-white/15 text-white px-6 py-3 rounded-xl font-semibold text-sm" onclick="cerrarPin()">Cancelar</button>
@@ -1985,7 +1989,7 @@
                 <p id="registro-google-info" class="hidden text-center text-emerald-600 text-xs mb-2"><i class="fas fa-circle-check mr-1"></i> Conectado con Google, ya no necesitas contraseña</p>
                 <input id="registro-correo" type="email" placeholder="Tu correo electrónico" class="border border-gray-300 rounded-xl px-3 py-2 w-full mb-2 text-sm">
                 <input id="registro-nombre" type="text" placeholder="Tu nombre" class="border border-gray-300 rounded-xl px-3 py-2 w-full mb-2 text-sm">
-                <input id="registro-password" type="password" placeholder="Crea una contraseña (mínimo 6 caracteres)" class="border border-gray-300 rounded-xl px-3 py-2 w-full mb-2 text-sm">
+                <input id="registro-password" type="password" placeholder="Crea una contraseña (mínimo 6 caracteres)" class="border border-gray-300 rounded-xl px-3 py-2 w-full mb-2 text-sm" onfocus="if(gatoAdmin) gatoAdmin.triggerCoverEyes(true)" onblur="if(gatoAdmin) gatoAdmin.triggerCoverEyes(false)">
                 <input id="registro-whatsapp" type="tel" inputmode="numeric" placeholder="Tu número de WhatsApp" class="border border-gray-300 rounded-xl px-3 py-2 w-full mb-2 text-sm">
                 <input id="registro-pin" type="password" inputmode="numeric" maxlength="6" placeholder="Crea tu PIN de acceso rápido (6 dígitos)" class="border border-gray-300 rounded-xl px-3 py-2 w-full mb-1 text-center text-lg tracking-widest" oninput="document.getElementById('registro-pin-fuerza').textContent = evaluarFuerzaPin(this.value).texto; document.getElementById('registro-pin-fuerza').className = 'text-xs mb-1 text-center ' + evaluarFuerzaPin(this.value).clase;">
                 <p id="registro-pin-fuerza" class="text-xs mb-1 text-center"></p>
@@ -2036,7 +2040,7 @@
                 <button type="button" onclick="iniciarSesionAdminConGoogle()" class="catlogin-btn-google"><i class="fab fa-google text-red-500"></i> Continuar con Google</button>
                 <div class="catlogin-divider">O CON TU CORREO</div>
                 <input id="login-correo" type="email" placeholder="Tu correo" class="catlogin-input">
-                <input id="login-password" type="password" placeholder="Tu contraseña" class="catlogin-input">
+                <input id="login-password" type="password" placeholder="Tu contraseña" class="catlogin-input" onfocus="if(gatoAdmin) gatoAdmin.triggerCoverEyes(true)" onblur="if(gatoAdmin) gatoAdmin.triggerCoverEyes(false)">
                 <p id="login-error" class="hidden catlogin-error"></p>
                 <button onclick="iniciarSesionCorreo()" class="catlogin-btn">Entrar</button>
                 <p class="catlogin-foot"><button type="button" onclick="recuperarContrasena()" class="catlogin-link">¿Olvidaste tu contraseña?</button></p>
@@ -2121,21 +2125,8 @@
                 <button id="detalle-avisar-stock" onclick="abrirAvisarStock()" class="hidden block w-full text-center bg-amber-100 text-amber-700 py-2.5 rounded-xl font-semibold mb-2 text-sm"><i class="fas fa-bell mr-1"></i> Avísame cuando haya stock</button>
                 <button id="detalle-agregar-carrito" onclick="agregarAlCarritoDesdeDetalle()" class="block w-full text-center bg-purple-100 text-purple-700 py-2.5 rounded-xl font-semibold mb-2 text-sm"><i class="fas fa-cart-plus mr-1"></i> Agregar al carrito</button>
                 <a id="detalle-whatsapp" href="#" target="_blank" class="block text-center boton-animado text-white py-2.5 rounded-xl font-semibold shadow mb-2 text-sm">Comprar por WhatsApp</a>
-                <button id="detalle-hacer-oferta" onclick="abrirOfertaModal()" class="hidden block w-full text-center bg-white border border-indigo-200 text-indigo-600 py-2.5 rounded-xl font-semibold mb-2 text-sm"><i class="fas fa-hand-holding-dollar mr-1"></i> Hacer una oferta</button>
                 <button onclick="cerrarDetalleProducto()" class="text-gray-400 text-xs">Cerrar</button>
             </div>
-        </div>
-    </div>
-
-    <div id="oferta-modal" class="hidden modal-overlay" onclick="if (event.target === this) document.getElementById('oferta-modal').classList.add('hidden')">
-        <div class="bg-white rounded-3xl max-w-sm w-full mx-4 p-6 text-center">
-            <i class="fas fa-hand-holding-dollar text-3xl text-indigo-500 mb-3"></i>
-            <h3 class="text-lg font-bold text-slate-800 mb-1">Hacer una oferta</h3>
-            <p id="oferta-producto-info" class="text-sm text-gray-500 mb-4"></p>
-            <input id="oferta-precio-input" type="number" min="1" placeholder="¿Cuánto ofreces? (S/)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mb-3 text-center">
-            <input id="oferta-telefono-input" type="tel" inputmode="numeric" placeholder="Tu WhatsApp (ej: 925516886)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mb-3">
-            <button onclick="enviarOferta()" class="boton-animado text-white py-3 rounded-xl font-semibold w-full mb-2">Enviar oferta</button>
-            <button onclick="document.getElementById('oferta-modal').classList.add('hidden')" class="text-gray-400 text-sm">Cancelar</button>
         </div>
     </div>
 
@@ -4336,8 +4327,6 @@
             usdEl.textContent = `≈ US$ ${(precioSoles / TASA_CAMBIO_USD_APROX).toFixed(2)} (aprox.)`;
             const botonWhatsapp = document.getElementById('detalle-whatsapp');
             const botonAvisar = document.getElementById('detalle-avisar-stock');
-            const botonOferta = document.getElementById('detalle-hacer-oferta');
-            if (botonOferta) botonOferta.classList.toggle('hidden', !!agotado);
             const vacaciones = estadoVacacionesVendedor(producto.propietario);
             const bannerVacaciones = document.getElementById('detalle-vacaciones');
             if (vacaciones) {
@@ -4548,58 +4537,6 @@
 
         function cerrarAvisarStock() {
             document.getElementById('avisar-stock-modal').classList.add('hidden');
-        }
-
-        // ---- Hacer una oferta: el cliente propone un precio distinto ----
-        function abrirOfertaModal() {
-            const producto = productos.find(p => p.id === productoDetalleActualId);
-            if (!producto) return;
-            document.getElementById('oferta-producto-info').textContent = `${producto.nombre} · Precio actual: S/ ${producto.precio}`;
-            document.getElementById('oferta-precio-input').value = '';
-            document.getElementById('oferta-telefono-input').value = clienteWhatsappGuardado() || '';
-            document.getElementById('oferta-modal').classList.remove('hidden');
-        }
-
-        function clienteWhatsappGuardado() {
-            try { return (miClienteDatos && miClienteDatos.whatsapp) || localStorage.getItem('sct_ultimo_whatsapp_cliente') || ''; } catch (err) { return ''; }
-        }
-
-        async function enviarOferta() {
-            const producto = productos.find(p => p.id === productoDetalleActualId);
-            if (!producto) return;
-            const precioOfrecido = parseFloat(document.getElementById('oferta-precio-input').value);
-            const telefonoInput = document.getElementById('oferta-telefono-input').value;
-            if (isNaN(precioOfrecido) || precioOfrecido <= 0) {
-                mostrarAviso('Escribe cuánto quieres ofrecer.');
-                return;
-            }
-            if (!esWhatsappPeruValido(telefonoInput)) {
-                mostrarAviso('Escribe un WhatsApp peruano válido: 9 dígitos, empezando con 9 (ej: 987654321).');
-                return;
-            }
-            if (precioOfrecido >= producto.precio) {
-                mostrarAviso('Tu oferta debe ser menor al precio actual del producto. Si quieres pagar el precio de lista, usa "Comprar por WhatsApp".');
-                return;
-            }
-            const telefono = telefonoInput.replace(/\D/g, '');
-            try {
-                await db.collection('ofertas').add({
-                    productoId: producto.id,
-                    productoNombre: producto.nombre,
-                    precioOriginal: producto.precio,
-                    precioOfrecido: precioOfrecido,
-                    clienteTelefono: telefono,
-                    clienteUid: auth.currentUser ? auth.currentUser.uid : null,
-                    vendedorId: producto.propietario || 'principal',
-                    vendedorNombre: producto.propietarioNombre || '',
-                    estado: 'pendiente',
-                    creado: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                document.getElementById('oferta-modal').classList.add('hidden');
-                mostrarAviso('¡Oferta enviada! El vendedor te escribirá si la acepta.');
-            } catch (err) {
-                mostrarAviso('No se pudo enviar la oferta: ' + (err.message || err.code || 'error desconocido'));
-            }
         }
 
         async function confirmarAvisarStock() {
@@ -8353,6 +8290,7 @@
             if (ok) {
                 catloginClientePlay();
                 abrirMiCuentaCliente();
+                activarAperturaPagina3D('panel-cliente-app');
             }
         }
 
@@ -8384,6 +8322,7 @@
                 if (ok) {
                     catloginClientePlay();
                     abrirPanelClienteCompleto('inicio');
+                    activarAperturaPagina3D('panel-cliente-app');
                 } else {
                     catloginClienteFail();
                 }
@@ -8439,6 +8378,7 @@
                 if (ok) {
                     catloginClientePlay();
                     abrirPanelClienteCompleto('inicio');
+                    activarAperturaPagina3D('panel-cliente-app');
                 } else {
                     catloginClienteFail();
                 }
@@ -8566,7 +8506,6 @@
             }
             if (tab === 'chat') abrirTabChatInterno();
             if (tab === 'reclamos') renderReclamosAdmin();
-            if (tab === 'ventas') renderOfertasRecibidas();
         }
 
         // ---- Borrador automático del formulario "Agregar producto" (evita perder lo escrito si se cierra por error) ----
@@ -8987,49 +8926,6 @@
                 actualizarBadgeReclamos();
             } catch (err) {
                 mostrarAviso('No se pudo actualizar el reclamo: ' + (err.message || err.code || 'error desconocido'));
-            }
-        }
-
-        // ---- Ofertas de clientes, vistas por el vendedor en su pestaña de Ventas ----
-        async function renderOfertasRecibidas() {
-            const wrap = document.getElementById('ofertas-recibidas-container');
-            const cont = document.getElementById('ofertas-recibidas-lista');
-            if (!wrap || !cont) return;
-            const miUid = esSuperAdmin ? 'principal' : (auth.currentUser && auth.currentUser.uid);
-            if (!miUid) { wrap.classList.add('hidden'); return; }
-            try {
-                const snap = await db.collection('ofertas').where('vendedorId', '==', miUid).where('estado', '==', 'pendiente').orderBy('creado', 'desc').limit(30).get();
-                if (snap.empty) { wrap.classList.add('hidden'); return; }
-                wrap.classList.remove('hidden');
-                cont.innerHTML = snap.docs.map(d => {
-                    const o = { id: d.id, ...d.data() };
-                    return `
-                    <div class="admin-card p-3 flex items-center justify-between gap-2 flex-wrap">
-                        <div>
-                            <p class="text-sm font-semibold text-slate-700">${o.productoNombre || 'Producto'}</p>
-                            <p class="text-xs text-gray-500">Ofrece S/ ${o.precioOfrecido} <span class="text-gray-400">(precio: S/ ${o.precioOriginal})</span> · <span class="dato-sensible">${o.clienteTelefono || ''}</span></p>
-                        </div>
-                        <div class="flex gap-1.5">
-                            <button onclick="responderOferta('${o.id}', true)" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Aceptar</button>
-                            <button onclick="responderOferta('${o.id}', false)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-semibold">Rechazar</button>
-                        </div>
-                    </div>`;
-                }).join('');
-            } catch (err) { console.error('No se pudieron cargar las ofertas:', err); }
-        }
-
-        async function responderOferta(id, aceptar) {
-            try {
-                const ofertaDoc = await db.collection('ofertas').doc(id).get();
-                const o = ofertaDoc.data();
-                await db.collection('ofertas').doc(id).update({ estado: aceptar ? 'aceptada' : 'rechazada' });
-                mostrarAviso(aceptar ? 'Oferta aceptada. Escríbele al cliente para cerrar la venta.' : 'Oferta rechazada.');
-                if (aceptar && o && o.clienteTelefono) {
-                    window.open(`https://wa.me/${o.clienteTelefono}?text=${encodeURIComponent(`Hola! Acepté tu oferta de S/ ${o.precioOfrecido} por "${o.productoNombre}". ¿Cómo coordinamos el pago?`)}`, '_blank');
-                }
-                renderOfertasRecibidas();
-            } catch (err) {
-                mostrarAviso('No se pudo responder la oferta: ' + (err.message || err.code || 'error desconocido'));
             }
         }
 
@@ -9584,6 +9480,7 @@
             const completar = () => {
                 adminDesbloqueado = true;
                 abrirPanelAdmin();
+                activarAperturaPagina3D('admin-modal');
                 registrarSesion(idDoc, nombre);
                 if (alTerminar) alTerminar();
             };
@@ -11934,7 +11831,6 @@
                 ['vista-rapida-modal', cerrarVistaRapida],
                 ['qr-producto-modal', () => document.getElementById('qr-producto-modal').classList.add('hidden')],
                 ['reclamo-modal', () => document.getElementById('reclamo-modal').classList.add('hidden')],
-                ['oferta-modal', () => document.getElementById('oferta-modal').classList.add('hidden')],
                 ['centro-ayuda-modal', () => document.getElementById('centro-ayuda-modal').classList.add('hidden')],
                 ['seguimiento-modal', cerrarSeguimientoPedido],
                 ['favoritos-modal', cerrarFavoritos],
@@ -12301,6 +12197,7 @@
 
             let isScratching = false, scratchStart = 0;
             let isPlaying = false, playStart = 0;
+            let isCoveringEyes = false;
             let nextBlink = 3 + Math.random() * 2;
             const earLBaseZ = 0.35, earRBaseZ = -0.35;
 
@@ -12310,7 +12207,7 @@
             const IDLE_DURATIONS = { 'look-left': 1.1, 'look-right': 1.1, 'ear-twitch': 0.35, 'tail-flick': 0.55, 'stretch': 1.7, 'head-tilt': 1.0 };
 
             function maybeStartIdleAction(t) {
-                if (isScratching || isPlaying) return;
+                if (isScratching || isPlaying || isCoveringEyes) return;
                 if (idleAction && t < idleAction.start + idleAction.duration) return;
                 if (t < nextIdleActionTime) { idleAction = null; return; }
                 const type = IDLE_POOL[Math.floor(Math.random() * IDLE_POOL.length)];
@@ -12320,6 +12217,7 @@
 
             function startScratchAnim() { isScratching = true; scratchStart = clock.getElapsedTime(); idleAction = null; }
             function startPlayAnim() { isPlaying = true; playStart = clock.getElapsedTime(); idleAction = null; }
+            function setCoverEyes(activo) { isCoveringEyes = activo; if (activo) idleAction = null; }
 
             function catTick(t) {
                 dragRotY += (targetRotY - dragRotY) * 0.15;
@@ -12380,6 +12278,12 @@
                         ballMesh.position.set(Math.sin(dt * 4) * 0.85, -0.55 + Math.abs(Math.sin(dt * 8)) * 0.55, 0.25 + Math.cos(dt * 3) * 0.15);
                         legL.rotation.x = Math.max(0, Math.sin(dt * 8)) * 0.6;
                         if (dt > 1.3) { isPlaying = false; ballMesh.visible = false; legL.rotation.x = 0; }
+                    } else if (isCoveringEyes) {
+                        // El gato se tapa los ojos con sus patitas mientras se escribe la contraseña (tímido/privado)
+                        legL.rotation.x += (1.55 - legL.rotation.x) * 0.18;
+                        legR.rotation.x += (1.55 - legR.rotation.x) * 0.18;
+                        headRotX += 0.12;
+                        eyeL.scale.y = eyeR.scale.y = 0.15;
                     } else {
                         legL.rotation.x = -legForward * 0.5;
                         legR.rotation.x = -legForward * 0.5;
@@ -12398,7 +12302,7 @@
             }
             animate();
 
-            return { triggerScratch: startScratchAnim, triggerPlay: startPlayAnim, resize: resizeCatRenderer };
+            return { triggerScratch: startScratchAnim, triggerPlay: startPlayAnim, triggerCoverEyes: setCoverEyes, resize: resizeCatRenderer };
         }
 
         // Sacude la tarjeta + marcas de arañazo del gato de administrador
@@ -12435,6 +12339,15 @@
         function catloginPinPlay() {
             if (!gatoPin) gatoPin = crearGatoLogin('catCanvasPin');
             if (gatoPin) gatoPin.triggerPlay();
+        }
+
+        // Aplica la animación de apertura 3D a la página/panel que se muestra justo después de un login exitoso
+        function activarAperturaPagina3D(elId) {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            el.classList.remove('apertura-3d');
+            void el.offsetWidth; // fuerza reflow para poder reiniciar la animación
+            el.classList.add('apertura-3d');
         }
 
         // Crea los gatitos apenas cargue la página (los canvas ya existen en el DOM,
