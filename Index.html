@@ -1047,6 +1047,7 @@
                     <button type="button" id="tab-btn-administradores" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('administradores')"><i class="fas fa-users mr-1.5"></i>Administradores</button>
                     <button type="button" id="tab-btn-clientes" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('clientes')"><i class="fas fa-user-group mr-1.5"></i>Clientes</button>
                     <button type="button" id="tab-btn-chat" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('chat')"><i class="fas fa-comments mr-1.5"></i>Chat<span id="badge-chat" class="hidden ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full"></span></button>
+                    <button type="button" id="tab-btn-reclamos" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('reclamos')"><i class="fas fa-triangle-exclamation mr-1.5"></i>Reclamos<span id="badge-reclamos" class="hidden ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full"></span></button>
                     <button type="button" id="tab-btn-seguridad" class="admin-tab-btn" onclick="cambiarTabAdmin('seguridad')"><i class="fas fa-shield-halved mr-1.5"></i>Seguridad</button>
                 </div>
 
@@ -1107,6 +1108,26 @@
                         <h4 class="mb-4 text-base admin-section-title"><i class="fas fa-eye mr-1"></i> Qué está generando más interés</h4>
                         <p class="text-xs text-gray-400 -mt-3 mb-4">Basado en clics en "Comprar" de cada producto.</p>
                         <div id="stats-interes-lista" class="space-y-2"></div>
+                    </div>
+                    <div id="embudo-conversion-superadmin" class="hidden mb-8">
+                        <h4 class="mb-2 text-base admin-section-title"><i class="fas fa-filter mr-1"></i> Embudo de conversión</h4>
+                        <p class="text-xs text-gray-400 mb-4">De cuántas vistas de producto salen clics en "Comprar", y de esos, cuántas ventas se confirman.</p>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="admin-card p-3 text-center">
+                                <p id="embudo-total-vistas" class="text-xl font-bold text-slate-800">0</p>
+                                <p class="text-[10px] text-gray-500">Vistas de producto</p>
+                            </div>
+                            <div class="admin-card p-3 text-center">
+                                <p id="embudo-total-clics" class="text-xl font-bold text-slate-800">0</p>
+                                <p class="text-[10px] text-gray-500">Clics en "Comprar"</p>
+                                <p id="embudo-tasa-vistas-clics" class="text-[10px] text-indigo-600 font-semibold mt-0.5"></p>
+                            </div>
+                            <div class="admin-card p-3 text-center">
+                                <p id="embudo-total-ventas-conf" class="text-xl font-bold text-slate-800">0</p>
+                                <p class="text-[10px] text-gray-500">Ventas confirmadas</p>
+                                <p id="embudo-tasa-clics-ventas" class="text-[10px] text-emerald-600 font-semibold mt-0.5"></p>
+                            </div>
+                        </div>
                     </div>
                     <div id="stats-categorias-superadmin" class="hidden mb-8">
                         <h4 class="mb-4 text-base admin-section-title"><i class="fas fa-chart-simple mr-1"></i> Plataformas más publicadas</h4>
@@ -1621,6 +1642,12 @@
                     </div>
                 </div>
 
+                <div class="admin-tab-pane" data-tab="reclamos">
+                    <h4 class="text-base admin-section-title mb-2"><i class="fas fa-triangle-exclamation mr-1"></i> Reclamos de clientes</h4>
+                    <p class="text-xs text-gray-400 mb-4" id="reclamos-subtitulo">Problemas reportados por clientes sobre sus compras.</p>
+                    <div id="reclamos-lista" class="space-y-3"></div>
+                </div>
+
                 <div class="admin-tab-pane" data-tab="seguridad">
                     <div class="admin-card p-4 mb-6">
                         <h4 class="text-sm font-bold text-slate-800 mb-1"><i class="fas fa-eye-slash mr-1 text-slate-500"></i> Modo presentación</h4>
@@ -1771,6 +1798,27 @@
             <p class="font-semibold text-slate-800">Detalle de tu compra</p>
         </div>
         <div id="panelc-detalle-compra-contenido" class="p-5"></div>
+    </div>
+
+    <div id="reclamo-modal" class="hidden modal-overlay" onclick="if (event.target === this) document.getElementById('reclamo-modal').classList.add('hidden')">
+        <div class="bg-white rounded-3xl max-w-sm w-full mx-4 p-6">
+            <h3 class="text-base font-bold text-slate-800 mb-1"><i class="fas fa-triangle-exclamation text-red-500 mr-1"></i> Reportar un problema</h3>
+            <p id="reclamo-producto-nombre" class="text-xs text-gray-400 mb-4"></p>
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Motivo</label>
+            <select id="reclamo-motivo-select" class="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full mb-3">
+                <option value="No llegó el producto">No llegó el producto</option>
+                <option value="Producto diferente al descrito">Producto diferente al descrito</option>
+                <option value="El vendedor no responde">El vendedor no responde</option>
+                <option value="Problema con el pago">Problema con el pago</option>
+                <option value="Otro">Otro</option>
+            </select>
+            <label class="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Cuéntanos qué pasó</label>
+            <textarea id="reclamo-descripcion-input" rows="3" placeholder="Describe el problema con el mayor detalle posible..." class="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full mb-4"></textarea>
+            <div class="flex gap-2">
+                <button onclick="document.getElementById('reclamo-modal').classList.add('hidden')" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 py-2.5 rounded-xl text-sm font-semibold">Cancelar</button>
+                <button onclick="enviarReclamo()" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2.5 rounded-xl text-sm font-semibold">Enviar reporte</button>
+            </div>
+        </div>
     </div>
 
     <div id="pin-modal" class="hidden catlogin-overlay">
@@ -2340,6 +2388,9 @@
         const YAPE_NUMERO_MOSTRAR = "925 516 886"; // Yape/Plin del súper admin, para la suscripción de nuevos admins
         const SUSCRIPCION_ADMIN_MONTO = 10;
         const SUSCRIPCION_ADMIN_DIAS = 30;
+        // ---- Planes de vendedor: límite de productos activos según el plan ----
+        const LIMITE_PRODUCTOS_BASICO = 15;
+        const LIMITE_PRODUCTOS_PREMIUM = 200; // efectivamente "sin límite" para uso normal
         const TASA_CAMBIO_USD_APROX = 3.75; // referencial, para mostrar precio aprox. en dólares
 
         // ---- Idioma (ES/EN) — traduce los textos principales visibles; el resto del sitio
@@ -3828,6 +3879,20 @@
         let productoDetalleActualId = null;
 
         let productosVendedorActual = [];
+        // ---- Embudo de conversión: registra una vista por producto, una vez por sesión ----
+        function registrarVistaProducto(id) {
+            try {
+                const vistasKey = 'vistas_registradas_sesion';
+                const yaVistos = JSON.parse(sessionStorage.getItem(vistasKey) || '[]');
+                if (yaVistos.includes(id)) return;
+                yaVistos.push(id);
+                sessionStorage.setItem(vistasKey, JSON.stringify(yaVistos));
+                db.collection('productos').doc(id).update({ vistas: firebase.firestore.FieldValue.increment(1) }).catch(() => {});
+                const prodLocal = productos.find(p => p.id === id);
+                if (prodLocal) prodLocal.vistas = (prodLocal.vistas || 0) + 1;
+            } catch (err) { /* sessionStorage puede fallar en modo privado; no es crítico */ }
+        }
+
         function verDetalleProducto(id) {
             const producto = productos.find(p => p.id === id);
             if (!producto) return;
@@ -3838,6 +3903,7 @@
                 return;
             }
             productoDetalleActualId = id;
+            registrarVistaProducto(id);
             metodoPagoElegido = null;
             varianteElegidaActual = null;
             const chkProvincia = document.getElementById('detalle-es-provincia');
@@ -5275,6 +5341,7 @@
             actualizarPanelRiesgo();
             actualizarCobrosPendientes();
             actualizarStatsInteres();
+            actualizarEmbudoConversion();
             actualizarStatsSalud();
             dibujarGraficaVentas();
             actualizarComparativaYRacha();
@@ -6716,6 +6783,23 @@
             `).join('');
         }
 
+        function actualizarEmbudoConversion() {
+            const wrap = document.getElementById('embudo-conversion-superadmin');
+            if (!wrap || !esSuperAdmin) return;
+            const totalVistas = productos.reduce((s, p) => s + (p.vistas || 0), 0);
+            const totalClics = pedidos.length;
+            const totalVentasConf = pedidos.filter(p => p.estado === 'vendido').length;
+            if (totalVistas === 0 && totalClics === 0) { wrap.classList.add('hidden'); return; }
+            wrap.classList.remove('hidden');
+            document.getElementById('embudo-total-vistas').textContent = totalVistas;
+            document.getElementById('embudo-total-clics').textContent = totalClics;
+            document.getElementById('embudo-total-ventas-conf').textContent = totalVentasConf;
+            const tasaVistasClics = totalVistas > 0 ? ((totalClics / totalVistas) * 100).toFixed(1) : '—';
+            const tasaClicsVentas = totalClics > 0 ? ((totalVentasConf / totalClics) * 100).toFixed(1) : '—';
+            document.getElementById('embudo-tasa-vistas-clics').textContent = totalVistas > 0 ? `${tasaVistasClics}% de las vistas` : '';
+            document.getElementById('embudo-tasa-clics-ventas').textContent = totalClics > 0 ? `${tasaClicsVentas}% de los clics` : '';
+        }
+
         function actualizarStatsInteres() {
             const cont = document.getElementById('stats-interes-lista');
             const wrap = document.getElementById('stats-interes-superadmin');
@@ -7220,6 +7304,13 @@
                 try {
                     const miDoc = await db.collection('administradores').doc(auth.currentUser.uid).get();
                     propietarioVerificado = !!(miDoc.exists && miDoc.data().verificado);
+                    const miPlan = (miDoc.exists && miDoc.data().planVendedor) || 'basico';
+                    const miLimite = miPlan === 'premium' ? LIMITE_PRODUCTOS_PREMIUM : LIMITE_PRODUCTOS_BASICO;
+                    const misProductosActivos = productos.filter(p => p.propietario === propietario && p.pausado !== true).length;
+                    if (misProductosActivos >= miLimite) {
+                        mostrarAviso(`Llegaste al límite de tu plan ${miPlan === 'premium' ? 'Premium' : 'Básico'} (${miLimite} productos activos). Pausa o elimina alguno, o pide al súper admin que te suba de plan.`);
+                        return;
+                    }
                 } catch (err) { propietarioVerificado = false; }
             }
             try {
@@ -7645,11 +7736,50 @@
                     <div class="flex justify-between text-sm"><span class="text-gray-500">Estado</span><span class="font-semibold ${esVendido ? 'text-emerald-600' : 'text-amber-600'}">${estadoTexto}</span></div>
                 </div>
                 ${p.propietarioWhatsapp || p.propietario === 'principal' ? `<button onclick="window.open('https://wa.me/${(p.propietarioWhatsapp || WHATSAPP_NUMBER).replace(/\\D/g,'')}?text=' + encodeURIComponent('Hola, tengo una consulta sobre mi compra: ' + '${(p.productoNombre || '').replace(/'/g, "\\'")}'), '_blank')" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-semibold"><i class="fab fa-whatsapp mr-1"></i> Escribir al vendedor</button>` : ''}
+                <button onclick='abrirReclamoModal(${JSON.stringify(p).replace(/'/g, "&apos;")})' class="w-full mt-2 bg-white border border-red-200 text-red-500 py-3 rounded-xl font-semibold text-sm"><i class="fas fa-triangle-exclamation mr-1"></i> Reportar un problema</button>
             `;
             document.getElementById('panelc-detalle-compra').classList.remove('hidden');
         }
 
-        // Pull-to-refresh simple sobre la lista de compras
+        let reclamoPedidoActual = null;
+        function abrirReclamoModal(p) {
+            reclamoPedidoActual = p;
+            document.getElementById('reclamo-producto-nombre').textContent = `Sobre: ${p.productoNombre || 'tu compra'} · S/ ${p.precio || 0}`;
+            document.getElementById('reclamo-motivo-select').value = 'No llegó el producto';
+            document.getElementById('reclamo-descripcion-input').value = '';
+            document.getElementById('reclamo-modal').classList.remove('hidden');
+        }
+
+        async function enviarReclamo() {
+            if (!reclamoPedidoActual) return;
+            const motivo = document.getElementById('reclamo-motivo-select').value;
+            const descripcion = document.getElementById('reclamo-descripcion-input').value.trim();
+            if (!descripcion) {
+                mostrarAviso('Cuéntanos qué pasó antes de enviar el reporte.');
+                return;
+            }
+            const p = reclamoPedidoActual;
+            try {
+                await db.collection('reclamos').add({
+                    pedidoId: p.id || null,
+                    productoNombre: p.productoNombre || '',
+                    precio: p.precio || 0,
+                    clienteTelefono: (miClienteDatos && miClienteDatos.whatsapp) || p.clienteTelefono || '',
+                    clienteUid: auth.currentUser ? auth.currentUser.uid : null,
+                    vendedorId: p.propietario || null,
+                    vendedorNombre: p.propietarioNombre || '',
+                    motivo: motivo,
+                    descripcion: descripcion,
+                    estado: 'abierto',
+                    creado: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                document.getElementById('reclamo-modal').classList.add('hidden');
+                mostrarAviso('Reporte enviado. El vendedor lo revisará pronto.');
+                reclamoPedidoActual = null;
+            } catch (err) {
+                mostrarAviso('No se pudo enviar el reporte: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
         let ptrInicioY = null;
         function activarPullToRefreshCompras() {
             const cont = document.getElementById('panelc-contenido');
@@ -8056,6 +8186,7 @@
                 restaurarBorradorProducto();
             }
             if (tab === 'chat') abrirTabChatInterno();
+            if (tab === 'reclamos') renderReclamosAdmin();
         }
 
         // ---- Borrador automático del formulario "Agregar producto" (evita perder lo escrito si se cierra por error) ----
@@ -8394,6 +8525,89 @@
             }
             badge.classList.toggle('hidden', !hayNoLeidos);
             if (hayNoLeidos) badge.textContent = '•';
+        }
+
+        // ============================================================
+        // RECLAMOS — un cliente reporta un problema con una compra; el
+        // vendedor (o el súper admin, para cualquier caso) lo revisa y
+        // lo marca como resuelto respondiéndole al cliente.
+        // ============================================================
+        async function actualizarBadgeReclamos() {
+            const badge = document.getElementById('badge-reclamos');
+            if (!badge) return;
+            try {
+                let query = db.collection('reclamos').where('estado', '==', 'abierto');
+                if (!esSuperAdmin) {
+                    const miUid = auth.currentUser && auth.currentUser.uid;
+                    if (!miUid) { badge.classList.add('hidden'); return; }
+                    query = query.where('vendedorId', '==', miUid);
+                }
+                const snap = await query.limit(1).get();
+                badge.classList.toggle('hidden', snap.empty);
+                if (!snap.empty) badge.textContent = '•';
+            } catch (err) { console.error('No se pudo revisar reclamos pendientes:', err); }
+        }
+
+        async function renderReclamosAdmin() {
+            const cont = document.getElementById('reclamos-lista');
+            const subtitulo = document.getElementById('reclamos-subtitulo');
+            if (!cont) return;
+            cont.innerHTML = '<p class="text-gray-400 text-sm">Cargando reclamos...</p>';
+            subtitulo.textContent = esSuperAdmin
+                ? 'Todos los reclamos reportados por clientes, de cualquier vendedor.'
+                : 'Reclamos que tus clientes reportaron sobre tus productos.';
+            try {
+                let query = db.collection('reclamos').orderBy('creado', 'desc').limit(100);
+                if (!esSuperAdmin) {
+                    const miUid = auth.currentUser && auth.currentUser.uid;
+                    if (!miUid) { cont.innerHTML = '<p class="text-gray-400 text-sm">Inicia sesión para ver tus reclamos.</p>'; return; }
+                    query = db.collection('reclamos').where('vendedorId', '==', miUid).orderBy('creado', 'desc').limit(100);
+                }
+                const snap = await query.get();
+                if (snap.empty) {
+                    cont.innerHTML = '<p class="text-gray-400 text-sm">No hay reclamos registrados. 🎉</p>';
+                    return;
+                }
+                cont.innerHTML = snap.docs.map(d => {
+                    const r = { id: d.id, ...d.data() };
+                    const fecha = r.creado && r.creado.toDate ? r.creado.toDate().toLocaleDateString('es-PE', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+                    const resuelto = r.estado === 'resuelto';
+                    return `
+                    <div class="admin-card p-4">
+                        <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+                            <p class="font-semibold text-slate-800 text-sm">${r.productoNombre || 'Producto'}</p>
+                            <span class="${resuelto ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'} text-[10px] px-2 py-0.5 rounded-full font-semibold">${resuelto ? 'Resuelto' : 'Abierto'}</span>
+                        </div>
+                        <p class="text-xs text-gray-400 mb-2">${fecha}${esSuperAdmin && r.vendedorNombre ? ' · Vendedor: ' + r.vendedorNombre : ''} · Cliente: ${r.clienteTelefono || '—'}</p>
+                        <p class="text-xs text-gray-600 mb-1"><b>Motivo:</b> ${r.motivo || '—'}</p>
+                        <p class="text-xs text-gray-600 mb-2">${(r.descripcion || '').replace(/</g, '&lt;')}</p>
+                        ${r.respuesta ? `<div class="bg-gray-50 rounded-xl p-2.5 text-xs text-gray-600 mb-2"><b>Respuesta:</b> ${r.respuesta.replace(/</g, '&lt;')}</div>` : ''}
+                        <div class="flex gap-2 flex-wrap">
+                            ${r.clienteTelefono ? `<a href="https://wa.me/${r.clienteTelefono.replace(/\\D/g,'')}" target="_blank" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fab fa-whatsapp mr-1"></i>Escribirle</a>` : ''}
+                            ${!resuelto ? `<button onclick="resolverReclamo('${r.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Marcar como resuelto</button>` : ''}
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (err) {
+                cont.innerHTML = '<p class="text-red-400 text-sm">No se pudieron cargar los reclamos.</p>';
+                console.error(err);
+            }
+        }
+
+        async function resolverReclamo(id) {
+            const respuesta = prompt('¿Cómo se resolvió? (esto lo verá el cliente y quedará guardado)') || '';
+            try {
+                await db.collection('reclamos').doc(id).update({
+                    estado: 'resuelto',
+                    respuesta: respuesta,
+                    resueltoEn: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                mostrarAviso('Reclamo marcado como resuelto.');
+                renderReclamosAdmin();
+                actualizarBadgeReclamos();
+            } catch (err) {
+                mostrarAviso('No se pudo actualizar el reclamo: ' + (err.message || err.code || 'error desconocido'));
+            }
         }
 
         // ============================================================
@@ -8753,6 +8967,8 @@
             document.getElementById('tab-btn-administradores').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('tab-btn-clientes').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('tab-btn-chat').classList.remove('hidden');
+            document.getElementById('tab-btn-reclamos').classList.remove('hidden');
+            actualizarBadgeReclamos();
             actualizarBadgeChat();
             document.getElementById('referidos-admin-toggle').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('puntos-admin-toggle').classList.toggle('hidden', !esSuperAdmin);
@@ -10124,6 +10340,11 @@
                             ? `<span class="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-crown"></i> Vence pronto: ${new Date(adm.suscripcionVenceEl).toLocaleDateString('es-PE')}</span>`
                             : `<span class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-crown"></i> Suscripción hasta ${new Date(adm.suscripcionVenceEl).toLocaleDateString('es-PE')}</span>`)
                     : '';
+                const esPlanPremium = adm.planVendedor === 'premium';
+                const limiteProductosAdm = esPlanPremium ? LIMITE_PRODUCTOS_PREMIUM : LIMITE_PRODUCTOS_BASICO;
+                const badgePlan = esPlanPremium
+                    ? `<span class="bg-gradient-to-r from-fuchsia-100 to-violet-100 text-violet-700 text-[10px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-gem"></i> Plan Premium</span>`
+                    : `<span class="bg-gray-100 text-gray-600 text-[10px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-gem"></i> Plan Básico (${numProductos}/${limiteProductosAdm})</span>`;
                 const productosHtml = nombresProductos.length > 0
                     ? nombresProductos.map(n => `<span class="producto-pill">${n}</span>`).join('')
                     : `<span class="text-xs text-gray-400 italic">Todavía no publicó productos</span>`;
@@ -10163,6 +10384,7 @@
                                 <span class="bg-indigo-100 text-indigo-700 text-[10px] px-2 py-0.5 rounded-full font-semibold">${numProductos} producto${numProductos === 1 ? '' : 's'}</span>
                                 <span class="${conectado ? 'badge-en-linea' : 'badge-desconectado'} text-[10px] px-2 py-0.5 rounded-full font-semibold"><span class="estado-punto ${conectado ? 'en-linea' : 'desconectado'}"></span>${conectado ? 'En línea' : 'Desconectado'}</span>
                                 ${badgeSuscripcion}
+                                ${badgePlan}
                                 ${adm.chatHabilitado ? '<span class="bg-emerald-100 text-emerald-700 text-[10px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-comments"></i> Chat activo</span>' : (adm.chatSolicitado ? '<span class="bg-amber-100 text-amber-700 text-[10px] px-2 py-0.5 rounded-full font-semibold"><i class="fas fa-comments"></i> Pidió chat</span>' : '')}
                             </div>
                             <p class="text-sm text-gray-500 break-all mt-1">Correo: <span class="dato-sensible">${adm.correo || 'No especificó'}</span></p>
@@ -10181,6 +10403,7 @@
                         ${conectado ? `<button onclick="revocarSesionAdmin('${adm.id}', '${(adm.nombre || 'Administrador').replace(/'/g, "\\'")}')" class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-right-from-bracket mr-1"></i>Cerrar su sesión</button>` : ''}
                         <button onclick="reiniciarPinAdmin('${adm.id}')" class="bg-slate-500 hover:bg-slate-600 text-white px-3 py-2 rounded-xl text-xs font-semibold">Reiniciar PIN</button>
                         <button onclick="renovarSuscripcionAdmin('${adm.id}')" class="${suscripcionVencida ? 'bg-red-500 hover:bg-red-600' : 'bg-emerald-600 hover:bg-emerald-700'} text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-crown mr-1"></i>Registrar pago (+30 días)</button>
+                        <button onclick="togglePlanVendedor('${adm.id}', ${esPlanPremium})" class="${esPlanPremium ? 'bg-gray-200 hover:bg-gray-300 text-gray-700' : 'bg-violet-500 hover:bg-violet-600 text-white'} px-3 py-2 rounded-xl text-xs font-semibold"><i class="fas fa-gem mr-1"></i>${esPlanPremium ? 'Bajar a plan Básico' : 'Subir a plan Premium'}</button>
                         ${(suscripcionVencida || suscripcionPorVencer) && adm.whatsapp ? `<a href="https://wa.me/${adm.whatsapp}?text=${encodeURIComponent(`Hola ${adm.nombre || ''}! Tu suscripción de admin en APL market ${suscripcionVencida ? 'ya venció' : 'vence pronto'}. Yapea/Plinea S/ ${adm.suscripcionMonto || SUSCRIPCION_ADMIN_MONTO} al ${YAPE_NUMERO_MOSTRAR} y me avisas para renovarla 🙌`)}" target="_blank" class="bg-sky-500 hover:bg-sky-600 text-white px-3 py-2 rounded-xl text-xs font-semibold"><i class="fab fa-whatsapp mr-1"></i>Recordar pago</a>` : ''}
                         ${adm.whatsapp ? `<select onchange="enviarMensajeRapido('${adm.id}', this.value); this.value='';" class="bg-white border border-gray-300 rounded-xl px-2 py-2 text-xs font-semibold text-gray-600">
                             <option value="">💬 Mensaje rápido...</option>
@@ -10248,6 +10471,19 @@
                 mostrarAviso('Cambio de correo rechazado.');
             } catch (err) {
                 mostrarAviso('No se pudo rechazar el cambio: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
+        async function togglePlanVendedor(id, esPremiumActual) {
+            if (!esSuperAdmin) return;
+            const nuevoPlan = esPremiumActual ? 'basico' : 'premium';
+            try {
+                await db.collection('administradores').doc(id).update({ planVendedor: nuevoPlan });
+                mostrarAviso(nuevoPlan === 'premium'
+                    ? 'Listo, ahora tiene plan Premium (sin límite práctico de productos).'
+                    : `Listo, ahora tiene plan Básico (máximo ${LIMITE_PRODUCTOS_BASICO} productos activos).`);
+            } catch (err) {
+                mostrarAviso('No se pudo cambiar el plan: ' + (err.message || err.code || 'error desconocido'));
             }
         }
 
@@ -11258,6 +11494,7 @@
                 ['zoom-foto-modal', cerrarZoomFoto],
                 ['vista-rapida-modal', cerrarVistaRapida],
                 ['qr-producto-modal', () => document.getElementById('qr-producto-modal').classList.add('hidden')],
+                ['reclamo-modal', () => document.getElementById('reclamo-modal').classList.add('hidden')],
                 ['seguimiento-modal', cerrarSeguimientoPedido],
                 ['favoritos-modal', cerrarFavoritos],
                 ['carrito-modal', cerrarCarrito],
