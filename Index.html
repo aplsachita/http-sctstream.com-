@@ -897,7 +897,8 @@
         <div class="max-w-md mx-auto mb-4">
             <div class="relative">
                 <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-                <input id="buscador-productos" data-i18n-placeholder="buscar_placeholder" type="text" list="sugerencias-productos" placeholder="Busca lo que necesitas..." oninput="filtrarYRenderizarProductos()" class="w-full border-2 border-gray-200 rounded-2xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-purple-400">
+                <input id="buscador-productos" data-i18n-placeholder="buscar_placeholder" type="text" list="sugerencias-productos" placeholder="Busca lo que necesitas..." oninput="filtrarYRenderizarProductos()" class="w-full border-2 border-gray-200 rounded-2xl pl-10 pr-10 py-3 text-sm focus:outline-none focus:border-purple-400">
+                <button type="button" id="btn-busqueda-voz" onclick="iniciarBusquedaPorVoz()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-500" title="Buscar por voz"><i class="fas fa-microphone"></i></button>
                 <datalist id="sugerencias-productos"></datalist>
             </div>
             <div class="flex gap-2 mt-2 flex-wrap justify-center">
@@ -1176,6 +1177,12 @@
                         <textarea id="faq-editor-textarea" rows="6" placeholder="¿Cómo pago?|Aceptamos Yape, Plin y transferencia." class="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full mb-2"></textarea>
                         <button onclick="guardarFAQ()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold">Guardar preguntas frecuentes</button>
                     </div>
+                    <div id="editar-recompensas-wrap" class="hidden mt-4 admin-card p-4">
+                        <h4 class="text-sm font-bold text-slate-800 mb-1"><i class="fas fa-gift mr-1 text-amber-500"></i> Editar catálogo de canje de puntos</h4>
+                        <p class="text-xs text-gray-400 mb-3">Una recompensa por línea: nombre y costo en puntos separados por "|". Ej: S/ 5 de descuento|50</p>
+                        <textarea id="recompensas-editor-textarea" rows="4" placeholder="S/ 5 de descuento en tu próxima compra|50" class="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full mb-2"></textarea>
+                        <button onclick="guardarRecompensas()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-xs font-semibold">Guardar catálogo de canje</button>
+                    </div>
                 </div>
 
                 <div class="admin-tab-pane" data-tab="agregar">
@@ -1230,6 +1237,7 @@
                             <input type="file" id="new-photo" accept="image/*" class="hidden" onchange="previewNuevaFoto(event)">
                         </label>
                         <img id="new-photo-preview" class="hidden mt-2 h-24 rounded-xl object-cover">
+                        <p id="new-photo-borrosa-aviso" class="hidden mt-1 text-[11px] text-amber-600 font-semibold"><i class="fas fa-triangle-exclamation mr-1"></i>Esta foto se ve algo borrosa — considera tomar otra con mejor luz/enfoque.</p>
                         <label class="mt-4 flex items-center gap-3 border border-dashed border-gray-300 rounded-xl px-4 py-3 cursor-pointer hover:bg-gray-100">
                             <i class="fas fa-images text-indigo-600"></i>
                             <span id="new-fotos-extra-label" class="text-gray-500">Fotos adicionales (opcional, máx. 2)</span>
@@ -2312,6 +2320,10 @@
             <input id="mis-puntos-telefono" type="tel" inputmode="numeric" placeholder="Tu WhatsApp (ej: 987654321)" class="border-2 border-gray-300 rounded-xl px-4 py-3 text-center w-full mb-3">
             <button onclick="consultarMisPuntos()" class="boton-animado-morado text-white py-3 rounded-xl font-semibold w-full mb-2">Consultar</button>
             <div id="mis-puntos-resultado" class="hidden mt-3 bg-amber-50 rounded-2xl p-4 text-left"></div>
+            <div id="canje-catalogo-wrap" class="hidden mt-3 text-left">
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Canjea tus puntos</p>
+                <div id="canje-catalogo-lista" class="space-y-2"></div>
+            </div>
             <button onclick="cerrarMisPuntos()" class="text-gray-400 text-sm mt-3">Cerrar</button>
         </div>
     </div>
@@ -2857,6 +2869,33 @@
             document.getElementById('mis-puntos-modal').classList.add('hidden');
         }
 
+        // ---- Búsqueda por voz (Web Speech API, soportado en Chrome/Android; no en todos los navegadores) ----
+        (function initBusquedaVoz() {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRec) {
+                const btn = document.getElementById('btn-busqueda-voz');
+                if (btn) btn.classList.remove('hidden');
+            }
+        })();
+        function iniciarBusquedaPorVoz() {
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRec) { mostrarAviso('Tu navegador no soporta búsqueda por voz.'); return; }
+            const reconocimiento = new SpeechRec();
+            reconocimiento.lang = 'es-PE';
+            reconocimiento.interimResults = false;
+            const btn = document.getElementById('btn-busqueda-voz');
+            btn.classList.add('text-red-500');
+            reconocimiento.onresult = (evento) => {
+                const texto = evento.results[0][0].transcript;
+                const input = document.getElementById('buscador-productos');
+                input.value = texto;
+                filtrarYRenderizarProductos();
+            };
+            reconocimiento.onerror = () => mostrarAviso('No se pudo escuchar bien, intenta de nuevo.');
+            reconocimiento.onend = () => btn.classList.remove('text-red-500');
+            reconocimiento.start();
+        }
+
         // ---- Centro de ayuda / FAQ ----
         const FAQ_POR_DEFECTO = [
             { pregunta: '¿Cómo compro?', respuesta: 'Elige el producto, toca "Comprar por WhatsApp" y coordina el pago directo con el vendedor.' },
@@ -2890,6 +2929,22 @@
                 mostrarAviso('No se pudo guardar: ' + (err.message || err.code || 'error desconocido'));
             }
         }
+
+        async function guardarRecompensas() {
+            if (!esSuperAdmin) return;
+            const texto = document.getElementById('recompensas-editor-textarea').value.trim();
+            const lista = texto.split('\n').map(linea => {
+                const [nombre, costoTxt] = linea.split('|');
+                const costo = parseInt((costoTxt || '').trim(), 10);
+                return (nombre && nombre.trim() && !isNaN(costo) && costo > 0) ? { nombre: nombre.trim(), costo } : null;
+            }).filter(Boolean);
+            try {
+                await db.collection('configuracion').doc('principal').set({ recompensasLista: lista }, { merge: true });
+                mostrarAviso('Catálogo de canje actualizado.');
+            } catch (err) {
+                mostrarAviso('No se pudo guardar: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
         async function consultarMisPuntos() {
             const numero = document.getElementById('mis-puntos-telefono').value.trim();
             if (!esWhatsappPeruValido(numero)) {
@@ -2916,8 +2971,52 @@
                     <p class="text-xs text-gray-400 mt-1">${compras} compra${compras === 1 ? '' : 's'} confirmada${compras === 1 ? '' : 's'}</p>
                     ${compras >= 6 ? '<p class="text-xs text-emerald-600 font-semibold mt-2"><i class="fas fa-circle-check"></i> Eres VIP: escribe por WhatsApp al comprar para pedir tu descuento especial.</p>' : ''}
                 `;
+                renderCatalogoCanje(telefono, puntos);
             } catch (err) {
                 resultEl.innerHTML = '<p class="text-xs text-red-500">No se pudo consultar. Intenta de nuevo.<br><span class="font-mono">' + (err.message || err.code || '') + '</span></p>';
+            }
+        }
+
+        const RECOMPENSAS_POR_DEFECTO = [
+            { nombre: 'S/ 5 de descuento en tu próxima compra', costo: 50 },
+            { nombre: 'S/ 10 de descuento en tu próxima compra', costo: 90 }
+        ];
+        function renderCatalogoCanje(telefono, puntos) {
+            const wrap = document.getElementById('canje-catalogo-wrap');
+            const cont = document.getElementById('canje-catalogo-lista');
+            const catalogo = (configuracionPrincipalPublica.recompensasLista && configuracionPrincipalPublica.recompensasLista.length > 0)
+                ? configuracionPrincipalPublica.recompensasLista : RECOMPENSAS_POR_DEFECTO;
+            wrap.classList.remove('hidden');
+            cont.innerHTML = catalogo.map(r => {
+                const alcanza = puntos >= r.costo;
+                return `
+                <div class="border ${alcanza ? 'border-emerald-200 bg-emerald-50' : 'border-gray-200 bg-gray-50'} rounded-xl p-2.5 flex items-center justify-between gap-2">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-700">${r.nombre}</p>
+                        <p class="text-[10px] text-gray-400">${r.costo} puntos</p>
+                    </div>
+                    <button ${alcanza ? '' : 'disabled'} onclick='canjearRecompensa("${telefono}", ${JSON.stringify(r.nombre)}, ${r.costo})' class="${alcanza ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-300 cursor-not-allowed'} text-white px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0">Canjear</button>
+                </div>`;
+            }).join('');
+        }
+
+        async function canjearRecompensa(telefono, nombreRecompensa, costo) {
+            try {
+                const ref = db.collection('clientes_publico').doc(telefono);
+                await db.runTransaction(async (t) => {
+                    const doc = await t.get(ref);
+                    const puntosActuales = (doc.exists && doc.data().puntos) || 0;
+                    if (puntosActuales < costo) throw new Error('No te alcanzan los puntos.');
+                    t.update(ref, { puntos: puntosActuales - costo });
+                });
+                await db.collection('canjes').add({
+                    telefono: telefono, recompensa: nombreRecompensa, costoPuntos: costo,
+                    estado: 'pendiente', creado: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                mostrarAviso(`¡Listo! Canjeaste "${nombreRecompensa}". Muéstrale esto al vendedor por WhatsApp para que te lo aplique.`);
+                consultarMisPuntos();
+            } catch (err) {
+                mostrarAviso('No se pudo canjear: ' + (err.message || err.code || 'error desconocido'));
             }
         }
 
@@ -7260,9 +7359,47 @@
                 img.src = nuevaFotoBase64;
                 img.classList.remove('hidden');
                 document.getElementById('new-photo-label').textContent = file.name;
+                detectarFotoBorrosa(nuevaFotoBase64).then(esBorrosa => {
+                    document.getElementById('new-photo-borrosa-aviso').classList.toggle('hidden', !esBorrosa);
+                }).catch(() => {});
             } catch (err) {
                 mostrarAviso('No se pudo procesar la imagen.');
             }
+        }
+
+        // Estimación simple de nitidez: convierte a gris, mide cuánto varían los píxeles vecinos.
+        // Fotos borrosas tienen transiciones suaves (varianza baja); fotos nítidas tienen bordes marcados (varianza alta).
+        function detectarFotoBorrosa(dataUrl) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        const w = 120, h = Math.round(120 * (img.height / img.width || 1));
+                        const canvas = document.createElement('canvas');
+                        canvas.width = w; canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, w, h);
+                        const datos = ctx.getImageData(0, 0, w, h).data;
+                        const gris = new Float32Array(w * h);
+                        for (let i = 0; i < w * h; i++) {
+                            gris[i] = 0.299 * datos[i * 4] + 0.587 * datos[i * 4 + 1] + 0.114 * datos[i * 4 + 2];
+                        }
+                        let sumaDiferencias = 0, n = 0;
+                        for (let y = 1; y < h - 1; y++) {
+                            for (let x = 1; x < w - 1; x++) {
+                                const idx = y * w + x;
+                                const laplaciano = 4 * gris[idx] - gris[idx - 1] - gris[idx + 1] - gris[idx - w] - gris[idx + w];
+                                sumaDiferencias += laplaciano * laplaciano;
+                                n++;
+                            }
+                        }
+                        const varianza = n > 0 ? sumaDiferencias / n : 0;
+                        resolve(varianza < 90); // umbral empírico: por debajo, se ve borrosa
+                    } catch (err) { resolve(false); }
+                };
+                img.onerror = () => resolve(false);
+                img.src = dataUrl;
+            });
         }
 
         let comprobantePagoBase64 = null;
@@ -7876,9 +8013,30 @@
                     <div class="flex justify-between text-sm"><span class="text-gray-500">Estado</span><span class="font-semibold ${esVendido ? 'text-emerald-600' : 'text-amber-600'}">${estadoTexto}</span></div>
                 </div>
                 ${p.propietarioWhatsapp || p.propietario === 'principal' ? `<button onclick="window.open('https://wa.me/${(p.propietarioWhatsapp || WHATSAPP_NUMBER).replace(/\\D/g,'')}?text=' + encodeURIComponent('Hola, tengo una consulta sobre mi compra: ' + '${(p.productoNombre || '').replace(/'/g, "\\'")}'), '_blank')" class="w-full bg-emerald-500 text-white py-3 rounded-xl font-semibold"><i class="fab fa-whatsapp mr-1"></i> Escribir al vendedor</button>` : ''}
+                ${esVendido && !p.satisfaccion ? `
+                <div class="bg-indigo-50 rounded-2xl p-4 mt-3 text-center">
+                    <p class="text-xs font-semibold text-slate-600 mb-2">¿Qué tan satisfecho quedaste con esta compra?</p>
+                    <div class="flex justify-center gap-3 text-2xl">
+                        <button onclick="responderEncuestaSatisfaccion('${p.id}', 1)">😞</button>
+                        <button onclick="responderEncuestaSatisfaccion('${p.id}', 3)">😐</button>
+                        <button onclick="responderEncuestaSatisfaccion('${p.id}', 5)">😃</button>
+                    </div>
+                </div>` : (esVendido && p.satisfaccion ? `<p class="text-center text-xs text-gray-400 mt-3">Gracias por tu respuesta a la encuesta 🙌</p>` : '')}
                 <button onclick='abrirReclamoModal(${JSON.stringify(p).replace(/'/g, "&apos;")})' class="w-full mt-2 bg-white border border-red-200 text-red-500 py-3 rounded-xl font-semibold text-sm"><i class="fas fa-triangle-exclamation mr-1"></i> Reportar un problema</button>
             `;
             document.getElementById('panelc-detalle-compra').classList.remove('hidden');
+        }
+
+        async function responderEncuestaSatisfaccion(pedidoId, valor) {
+            try {
+                await db.collection('pedidos').doc(pedidoId).update({ satisfaccion: valor });
+                mostrarAviso('¡Gracias por tu respuesta!');
+                const p = (misComprasClienteCache || []).find(x => x.id === pedidoId);
+                if (p) { p.satisfaccion = valor; abrirDetalleCompraCliente(p); }
+                else document.getElementById('panelc-detalle-compra').classList.add('hidden');
+            } catch (err) {
+                mostrarAviso('No se pudo enviar tu respuesta: ' + (err.message || err.code || 'error desconocido'));
+            }
         }
 
         let reclamoPedidoActual = null;
@@ -9152,6 +9310,14 @@
                 if (esSuperAdmin) {
                     const faqActual = (configuracionPrincipalPublica.faqLista || []).map(f => `${f.pregunta}|${f.respuesta}`).join('\n');
                     document.getElementById('faq-editor-textarea').value = faqActual;
+                }
+            }
+            const editarRecompensasWrap = document.getElementById('editar-recompensas-wrap');
+            if (editarRecompensasWrap) {
+                editarRecompensasWrap.classList.toggle('hidden', !esSuperAdmin);
+                if (esSuperAdmin) {
+                    const recompensasActual = (configuracionPrincipalPublica.recompensasLista || []).map(r => `${r.nombre}|${r.costo}`).join('\n');
+                    document.getElementById('recompensas-editor-textarea').value = recompensasActual;
                 }
             }
             document.getElementById('tab-btn-solicitudes').classList.toggle('hidden', !esSuperAdmin);
