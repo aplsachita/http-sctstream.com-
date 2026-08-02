@@ -1225,6 +1225,7 @@
                         <p id="sugerencia-categoria" class="hidden text-xs text-indigo-600 mt-1"></p>
                         <input id="new-desc" type="text" oninput="autoguardarBorradorProducto();" placeholder="Descripción (ej: 4K • 4 pantallas)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-4">
                         <input id="new-stock" type="number" min="0" oninput="autoguardarBorradorProducto();" placeholder="Stock disponible (déjalo vacío si no quieres controlarlo)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-4">
+                        <input id="new-puntos-canje" type="number" min="1" oninput="autoguardarBorradorProducto();" placeholder="Puntos para canjearlo gratis (opcional — déjalo vacío si no es canjeable)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-4">
                         <label class="mt-4 flex items-center gap-3 border border-gray-300 rounded-xl px-4 py-3 cursor-pointer">
                             <input type="checkbox" id="new-entrega-demorada" onchange="autoguardarBorradorProducto();" class="w-5 h-5 accent-orange-500">
                             <span class="text-sm text-gray-600"><i class="fas fa-clock text-orange-500 mr-1"></i> Este producto tarda hasta 24 horas en entregarse</span>
@@ -3050,23 +3051,34 @@
         function renderCatalogoCanjePanel(telefono, puntos) {
             const cont = document.getElementById('panelc-canje-lista');
             if (!cont) return;
-            const catalogo = (configuracionPrincipalPublica.recompensasLista && configuracionPrincipalPublica.recompensasLista.length > 0)
+            // Productos marcados como canjeables por el vendedor, más las recompensas configuradas
+            const productosCanjeables = productos
+                .filter(p => p.puntosCanje > 0 && p.pausado !== true)
+                .sort((a, b) => a.puntosCanje - b.puntosCanje)
+                .map(p => ({ nombre: p.nombre, costo: p.puntosCanje, productoId: p.id, imagen: p.imagenMiniatura || p.imagen }));
+            const recompensas = (configuracionPrincipalPublica.recompensasLista && configuracionPrincipalPublica.recompensasLista.length > 0)
                 ? configuracionPrincipalPublica.recompensasLista : RECOMPENSAS_POR_DEFECTO;
+            const catalogo = [...productosCanjeables, ...recompensas];
+            if (catalogo.length === 0) { cont.innerHTML = '<p class="text-violet-300 text-xs">Pronto habrá recompensas para canjear.</p>'; return; }
             cont.innerHTML = catalogo.map(r => {
                 const alcanza = puntos >= r.costo;
+                const img = r.imagen ? `<img src="${r.imagen}" class="w-9 h-9 rounded-lg object-cover shrink-0">` : `<div class="w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center shrink-0"><i class="fas fa-gift text-amber-300 text-sm"></i></div>`;
                 return `
                 <div class="rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 ${alcanza ? 'bg-white/20 ring-1 ring-white/40' : 'bg-white/5'}">
-                    <div class="text-left">
-                        <p class="text-xs font-semibold text-white">${r.nombre}</p>
-                        <p class="text-[10px] text-violet-200">${r.costo} puntos</p>
+                    <div class="flex items-center gap-2.5 text-left min-w-0">
+                        ${img}
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-white truncate">${r.nombre}</p>
+                            <p class="text-[10px] text-violet-200">${r.costo} puntos${alcanza ? '' : ` · te faltan ${r.costo - puntos}`}</p>
+                        </div>
                     </div>
-                    <button ${alcanza ? '' : 'disabled'} onclick='canjearRecompensaPanel("${telefono}", ${JSON.stringify(r.nombre)}, ${r.costo})' class="${alcanza ? 'bg-white text-violet-700' : 'bg-white/20 text-white/50 cursor-not-allowed'} px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0">Canjear</button>
+                    <button ${alcanza ? '' : 'disabled'} onclick='canjearRecompensaPanel("${telefono}", ${JSON.stringify(r.nombre)}, ${r.costo}, ${JSON.stringify(r.productoId || null)})' class="${alcanza ? 'bg-white text-violet-700' : 'bg-white/20 text-white/50 cursor-not-allowed'} px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0">Canjear</button>
                 </div>`;
             }).join('');
         }
 
-        async function canjearRecompensaPanel(telefono, nombreRecompensa, costo) {
-            canjearRecompensa(telefono, nombreRecompensa, costo, () => consultarMisPuntosPanel());
+        async function canjearRecompensaPanel(telefono, nombreRecompensa, costo, productoId) {
+            canjearRecompensa(telefono, nombreRecompensa, costo, () => consultarMisPuntosPanel(), productoId);
         }
 
         function renderCatalogoCanje(telefono, puntos) {
@@ -3088,7 +3100,7 @@
             }).join('');
         }
 
-        async function canjearRecompensa(telefono, nombreRecompensa, costo, alTerminar) {
+        async function canjearRecompensa(telefono, nombreRecompensa, costo, alTerminar, productoId) {
             try {
                 const ref = db.collection('clientes_publico').doc(telefono);
                 await db.runTransaction(async (t) => {
@@ -3099,6 +3111,7 @@
                 });
                 await db.collection('canjes').add({
                     telefono: telefono, recompensa: nombreRecompensa, costoPuntos: costo,
+                    productoId: productoId || null,
                     estado: 'pendiente', creado: firebase.firestore.FieldValue.serverTimestamp()
                 });
                 mostrarAviso(`¡Listo! Canjeaste "${nombreRecompensa}". Muéstrale esto al vendedor por WhatsApp para que te lo aplique.`);
@@ -5784,6 +5797,8 @@
                         <button onclick="guardarStockProducto('${producto.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Guardar stock</button>
                         <input type="number" min="0" step="0.01" id="precio-input-${producto.id}" value="${producto.precio}" placeholder="Precio" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-24">
                         <button onclick="guardarPrecioProducto('${producto.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold">Guardar precio</button>
+                        <input type="number" min="1" id="canje-input-${producto.id}" value="${producto.puntosCanje || ''}" placeholder="Pts canje" title="Puntos para canjearlo gratis (vacío = no canjeable)" class="border border-amber-300 rounded-lg px-3 py-1.5 text-sm w-24">
+                        <button onclick="guardarPuntosCanjeProducto('${producto.id}')" class="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"><i class="fas fa-star mr-0.5"></i>Canje</button>
                     </div>
                     <details class="border-t border-gray-100 pt-2">
                         <summary class="text-xs font-semibold text-indigo-600 cursor-pointer select-none list-none flex items-center gap-1">
@@ -5929,6 +5944,19 @@
                 mostrarAviso(stock === null ? 'Ahora este producto no controla stock.' : `Stock actualizado a ${stock}.`);
             } catch (err) {
                 mostrarAviso('No se pudo actualizar el stock: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
+        async function guardarPuntosCanjeProducto(id) {
+            const input = document.getElementById(`canje-input-${id}`);
+            if (!input) return;
+            const valor = input.value.trim();
+            const puntosCanje = valor === '' ? null : Math.max(1, parseInt(valor, 10));
+            try {
+                await db.collection('productos').doc(id).update({ puntosCanje: puntosCanje });
+                mostrarAviso(puntosCanje === null ? 'Este producto ya no es canjeable por puntos.' : `Listo: canjeable por ${puntosCanje} puntos.`);
+            } catch (err) {
+                mostrarAviso('No se pudo actualizar: ' + (err.message || err.code || 'error desconocido'));
             }
         }
 
@@ -7525,6 +7553,7 @@
             document.getElementById('new-price').value = producto.precio;
             document.getElementById('new-desc').value = producto.descripcion || '';
             document.getElementById('new-stock').value = producto.stock !== null && producto.stock !== undefined ? producto.stock : '';
+            document.getElementById('new-puntos-canje').value = producto.puntosCanje || '';
             document.getElementById('new-entrega-demorada').checked = !!producto.entregaDemorada;
             const catSelect = document.getElementById('new-categoria');
             const catExiste = [...catSelect.options].some(o => o.value === producto.categoria);
@@ -7550,6 +7579,8 @@
             const descripcion = document.getElementById('new-desc').value.trim() || "Cuenta premium compartida";
             const stockValor = document.getElementById('new-stock').value.trim();
             const stock = stockValor === '' ? null : Math.max(0, parseInt(stockValor, 10));
+            const puntosCanjeValor = document.getElementById('new-puntos-canje').value.trim();
+            const puntosCanje = puntosCanjeValor === '' ? null : Math.max(1, parseInt(puntosCanjeValor, 10));
             const entregaDemorada = document.getElementById('new-entrega-demorada').checked;
             const publicarEnValor = document.getElementById('new-publicar-en').value;
             const publicarEn = publicarEnValor ? new Date(publicarEnValor).getTime() : null;
@@ -7630,6 +7661,7 @@
                     precio: precio,
                     descripcion: descripcion,
                     stock: stock,
+                    puntosCanje: puntosCanje,
                     entregaDemorada: entregaDemorada,
                     publicarEn: publicarEn,
                     imagen: nuevaFotoBase64 || "https://picsum.photos/id/" + (100 + Math.floor(Math.random()*400)) + "/400/300",
@@ -7674,6 +7706,7 @@
             document.getElementById('new-price').value = '';
             document.getElementById('new-desc').value = '';
             document.getElementById('new-stock').value = '';
+            document.getElementById('new-puntos-canje').value = '';
             document.getElementById('new-entrega-demorada').checked = false;
             document.getElementById('new-publicar-en').value = '';
             document.getElementById('new-categoria').value = 'Streaming';
@@ -8141,19 +8174,21 @@
 
         function renderTabPuntosCliente() {
             const cont = document.getElementById('panelc-contenido');
+            const telefonoConocido = miClienteDatos && miClienteDatos.telefono;
             cont.innerHTML = `
                 <div class="text-center text-white mt-4 mb-5">
                     <i class="fas fa-star text-3xl text-amber-300 mb-2"></i>
-                    <p class="text-sm text-violet-200">Escribe tu WhatsApp para ver tus puntos y nivel de cliente frecuente.</p>
+                    <p class="text-sm text-violet-200">${telefonoConocido ? 'Tus puntos y qué puedes canjear con ellos.' : 'Escribe tu WhatsApp para ver tus puntos y nivel de cliente frecuente.'}</p>
                 </div>
-                <input id="panelc-puntos-telefono" type="tel" placeholder="Tu WhatsApp (9 dígitos)" class="w-full rounded-xl px-4 py-3 text-center mb-3 text-slate-800" value="${(miClienteDatos && miClienteDatos.telefono) || ''}">
-                <button onclick="consultarMisPuntosPanel()" class="w-full bg-white text-violet-700 font-semibold py-3 rounded-xl mb-4">Consultar</button>
-                <div id="panelc-puntos-resultado"></div>
+                <input id="panelc-puntos-telefono" type="tel" placeholder="Tu WhatsApp (9 dígitos)" class="${telefonoConocido ? 'hidden' : ''} w-full rounded-xl px-4 py-3 text-center mb-3 text-slate-800" value="${telefonoConocido || ''}">
+                <button onclick="consultarMisPuntosPanel()" class="${telefonoConocido ? 'hidden' : ''} w-full bg-white text-violet-700 font-semibold py-3 rounded-xl mb-4">Consultar</button>
+                <div id="panelc-puntos-resultado">${telefonoConocido ? '<p class="text-violet-300 text-xs text-center">Cargando tus puntos…</p>' : ''}</div>
                 <div class="mt-8 pb-4">
                     <h4 class="text-white font-bold text-sm mb-3 flex items-center gap-2"><i class="fas fa-ranking-star text-amber-300"></i> Top clientes con más puntos</h4>
                     <div id="panelc-ranking-lista"><p class="text-violet-300 text-xs text-center">Cargando ranking…</p></div>
                 </div>
             `;
+            if (telefonoConocido) consultarMisPuntosPanel();
             cargarRankingClientes();
         }
 
@@ -10503,12 +10538,31 @@
                         <div class="text-xs text-gray-500">${whatsappHtml}</div>
                         <div class="text-xs text-gray-400">Última conexión: ${ultimaConexion}</div>
                         <div class="flex gap-1.5">
+                            ${c.telefono ? `<button onclick="editarPuntosCliente('${normalizarWhatsapp(c.telefono).replace(/^51/, '')}', '${nombreEscapado}')" class="bg-amber-100 hover:bg-amber-200 text-amber-700 px-2.5 py-1 rounded-lg text-[11px] font-semibold"><i class="fas fa-star mr-0.5"></i>Puntos</button>` : ''}
                             <button onclick="toggleBloqueoCliente('${c.id}', ${!!c.bloqueado})" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-2.5 py-1 rounded-lg text-[11px] font-semibold">${c.bloqueado ? 'Desbloquear' : 'Bloquear'}</button>
                             <button onclick="eliminarCuentaCliente('${c.id}', '${nombreEscapado}')" class="bg-red-100 hover:bg-red-200 text-red-700 px-2.5 py-1 rounded-lg text-[11px] font-semibold">Eliminar</button>
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        // El súper admin ajusta manualmente los puntos de un cliente (subir o bajar)
+        async function editarPuntosCliente(telefono, nombre) {
+            if (!esSuperAdmin) return;
+            try {
+                const ref = db.collection('clientes_publico').doc(telefono);
+                const doc = await ref.get();
+                const puntosActuales = (doc.exists && doc.data().puntos) || 0;
+                const respuesta = prompt(`Puntos de ${nombre || telefono}: ${puntosActuales}\n\nEscribe el nuevo total de puntos:`, puntosActuales);
+                if (respuesta === null) return;
+                const nuevos = parseInt(respuesta, 10);
+                if (isNaN(nuevos) || nuevos < 0) { mostrarAviso('Escribe un número válido (0 o más).'); return; }
+                await ref.set({ puntos: nuevos }, { merge: true });
+                mostrarAviso(`Listo: ${nombre || telefono} ahora tiene ${nuevos} puntos.`);
+            } catch (err) {
+                mostrarAviso('No se pudo actualizar los puntos: ' + (err.message || err.code || 'error desconocido'));
+            }
         }
 
         function exportarClientesListaCSV() {
