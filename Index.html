@@ -8287,7 +8287,12 @@
             if (!file || !auth.currentUser) return;
             try {
                 const fotoBase64 = await comprimirImagen(file, 300, 0.75);
-                await db.collection('clientes').doc(auth.currentUser.uid).update({ foto: fotoBase64 });
+                // set + merge: crea el documento si no existe (cuentas antiguas sin doc en 'clientes')
+                await db.collection('clientes').doc(auth.currentUser.uid).set({
+                    foto: fotoBase64,
+                    nombre: (miClienteDatos && miClienteDatos.nombre) || auth.currentUser.displayName || 'Cliente',
+                    correo: (miClienteDatos && miClienteDatos.correo) || auth.currentUser.email || ''
+                }, { merge: true });
                 miClienteDatos = { ...(miClienteDatos || {}), foto: fotoBase64 };
                 actualizarIconoCuentaCliente();
                 renderTabPerfilCliente();
