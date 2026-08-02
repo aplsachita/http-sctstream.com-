@@ -6905,8 +6905,8 @@
                         }).catch(err => console.error('No se pudo registrar la compra verificada:', err));
                     }
                     const puntosPermitidos = esSuperAdmin ? programaPuntosActivo : miPuntosActivo;
-                    // 1 punto por cada compra confirmada (antes: 1 punto por sol)
-                    const puntosGanados = puntosPermitidos ? 1 : 0;
+                    // 1 punto por cada sol de la compra (ej: compra de S/15 = 15 puntos)
+                    const puntosGanados = puntosPermitidos ? Math.max(1, Math.round(parseFloat(pedido && pedido.precio || 0))) : 0;
                     db.collection('clientes_publico').doc(extra.clienteTelefono).set({
                         comprasConfirmadas: firebase.firestore.FieldValue.increment(1),
                         puntos: firebase.firestore.FieldValue.increment(puntosGanados),
