@@ -1468,6 +1468,11 @@
                         <button onclick="abrirTodosLosClientes()" class="bg-slate-600 hover:bg-slate-700 text-white px-4 rounded-xl text-sm font-semibold" title="Ver todos mis clientes" aria-label="Ver todos mis clientes"><i class="fas fa-users"></i></button>
                     </div>
                     <div id="ventas-urgentes-container" class="hidden mb-4"></div>
+                    <div id="renovaciones-container" class="hidden mb-6">
+                        <h4 class="mb-1 text-base admin-section-title"><i class="fas fa-rotate mr-1 text-sky-500"></i> Clientes por renovar</h4>
+                        <p class="text-xs text-gray-400 mb-3">Ventas confirmadas hace 25 días o más — escríbeles antes de que se les venza y asegura la recompra.</p>
+                        <div id="renovaciones-lista" class="space-y-2"></div>
+                    </div>
                     <div id="avisos-stock-container" class="hidden mb-4"></div>
                     <div id="ventas-lista"></div>
                 </div>
@@ -1498,6 +1503,30 @@
                         <label class="relative inline-flex items-center cursor-pointer shrink-0">
                             <input type="checkbox" id="toggle-puntos-activo" class="sr-only peer" onchange="toggleProgramaPuntos(this.checked)">
                             <div class="w-11 h-6 bg-gray-300 peer-checked:bg-emerald-500 rounded-full transition-colors"></div>
+                            <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                        </label>
+                    </div>
+
+                    <div id="puntos-dobles-toggle-wrap" class="hidden admin-card p-4 mb-6 flex items-center justify-between gap-3">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800"><i class="fas fa-bolt mr-1 text-amber-500"></i> Día de puntos DOBLES</h4>
+                            <p class="text-xs text-gray-400">Mientras esté activo, cada compra confirmada da el doble de puntos y la tienda muestra un banner. Ideal para fechas especiales o semanas lentas.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input type="checkbox" id="toggle-puntos-dobles" class="sr-only peer" onchange="togglePuntosDobles(this.checked)">
+                            <div class="w-11 h-6 bg-gray-300 peer-checked:bg-amber-500 rounded-full transition-colors"></div>
+                            <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                        </label>
+                    </div>
+
+                    <div id="mantenimiento-toggle-wrap" class="hidden admin-card p-4 mb-6 flex items-center justify-between gap-3">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800"><i class="fas fa-screwdriver-wrench mr-1 text-gray-500"></i> Modo mantenimiento</h4>
+                            <p class="text-xs text-gray-400">Muestra una pantalla de "volvemos pronto" a los clientes mientras haces cambios grandes. Tú y los vendedores logueados siguen viendo todo normal.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input type="checkbox" id="toggle-mantenimiento" class="sr-only peer" onchange="toggleModoMantenimiento(this.checked)">
+                            <div class="w-11 h-6 bg-gray-300 peer-checked:bg-red-500 rounded-full transition-colors"></div>
                             <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
                         </label>
                     </div>
@@ -3337,7 +3366,48 @@
             configuracionPrincipalPublica = doc.exists ? doc.data() : {};
             renderProductos();
             revisarHorarioAtencion();
+            aplicarEstadoPuntosDoblesYMantenimiento();
         }, err => console.error('Error leyendo configuración pública:', err));
+
+        function aplicarEstadoPuntosDoblesYMantenimiento() {
+            // Banner de puntos dobles en la tienda
+            let banner = document.getElementById('banner-puntos-dobles');
+            if (configuracionPrincipalPublica.puntosDobles) {
+                if (!banner) {
+                    banner = document.createElement('div');
+                    banner.id = 'banner-puntos-dobles';
+                    banner.className = 'bg-gradient-to-r from-amber-400 to-orange-500 text-white text-center text-sm font-bold py-2.5 px-4';
+                    banner.innerHTML = '⚡ ¡HOY PUNTOS DOBLES! Cada compra confirmada suma el doble de puntos ⚡';
+                    document.body.prepend(banner);
+                }
+            } else if (banner) {
+                banner.remove();
+            }
+            // Sincroniza los toggles del panel del súper admin
+            const tDobles = document.getElementById('toggle-puntos-dobles');
+            if (tDobles) tDobles.checked = !!configuracionPrincipalPublica.puntosDobles;
+            const tMant = document.getElementById('toggle-mantenimiento');
+            if (tMant) tMant.checked = !!configuracionPrincipalPublica.modoMantenimiento;
+            // Pantalla de mantenimiento (no aplica a vendedores/súper admin logueados)
+            let overlay = document.getElementById('overlay-mantenimiento');
+            const esStaff = !!(auth.currentUser) || esSuperAdmin || adminDesbloqueado;
+            if (configuracionPrincipalPublica.modoMantenimiento && !esStaff) {
+                if (!overlay) {
+                    overlay = document.createElement('div');
+                    overlay.id = 'overlay-mantenimiento';
+                    overlay.className = 'fixed inset-0 z-[500] flex flex-col items-center justify-center text-center px-8';
+                    overlay.style.background = 'linear-gradient(135deg, #1e1b4b, #312e81)';
+                    overlay.innerHTML = `
+                        <p class="text-6xl mb-4">🛠️</p>
+                        <h2 class="text-white text-2xl font-bold mb-2">Estamos mejorando la tienda</h2>
+                        <p class="text-violet-200 text-sm max-w-sm">Volvemos en unos minutos con novedades. ¡Gracias por tu paciencia!</p>
+                        <a href="https://wa.me/${WHATSAPP_NUMBER}" target="_blank" class="mt-6 bg-white text-violet-700 font-semibold px-6 py-3 rounded-2xl text-sm"><i class="fab fa-whatsapp mr-1"></i> Escríbenos por WhatsApp</a>`;
+                    document.body.appendChild(overlay);
+                }
+            } else if (overlay) {
+                overlay.remove();
+            }
+        }
 
         function revisarHorarioAtencion() {
             const aviso = document.getElementById('aviso-horario');
@@ -3697,6 +3767,14 @@
             const efecto3D = tieneEfecto3D(producto);
             card.className = 'rounded-2xl overflow-hidden cursor-pointer ' + (efecto3D ? 'tarjeta-3d' : '') + ' ' + (ofertaActiva ? 'oferta-relampago' : '');
             const numeroContacto = producto.propietarioWhatsapp || WHATSAPP_NUMBER;
+            // Etiquetas automáticas según datos reales: top 3 en clics de compra = "Más vendido";
+            // publicado hace menos de 7 días = "Nuevo"
+            let etiquetaAuto = '';
+            if (topProductosVendidos.has(producto.id)) {
+                etiquetaAuto = '<span class="inline-block bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full mb-1">🔥 Más vendido</span> ';
+            } else if (producto.creado && producto.creado.toDate && (Date.now() - producto.creado.toDate().getTime()) < 7 * 24 * 60 * 60 * 1000) {
+                etiquetaAuto = '<span class="inline-block bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full mb-1">✨ Nuevo</span> ';
+            }
             const tieneStock = producto.stock !== null && producto.stock !== undefined;
             const agotado = tieneStock && producto.stock <= 0;
             let etiquetaStock = '';
@@ -3774,7 +3852,7 @@
                         ${precioHtml}
                     </div>
                     ${etiquetaEntrega}
-                    ${etiquetaStock}
+                    ${etiquetaAuto}${etiquetaStock}
                     ${botonComprarFinal}
                 </div>
             `;
@@ -3806,7 +3884,16 @@
             renderProductos();
         }
 
+        let topProductosVendidos = new Set();
         function renderProductos() {
+            // Top 3 productos con más clics de compra (para la etiqueta "Más vendido")
+            topProductosVendidos = new Set(
+                productos
+                    .filter(p => (p.clicsCompra || 0) >= 3)
+                    .sort((a, b) => (b.clicsCompra || 0) - (a.clicsCompra || 0))
+                    .slice(0, 3)
+                    .map(p => p.id)
+            );
             renderCategoriasMenu();
             const contenedor = document.getElementById('filas-productos');
             contenedor.innerHTML = '';
@@ -6408,10 +6495,53 @@
             document.getElementById('cliente-perfil-modal').classList.add('hidden');
         }
 
+        // ---- Recordatorio de recompra: ventas confirmadas hace 25-60 días,
+        // agrupadas por cliente+producto, para ofrecerles renovar por WhatsApp ----
+        function renderRenovacionesPendientes() {
+            const wrap = document.getElementById('renovaciones-container');
+            const cont = document.getElementById('renovaciones-lista');
+            if (!wrap || !cont) return;
+            const ahora = Date.now();
+            const DIA = 24 * 60 * 60 * 1000;
+            const candidatos = pedidosFiltrados().filter(p => {
+                if (p.estado !== 'vendido' || !p.clienteTelefono) return false;
+                const fecha = p.vendidoEn && p.vendidoEn.toDate ? p.vendidoEn.toDate().getTime() : (p.creado && p.creado.toDate ? p.creado.toDate().getTime() : null);
+                if (!fecha) return false;
+                const dias = (ahora - fecha) / DIA;
+                return dias >= 25 && dias <= 60;
+            });
+            // Si el mismo cliente ya volvió a comprar el mismo producto después, no molestar
+            const recompras = new Set(pedidosFiltrados()
+                .filter(p => p.estado === 'vendido' && p.clienteTelefono)
+                .filter(p => {
+                    const fecha = p.vendidoEn && p.vendidoEn.toDate ? p.vendidoEn.toDate().getTime() : 0;
+                    return (ahora - fecha) / DIA < 25;
+                })
+                .map(p => `${p.clienteTelefono}|${p.productoNombre || ''}`));
+            const pendientes = candidatos.filter(p => !recompras.has(`${p.clienteTelefono}|${p.productoNombre || ''}`));
+            if (pendientes.length === 0) { wrap.classList.add('hidden'); return; }
+            wrap.classList.remove('hidden');
+            cont.innerHTML = pendientes.slice(0, 20).map(p => {
+                const fecha = p.vendidoEn && p.vendidoEn.toDate ? p.vendidoEn.toDate() : (p.creado && p.creado.toDate ? p.creado.toDate() : null);
+                const dias = fecha ? Math.floor((ahora - fecha.getTime()) / DIA) : '?';
+                const tel = (p.clienteTelefono || '').replace(/\D/g, '');
+                const msj = encodeURIComponent(`¡Hola! 😊 Hace ${dias} días compraste "${p.productoNombre || 'tu producto'}" con nosotros. ¿Te gustaría renovarlo? Tenemos tu pedido listo para reactivarlo al toque.`);
+                return `
+                <div class="admin-card p-3 flex items-center justify-between gap-2 flex-wrap border-l-4 border-sky-400">
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-slate-700 truncate">${p.productoNombre || 'Producto'}</p>
+                        <p class="text-xs text-gray-500"><span class="dato-sensible">${tel}</span> · hace <b>${dias} días</b> · S/ ${p.precio || 0}</p>
+                    </div>
+                    <a href="https://wa.me/${tel.startsWith('51') ? tel : '51' + tel}?text=${msj}" target="_blank" class="bg-sky-500 hover:bg-sky-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0"><i class="fab fa-whatsapp mr-1"></i>Ofrecer renovación</a>
+                </div>`;
+            }).join('');
+        }
+
         function renderVentas() {
             const cont = document.getElementById('ventas-lista');
             if (!cont) return;
             revisarAvisoBackup();
+            renderRenovacionesPendientes();
             const lista = pedidosFiltrados();
             const interesados = lista.filter(p => p.estado !== 'vendido');
             const confirmadas = lista.filter(p => p.estado === 'vendido');
@@ -6905,8 +7035,9 @@
                         }).catch(err => console.error('No se pudo registrar la compra verificada:', err));
                     }
                     const puntosPermitidos = esSuperAdmin ? programaPuntosActivo : miPuntosActivo;
-                    // 1 punto por cada sol de la compra (ej: compra de S/15 = 15 puntos)
-                    const puntosGanados = puntosPermitidos ? Math.max(1, Math.round(parseFloat(pedido && pedido.precio || 0))) : 0;
+                    // 1 punto por cada sol de la compra (ej: compra de S/15 = 15 puntos); x2 si hay puntos dobles activos
+                    const multiplicadorPuntos = configuracionPrincipalPublica.puntosDobles ? 2 : 1;
+                    const puntosGanados = puntosPermitidos ? Math.max(1, Math.round(parseFloat(pedido && pedido.precio || 0))) * multiplicadorPuntos : 0;
                     db.collection('clientes_publico').doc(extra.clienteTelefono).set({
                         comprasConfirmadas: firebase.firestore.FieldValue.increment(1),
                         puntos: firebase.firestore.FieldValue.increment(puntosGanados),
@@ -9353,6 +9484,26 @@
             }
         }
 
+        async function togglePuntosDobles(activo) {
+            if (!esSuperAdmin) return;
+            try {
+                await db.collection('configuracion').doc('principal').set({ puntosDobles: activo }, { merge: true });
+                mostrarAviso(activo ? '⚡ ¡Puntos DOBLES activados! La tienda ya muestra el banner.' : 'Puntos dobles desactivados.');
+            } catch (err) {
+                mostrarAviso('No se pudo cambiar: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
+        async function toggleModoMantenimiento(activo) {
+            if (!esSuperAdmin) return;
+            try {
+                await db.collection('configuracion').doc('principal').set({ modoMantenimiento: activo }, { merge: true });
+                mostrarAviso(activo ? 'Modo mantenimiento ACTIVADO: los clientes verán la pantalla de "volvemos pronto".' : 'Modo mantenimiento desactivado, tienda visible de nuevo.');
+            } catch (err) {
+                mostrarAviso('No se pudo cambiar: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
         async function toggleProgramaReferidos(activo) {
             if (!esSuperAdmin) {
                 mostrarAviso('Solo el súper admin puede activar o desactivar este programa.');
@@ -9408,6 +9559,8 @@
             actualizarBadgeChat();
             document.getElementById('referidos-admin-toggle').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('puntos-admin-toggle').classList.toggle('hidden', !esSuperAdmin);
+            document.getElementById('puntos-dobles-toggle-wrap').classList.toggle('hidden', !esSuperAdmin);
+            document.getElementById('mantenimiento-toggle-wrap').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('suscripcion-admin-toggle').classList.toggle('hidden', !esSuperAdmin);
             const montoToggleEl = document.getElementById('suscripcion-toggle-monto');
             if (montoToggleEl) montoToggleEl.textContent = SUSCRIPCION_ADMIN_MONTO;
