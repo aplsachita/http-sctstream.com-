@@ -12364,13 +12364,13 @@
                         // La nube entra flotando desde abajo/lado y se acomoda bajo el gato
                         nubeGroup.position.set(
                             (1 - restAmount) * 1.6,
-                            -0.62 - (1 - restAmount) * 0.9 + Math.sin(t * 1.1) * 0.03 * restAmount,
+                            -0.82 - (1 - restAmount) * 0.7 + Math.sin(t * 1.1) * 0.03 * restAmount,
                             0.05
                         );
                         nubeMat.opacity = 0.92 * Math.min(1, restAmount * 1.4);
-                        // El gato se recuesta sobre la nube: baja, se estira y respira lento
-                        catGroup.position.y += restAmount * (-0.18 + Math.sin(t * 1.15) * 0.02);
-                        catGroup.rotation.z = restAmount * 0.09;
+                        // El gato SUBE y se recuesta ENCIMA de la nube (no se hunde a través de ella)
+                        catGroup.position.y += restAmount * (0.34 + Math.sin(t * 1.15) * 0.02);
+                        catGroup.rotation.z = restAmount * 0.07;
                         const respiracion = 1 + Math.sin(t * 1.15) * 0.02 * restAmount;
                         catGroup.scale.set(1, respiracion, 1);
                         if (restAmount > 0.6) {
@@ -12383,6 +12383,10 @@
                         catGroup.rotation.z += (0 - catGroup.rotation.z) * 0.1;
                         catGroup.scale.set(1, 1, 1);
                     }
+                    // Patas traseras: se pliegan bajo el cuerpo al descansar (pose de "pancito"),
+                    // para que no cuelguen atravesando la nube; se despliegan solas al despertar.
+                    legBackL.rotation.x += (-0.75 * restAmount - legBackL.rotation.x) * 0.12;
+                    legBackR.rotation.x += (-0.75 * restAmount - legBackR.rotation.x) * 0.12;
                     // Al despertar, los ojos se reabren suavemente (fuera de la ventana de parpadeo)
                     if (!isCoveringEyes && restAmount <= 0.6 && (t < nextBlink || t > nextBlink + 0.12)) {
                         eyeL.scale.y += (1 - eyeL.scale.y) * 0.25;
@@ -12425,14 +12429,15 @@
                         headRotX += 0.1;
                         eyeL.scale.y = eyeR.scale.y = 0.15;
                     } else {
-                        legL.rotation.x += (-legForward * 0.5 - legL.rotation.x) * 0.2;
-                        legR.rotation.x += (-legForward * 0.5 - legR.rotation.x) * 0.2;
+                        // Pose normal sentada, mezclada con el plegado de "pancito" al descansar en la nube
+                        legL.rotation.x += ((-legForward * 0.5 + 1.35 * restAmount) - legL.rotation.x) * 0.2;
+                        legR.rotation.x += ((-legForward * 0.5 + 1.35 * restAmount) - legR.rotation.x) * 0.2;
                         legL.position.x += (-0.17 - legL.position.x) * 0.2;
-                        legL.position.y += (-0.34 - legL.position.y) * 0.2;
-                        legL.position.z += (0.3 - legL.position.z) * 0.2;
+                        legL.position.y += ((-0.34 + 0.18 * restAmount) - legL.position.y) * 0.2;
+                        legL.position.z += ((0.3 + 0.04 * restAmount) - legL.position.z) * 0.2;
                         legR.position.x += (0.17 - legR.position.x) * 0.2;
-                        legR.position.y += (-0.34 - legR.position.y) * 0.2;
-                        legR.position.z += (0.3 - legR.position.z) * 0.2;
+                        legR.position.y += ((-0.34 + 0.18 * restAmount) - legR.position.y) * 0.2;
+                        legR.position.z += ((0.3 + 0.04 * restAmount) - legR.position.z) * 0.2;
                     }
 
                     headGroup.rotation.set(headRotX, headRotY, headRotZ);
