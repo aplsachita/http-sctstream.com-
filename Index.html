@@ -508,6 +508,8 @@
         .admin-tabs { display: flex; gap: 4px; overflow-x: auto; border-bottom: 1px solid rgba(226,232,240,0.8); margin-bottom: 1.5rem; position: sticky; top: 0; z-index: 20; background: rgba(248,250,255,0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); padding-top: 0.25rem; }
         #admin-modal-panel.dark-panel .admin-tabs { border-color: #3a3a5c; background: rgba(23,23,43,0.85); }
         .admin-tab-btn { flex-shrink: 0; padding: 0.65rem 1rem; font-size: 0.85rem; font-weight: 600; color: #64748b; border-bottom: 2px solid transparent; white-space: nowrap; transition: all .15s ease; background:transparent; }
+        .tab-sep { display:inline-block; width:1px; height:18px; background:#e2e8f0; margin:0 4px; flex-shrink:0; align-self:center; }
+        #admin-modal-panel.dark-panel .tab-sep { background:#3a3a52; }
         .admin-tab-btn:hover { color: #4338ca; }
         .admin-tab-btn.active { color: #4338ca; border-bottom-color: #4338ca; }
         #admin-modal-panel.dark-panel .admin-tab-btn { color: #a5a5c0; }
@@ -1068,20 +1070,39 @@
 
                 <div class="admin-tabs">
                     <button type="button" id="tab-btn-resumen" class="admin-tab-btn" onclick="cambiarTabAdmin('resumen')"><i class="fas fa-chart-line mr-1.5"></i>Resumen</button>
+                    <span class="tab-sep" title="Catálogo"></span>
                     <button type="button" id="tab-btn-agregar" class="admin-tab-btn" onclick="cambiarTabAdmin('agregar')"><i class="fas fa-circle-plus mr-1.5"></i>Agregar producto</button>
                     <button type="button" id="tab-btn-productos" class="admin-tab-btn" onclick="cambiarTabAdmin('productos')"><i class="fas fa-box mr-1.5"></i>Productos</button>
-                    <button type="button" id="tab-btn-ventas" class="admin-tab-btn" onclick="cambiarTabAdmin('ventas')"><i class="fas fa-cart-shopping mr-1.5"></i>Ventas</button>
+                    <span class="tab-sep" title="Ventas y clientes"></span>
+                    <button type="button" id="tab-btn-ventas" class="admin-tab-btn" onclick="cambiarTabAdmin('ventas')"><i class="fas fa-cart-shopping mr-1.5"></i>Ventas<span id="badge-ventas" class="hidden ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full"></span></button>
                     <button type="button" id="tab-btn-fidelizacion" class="admin-tab-btn" onclick="cambiarTabAdmin('fidelizacion')"><i class="fas fa-gift mr-1.5"></i>Fidelización</button>
-                    <button type="button" id="tab-btn-pendientes" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('pendientes')"><i class="fas fa-clock-rotate-left mr-1.5"></i>Pendientes<span id="badge-pendientes" class="hidden ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full"></span></button>
-                    <button type="button" id="tab-btn-solicitudes" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('solicitudes')"><i class="fas fa-user-clock mr-1.5"></i>Solicitudes</button>
-                    <button type="button" id="tab-btn-administradores" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('administradores')"><i class="fas fa-users mr-1.5"></i>Administradores</button>
                     <button type="button" id="tab-btn-clientes" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('clientes')"><i class="fas fa-user-group mr-1.5"></i>Clientes</button>
+                    <span class="tab-sep" title="Soporte"></span>
                     <button type="button" id="tab-btn-chat" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('chat')"><i class="fas fa-comments mr-1.5"></i>Chat<span id="badge-chat" class="hidden ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full"></span></button>
                     <button type="button" id="tab-btn-reclamos" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('reclamos')"><i class="fas fa-triangle-exclamation mr-1.5"></i>Reclamos<span id="badge-reclamos" class="hidden ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full"></span></button>
+                    <span class="tab-sep" title="Equipo"></span>
+                    <button type="button" id="tab-btn-pendientes" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('pendientes')"><i class="fas fa-clock-rotate-left mr-1.5"></i>Pendientes<span id="badge-pendientes" class="hidden ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full"></span></button>
+                    <button type="button" id="tab-btn-solicitudes" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('solicitudes')"><i class="fas fa-user-clock mr-1.5"></i>Solicitudes<span id="badge-solicitudes" class="hidden ml-1 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full"></span></button>
+                    <button type="button" id="tab-btn-administradores" class="admin-tab-btn hidden" onclick="cambiarTabAdmin('administradores')"><i class="fas fa-users mr-1.5"></i>Administradores</button>
                     <button type="button" id="tab-btn-seguridad" class="admin-tab-btn" onclick="cambiarTabAdmin('seguridad')"><i class="fas fa-shield-halved mr-1.5"></i>Seguridad</button>
                 </div>
 
                 <div class="admin-tab-pane" data-tab="resumen">
+                    <div id="atencion-hoy" class="hidden mb-6"></div>
+                    <div class="grid grid-cols-3 gap-2 mb-6">
+                        <button onclick="cambiarTabAdmin('agregar')" class="admin-card p-3 text-center hover:ring-2 hover:ring-indigo-300 transition">
+                            <i class="fas fa-circle-plus text-indigo-500 text-lg mb-1"></i>
+                            <p class="text-[11px] font-semibold text-slate-700">Agregar producto</p>
+                        </button>
+                        <button onclick="cambiarTabAdmin('ventas')" class="admin-card p-3 text-center hover:ring-2 hover:ring-emerald-300 transition">
+                            <i class="fas fa-cart-shopping text-emerald-500 text-lg mb-1"></i>
+                            <p class="text-[11px] font-semibold text-slate-700">Ver ventas</p>
+                        </button>
+                        <button onclick="cambiarTabAdmin('productos')" class="admin-card p-3 text-center hover:ring-2 hover:ring-violet-300 transition">
+                            <i class="fas fa-box text-violet-500 text-lg mb-1"></i>
+                            <p class="text-[11px] font-semibold text-slate-700">Mis productos</p>
+                        </button>
+                    </div>
                     <div id="resumen-superadmin" class="hidden mb-8 grid grid-cols-2 sm:grid-cols-3 gap-3">
                         <div class="admin-card p-4 text-center">
                             <div class="admin-stat-icon bg-indigo-100 text-indigo-600 mx-auto mb-2"><i class="fas fa-users"></i></div>
@@ -5796,6 +5817,8 @@
             actualizarCobrosPendientes();
             actualizarStatsInteres();
             actualizarEmbudoConversion();
+            renderAtencionHoy();
+            actualizarBadgesPanel();
             actualizarStatsSalud();
             dibujarGraficaVentas();
             actualizarComparativaYRacha();
@@ -8816,13 +8839,77 @@
             });
         }
 
+        // Actualiza los contadores rojos de todas las pestañas con pendientes
+        // "Necesita tu atención hoy": junta en un solo bloque todo lo accionable
+        function renderAtencionHoy() {
+            const cont = document.getElementById('atencion-hoy');
+            if (!cont) return;
+            const items = [];
+            const lista = pedidosFiltrados();
+            const sinEntregar = lista.filter(p => {
+                if (p.estado !== 'vendido' || p.entregado) return false;
+                const horas = p.vendidoEn && p.vendidoEn.toDate ? (Date.now() - p.vendidoEn.toDate().getTime()) / 3600000 : null;
+                return horas !== null && horas >= 20;
+            }).length;
+            if (sinEntregar) items.push({ icono: 'fa-truck-fast', color: 'red', texto: `${sinEntregar} venta${sinEntregar === 1 ? '' : 's'} sin marcar como entregada (+20h)`, tab: 'ventas' });
+
+            const interesados = lista.filter(p => p.estado === 'interesado').length;
+            if (interesados) items.push({ icono: 'fa-hand-point-up', color: 'amber', texto: `${interesados} cliente${interesados === 1 ? '' : 's'} mostró interés y falta cerrar la venta`, tab: 'ventas' });
+
+            const misProductos = esSuperAdmin ? productos : productos.filter(p => p.propietario === (auth.currentUser && auth.currentUser.uid));
+            const agotados = misProductos.filter(p => p.stock !== null && p.stock !== undefined && p.stock <= 0 && !p.pausado).length;
+            if (agotados) items.push({ icono: 'fa-box-open', color: 'orange', texto: `${agotados} producto${agotados === 1 ? '' : 's'} agotado${agotados === 1 ? '' : 's'} y sigue${agotados === 1 ? '' : 'n'} publicado${agotados === 1 ? '' : 's'}`, tab: 'productos' });
+
+            if (esSuperAdmin) {
+                if (solicitudesPendientes.length) items.push({ icono: 'fa-user-clock', color: 'sky', texto: `${solicitudesPendientes.length} solicitud${solicitudesPendientes.length === 1 ? '' : 'es'} de admin por revisar`, tab: 'solicitudes' });
+                const porVencer = adminsActivos.filter(a => a.suscripcionVenceEl && a.suscripcionVenceEl < Date.now() + 3 * 86400000).length;
+                if (porVencer) items.push({ icono: 'fa-crown', color: 'violet', texto: `${porVencer} suscripción${porVencer === 1 ? '' : 'es'} vencida o por vencer`, tab: 'administradores' });
+            }
+
+            if (items.length === 0) {
+                cont.classList.remove('hidden');
+                cont.innerHTML = `<div class="admin-card p-4 text-center border-l-4 border-emerald-400"><p class="text-sm font-semibold text-emerald-600"><i class="fas fa-circle-check mr-1"></i> Todo al día — no hay nada urgente por ahora 🎉</p></div>`;
+                return;
+            }
+            cont.classList.remove('hidden');
+            cont.innerHTML = `
+                <h4 class="mb-2 text-base admin-section-title"><i class="fas fa-bell mr-1 text-red-500"></i> Necesita tu atención</h4>
+                <div class="space-y-2">
+                    ${items.map(i => `
+                        <button onclick="cambiarTabAdmin('${i.tab}')" class="w-full admin-card p-3 flex items-center gap-3 text-left border-l-4 border-${i.color}-400 hover:ring-2 hover:ring-${i.color}-200 transition">
+                            <i class="fas ${i.icono} text-${i.color}-500 shrink-0"></i>
+                            <p class="text-sm text-slate-700 flex-1">${i.texto}</p>
+                            <i class="fas fa-chevron-right text-gray-300 text-xs shrink-0"></i>
+                        </button>`).join('')}
+                </div>`;
+        }
+
+        function actualizarBadgesPanel() {
+            const poner = (id, n) => {
+                const b = document.getElementById(id);
+                if (!b) return;
+                b.classList.toggle('hidden', !n);
+                if (n) b.textContent = n > 99 ? '99+' : n;
+            };
+            // Ventas sin entregar hace 20h o más
+            const ventasUrgentes = pedidosFiltrados().filter(p => {
+                if (p.estado !== 'vendido' || p.entregado) return false;
+                const horas = p.vendidoEn && p.vendidoEn.toDate ? (Date.now() - p.vendidoEn.toDate().getTime()) / 3600000 : null;
+                return horas !== null && horas >= 20;
+            }).length;
+            poner('badge-ventas', ventasUrgentes);
+            if (esSuperAdmin) poner('badge-solicitudes', solicitudesPendientes.length);
+        }
+
         function cambiarTabAdmin(tab) {
+            try { localStorage.setItem('admin_ultima_tab', tab); } catch (err) {}
             document.querySelectorAll('.admin-tab-pane').forEach(pane => {
                 pane.classList.toggle('active', pane.dataset.tab === tab);
             });
             document.querySelectorAll('.admin-tab-btn').forEach(btn => {
                 btn.classList.toggle('active', btn.id === `tab-btn-${tab}`);
             });
+            actualizarBadgesPanel();
             if (tab === 'fidelizacion') renderFidelizacion();
             if (tab === 'seguridad') cargarTabSeguridad();
             if (tab === 'pendientes') renderPendientes();
@@ -9654,6 +9741,13 @@
             const backupWrap = document.getElementById('backup-wrap');
             if (backupWrap) backupWrap.classList.toggle('hidden', !esSuperAdmin);
             actualizarVendedorDelMes();
+            // Vuelve a la última pestaña que estaba abierta (si sigue disponible para este rol)
+            try {
+                const ultima = localStorage.getItem('admin_ultima_tab');
+                const btnUltima = ultima && document.getElementById('tab-btn-' + ultima);
+                if (btnUltima && !btnUltima.classList.contains('hidden')) cambiarTabAdmin(ultima);
+                else cambiarTabAdmin('resumen');
+            } catch (err) { cambiarTabAdmin('resumen'); }
             document.getElementById('tab-btn-solicitudes').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('tab-btn-pendientes').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('tab-btn-administradores').classList.toggle('hidden', !esSuperAdmin);
