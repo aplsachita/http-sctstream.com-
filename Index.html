@@ -1212,6 +1212,14 @@
                         <textarea id="recompensas-editor-textarea" rows="4" placeholder="S/ 5 de descuento en tu próxima compra|50" class="border border-gray-300 rounded-xl px-3 py-2 text-sm w-full mb-2"></textarea>
                         <button onclick="guardarRecompensas()" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-xl text-xs font-semibold">Guardar catálogo de canje</button>
                     </div>
+                    <div id="vendedor-mes-card" class="hidden mt-4 admin-card p-4 border-l-4 border-amber-400"></div>
+                    <div id="backup-wrap" class="hidden mt-4 admin-card p-4 flex items-center justify-between gap-3 flex-wrap">
+                        <div>
+                            <h4 class="text-sm font-bold text-slate-800"><i class="fas fa-database mr-1 text-indigo-500"></i> Respaldo de tus datos</h4>
+                            <p class="text-xs text-gray-400">Descarga un archivo JSON con productos, ventas, admins, clientes, canjes y configuración. Guárdalo seguido por si algo sale mal.</p>
+                        </div>
+                        <button onclick="descargarBackupJSON()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold shrink-0"><i class="fas fa-download mr-1"></i>Descargar backup</button>
+                    </div>
                 </div>
 
                 <div class="admin-tab-pane" data-tab="agregar">
@@ -1226,6 +1234,7 @@
                         <input id="new-desc" type="text" oninput="autoguardarBorradorProducto();" placeholder="Descripción (ej: 4K • 4 pantallas)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-4">
                         <input id="new-stock" type="number" min="0" oninput="autoguardarBorradorProducto();" placeholder="Stock disponible (déjalo vacío si no quieres controlarlo)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-4">
                         <input id="new-puntos-canje" type="number" min="1" oninput="autoguardarBorradorProducto();" placeholder="Puntos para canjearlo gratis (opcional — déjalo vacío si no es canjeable)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-4">
+                        <input id="new-video-url" type="url" oninput="autoguardarBorradorProducto();" placeholder="Link de video de YouTube (opcional — demo del producto)" class="border border-gray-300 rounded-xl px-4 py-3 w-full mt-4">
                         <label class="mt-4 flex items-center gap-3 border border-gray-300 rounded-xl px-4 py-3 cursor-pointer">
                             <input type="checkbox" id="new-entrega-demorada" onchange="autoguardarBorradorProducto();" class="w-5 h-5 accent-orange-500">
                             <span class="text-sm text-gray-600"><i class="fas fa-clock text-orange-500 mr-1"></i> Este producto tarda hasta 24 horas en entregarse</span>
@@ -2139,6 +2148,7 @@
                     <summary class="px-3 py-2 text-xs font-semibold text-gray-600 cursor-pointer select-none bg-gray-50">📋 Ver términos y condiciones</summary>
                     <p id="detalle-descripcion" class="px-3 pb-3 pt-1 text-gray-600 text-xs whitespace-pre-line leading-snug"></p>
                 </details>
+                <div id="detalle-video-wrap" class="hidden mb-3 rounded-2xl overflow-hidden" style="aspect-ratio:16/9;"></div>
                 <div id="detalle-metodos-pago" class="hidden mb-1"></div>
                 <div id="detalle-relacionados" class="hidden mt-3 pt-3 border-t border-gray-100 text-left">
                     <button onclick="toggleRelacionadosDetalle()" class="flex items-center justify-between w-full text-xs font-semibold text-gray-500">
@@ -3040,6 +3050,67 @@
             } catch (err) {
                 mostrarAviso('No se pudo guardar: ' + (err.message || err.code || 'error desconocido'));
             }
+        }
+
+        // ---- Respaldo con un clic: descarga un JSON con las colecciones principales ----
+        async function descargarBackupJSON() {
+            if (!esSuperAdmin) return;
+            mostrarAviso('Preparando tu backup, dame unos segundos...');
+            try {
+                const backup = {
+                    generadoEl: new Date().toISOString(),
+                    productos: productos,
+                    pedidos: pedidos.map(p => ({ ...p, creado: p.creado && p.creado.toDate ? p.creado.toDate().toISOString() : null, vendidoEn: p.vendidoEn && p.vendidoEn.toDate ? p.vendidoEn.toDate().toISOString() : null })),
+                    administradores: adminsActivos,
+                    clientes_publico: [],
+                    canjes: [],
+                    reclamos: [],
+                    configuracion: configuracionPrincipalPublica
+                };
+                const [clientesSnap, canjesSnap, reclamosSnap] = await Promise.all([
+                    db.collection('clientes_publico').limit(2000).get(),
+                    db.collection('canjes').limit(2000).get().catch(() => ({ docs: [] })),
+                    db.collection('reclamos').limit(2000).get().catch(() => ({ docs: [] }))
+                ]);
+                backup.clientes_publico = clientesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                backup.canjes = canjesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                backup.reclamos = reclamosSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `backup-apl-market-${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+                URL.revokeObjectURL(a.href);
+                mostrarAviso('¡Backup descargado! Guárdalo en un lugar seguro.');
+            } catch (err) {
+                mostrarAviso('No se pudo generar el backup: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
+        // ---- Vendedor del mes: el que más ventas confirmadas tiene este mes ----
+        function actualizarVendedorDelMes() {
+            const card = document.getElementById('vendedor-mes-card');
+            if (!card || !esSuperAdmin) return;
+            const inicioMes = new Date(); inicioMes.setDate(1); inicioMes.setHours(0, 0, 0, 0);
+            const porVendedor = {};
+            pedidos.forEach(p => {
+                if (p.estado !== 'vendido') return;
+                const fecha = p.vendidoEn && p.vendidoEn.toDate ? p.vendidoEn.toDate() : (p.creado && p.creado.toDate ? p.creado.toDate() : null);
+                if (!fecha || fecha < inicioMes) return;
+                const vend = p.propietario || 'principal';
+                if (!porVendedor[vend]) porVendedor[vend] = { ventas: 0, ingresos: 0 };
+                porVendedor[vend].ventas++;
+                porVendedor[vend].ingresos += parseFloat(p.precio) || 0;
+            });
+            const entradas = Object.entries(porVendedor).sort((a, b) => b[1].ventas - a[1].ventas);
+            if (entradas.length === 0) { card.classList.add('hidden'); return; }
+            const [uid, datos] = entradas[0];
+            const nombre = uid === 'principal' ? 'Tú (tienda principal)' : ((adminsActivos.find(a => a.id === uid) || {}).nombre || 'Vendedor');
+            card.classList.remove('hidden');
+            card.innerHTML = `
+                <h4 class="text-sm font-bold text-slate-800 mb-1">🏆 Vendedor del mes (hasta ahora)</h4>
+                <p class="text-lg font-bold text-amber-600">${nombre}</p>
+                <p class="text-xs text-gray-500">${datos.ventas} venta${datos.ventas === 1 ? '' : 's'} confirmada${datos.ventas === 1 ? '' : 's'} · S/ ${datos.ingresos.toFixed(2).replace(/\.00$/, '')} este mes</p>`;
         }
         async function consultarMisPuntos() {
             const numero = document.getElementById('mis-puntos-telefono').value.trim();
@@ -4372,6 +4443,16 @@
 
             const historialToggle = document.getElementById('detalle-historial-precio-toggle');
             const historialLista = document.getElementById('detalle-historial-precio-lista');
+            const videoWrap = document.getElementById('detalle-video-wrap');
+            if (videoWrap) {
+                if (producto.videoYouTubeId) {
+                    videoWrap.classList.remove('hidden');
+                    videoWrap.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${producto.videoYouTubeId}" title="Video del producto" style="width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>`;
+                } else {
+                    videoWrap.classList.add('hidden');
+                    videoWrap.innerHTML = '';
+                }
+            }
             historialLista.classList.add('hidden');
             const historial = (producto.historialPrecios || []).slice().sort((a, b) => b.fecha - a.fecha);
             if (historial.length > 1) {
@@ -6241,6 +6322,13 @@
             return { texto: '🆕 Nuevo', clase: 'bg-gray-100 text-gray-600' };
         }
 
+        // Extrae el ID de un link de YouTube (youtube.com/watch?v=, youtu.be/, shorts/)
+        function extraerYouTubeId(url) {
+            if (!url) return null;
+            const m = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{6,15})/);
+            return m ? m[1] : null;
+        }
+
         // ---- Escalera de rangos por puntos (1 punto = 1 compra confirmada) ----
         const RANGOS_CLIENTE = [
             { nombre: 'Bronce', icono: '🥉', min: 0 },
@@ -7745,6 +7833,8 @@
             const stock = stockValor === '' ? null : Math.max(0, parseInt(stockValor, 10));
             const puntosCanjeValor = document.getElementById('new-puntos-canje').value.trim();
             const puntosCanje = puntosCanjeValor === '' ? null : Math.max(1, parseInt(puntosCanjeValor, 10));
+            const videoUrlValor = document.getElementById('new-video-url').value.trim();
+            const videoYouTubeId = extraerYouTubeId(videoUrlValor);
             const entregaDemorada = document.getElementById('new-entrega-demorada').checked;
             const publicarEnValor = document.getElementById('new-publicar-en').value;
             const publicarEn = publicarEnValor ? new Date(publicarEnValor).getTime() : null;
@@ -7826,6 +7916,7 @@
                     descripcion: descripcion,
                     stock: stock,
                     puntosCanje: puntosCanje,
+                    videoYouTubeId: videoYouTubeId,
                     entregaDemorada: entregaDemorada,
                     publicarEn: publicarEn,
                     imagen: nuevaFotoBase64 || "https://picsum.photos/id/" + (100 + Math.floor(Math.random()*400)) + "/400/300",
@@ -7871,6 +7962,7 @@
             document.getElementById('new-desc').value = '';
             document.getElementById('new-stock').value = '';
             document.getElementById('new-puntos-canje').value = '';
+            document.getElementById('new-video-url').value = '';
             document.getElementById('new-entrega-demorada').checked = false;
             document.getElementById('new-publicar-en').value = '';
             document.getElementById('new-categoria').value = 'Streaming';
@@ -8411,6 +8503,16 @@
                 const compras = datos.comprasConfirmadas || 0;
                 const puntos = datos.puntos || 0;
                 const rango = rangoDeCliente(puntos);
+                // Celebra si subió de rango desde la última vez que revisó
+                try {
+                    const claveRango = 'rango_visto_' + telefono;
+                    const idxActual = RANGOS_CLIENTE.findIndex(r => r.nombre === rango.nombre);
+                    const idxGuardado = parseInt(localStorage.getItem(claveRango) || '-1', 10);
+                    if (idxGuardado >= 0 && idxActual > idxGuardado) {
+                        mostrarAviso(`🎉 ¡FELICIDADES! Subiste de rango: ahora eres ${rango.icono} ${rango.nombre}. Sigue así 💪`);
+                    }
+                    localStorage.setItem(claveRango, idxActual);
+                } catch (err) { /* localStorage puede fallar en modo privado */ }
                 resultEl.innerHTML = `
                     <div class="glass-card-fuerte rounded-2xl p-5 text-center text-white">
                         <p class="text-3xl font-bold">${puntos}</p>
@@ -9549,6 +9651,9 @@
                     document.getElementById('recompensas-editor-textarea').value = recompensasActual;
                 }
             }
+            const backupWrap = document.getElementById('backup-wrap');
+            if (backupWrap) backupWrap.classList.toggle('hidden', !esSuperAdmin);
+            actualizarVendedorDelMes();
             document.getElementById('tab-btn-solicitudes').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('tab-btn-pendientes').classList.toggle('hidden', !esSuperAdmin);
             document.getElementById('tab-btn-administradores').classList.toggle('hidden', !esSuperAdmin);
