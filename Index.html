@@ -1021,6 +1021,7 @@
     </section>
 
     <div id="admin-modal" class="hidden fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4" onclick="if (event.target === this) toggleAdmin()">
+        <button onclick="cambiarTabAdmin('agregar')" title="Agregar producto (tecla N)" class="fixed bottom-6 right-6 z-[130] w-14 h-14 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-2xl flex items-center justify-center text-2xl"><i class="fas fa-plus"></i></button>
         <div id="admin-modal-panel" class="relative rounded-3xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-hidden">
             <div class="admin-panel-surface relative max-h-[90vh] overflow-auto" id="admin-panel-scroll">
             <div class="p-8">
@@ -1308,7 +1309,8 @@
                         <p class="text-[11px] text-gray-400 mt-1">Si vendes el mismo producto en varias duraciones/planes, escríbelos así (uno por línea): Nombre|Precio. Déjalo vacío si no aplica.</p>
                         <button onclick="vistaPreviaProductoNuevo()" class="mt-4 w-full bg-white border border-indigo-300 text-indigo-600 py-2.5 rounded-2xl font-semibold text-sm"><i class="fas fa-eye mr-1"></i> Vista previa de la tarjeta</button>
                         <div id="vista-previa-producto-nuevo" class="hidden mt-3 flex justify-center"></div>
-                        <button onclick="agregarProducto()" class="mt-4 w-full admin-btn-primary text-white py-3.5 rounded-2xl font-semibold shadow-md">Agregar Producto</button>
+                        <button onclick="previsualizarProductoNuevo()" class="mt-4 w-full bg-white border-2 border-indigo-200 text-indigo-600 py-3 rounded-2xl font-semibold text-sm"><i class="fas fa-eye mr-1"></i> Ver cómo lo verá el cliente</button>
+                        <button onclick="agregarProducto()" class="mt-2 w-full admin-btn-primary text-white py-3.5 rounded-2xl font-semibold shadow-md">Agregar Producto</button>
                     </div>
                 </div>
 
@@ -8028,12 +8030,91 @@
             mostrarConfirmacion(mensaje, async () => {
                 try {
                     const producto = productos.find(p => p.id === id);
+                    // Papelera: guardamos una copia antes de borrar, para poder deshacer
+                    if (producto) {
+                        const copia = { ...producto };
+                        delete copia.id;
+                        await db.collection('papelera').doc(id).set({
+                            ...copia,
+                            _eliminadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+                            _eliminadoPor: (auth.currentUser && auth.currentUser.uid) || 'superadmin'
+                        }).catch(() => {});
+                    }
                     await db.collection('productos').doc(id).delete();
                     registrarAuditoria('Eliminó producto', producto ? producto.nombre : id);
+                    ofrecerDeshacerEliminacion(id, producto ? producto.nombre : 'Producto');
                 } catch (err) {
                     mostrarAviso('No se pudo eliminar el producto.');
                 }
             });
+        }
+
+        // ---- Papelera: barra flotante para deshacer una eliminación reciente ----
+        let temporizadorDeshacer = null;
+        function ofrecerDeshacerEliminacion(id, nombre) {
+            const anterior = document.getElementById('barra-deshacer');
+            if (anterior) anterior.remove();
+            if (temporizadorDeshacer) clearTimeout(temporizadorDeshacer);
+            const barra = document.createElement('div');
+            barra.id = 'barra-deshacer';
+            barra.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 z-[400] bg-slate-800 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-sm';
+            barra.innerHTML = `<span>Eliminaste "${(nombre || '').slice(0, 28)}"</span>
+                <button onclick="restaurarDePapelera('${id}')" class="bg-white text-slate-800 font-bold px-3 py-1.5 rounded-xl text-xs shrink-0">Deshacer</button>`;
+            document.body.appendChild(barra);
+            temporizadorDeshacer = setTimeout(() => barra.remove(), 8000);
+        }
+
+        async function restaurarDePapelera(id) {
+            try {
+                const doc = await db.collection('papelera').doc(id).get();
+                if (!doc.exists) { mostrarAviso('Ya no se puede restaurar este producto.'); return; }
+                const datos = doc.data();
+                delete datos._eliminadoEn;
+                delete datos._eliminadoPor;
+                await db.collection('productos').doc(id).set(datos);
+                await db.collection('papelera').doc(id).delete().catch(() => {});
+                const barra = document.getElementById('barra-deshacer');
+                if (barra) barra.remove();
+                mostrarAviso('¡Producto restaurado!');
+            } catch (err) {
+                mostrarAviso('No se pudo restaurar: ' + (err.message || err.code || 'error desconocido'));
+            }
+        }
+
+        // Vista previa: muestra el producto tal como lo verá el cliente, sin publicarlo
+        function previsualizarProductoNuevo() {
+            const nombre = document.getElementById('new-name').value.trim();
+            const precio = parseFloat(document.getElementById('new-price').value);
+            if (!nombre || isNaN(precio)) {
+                mostrarAviso('Completa al menos el nombre y el precio para ver la vista previa.');
+                return;
+            }
+            const stockValor = document.getElementById('new-stock').value.trim();
+            const productoPreview = {
+                id: '__preview__',
+                nombre: nombre,
+                precio: precio,
+                descripcion: document.getElementById('new-desc').value.trim(),
+                categoria: document.getElementById('new-categoria').value,
+                imagen: nuevaFotoBase64 || '',
+                imagenMiniatura: nuevaFotoMiniaturaBase64 || nuevaFotoBase64 || '',
+                stock: stockValor === '' ? null : Math.max(0, parseInt(stockValor, 10)),
+                puntosCanje: parseInt(document.getElementById('new-puntos-canje').value, 10) || null,
+                videoYouTubeId: extraerYouTubeId(document.getElementById('new-video-url').value.trim()),
+                propietario: esSuperAdmin ? 'principal' : (auth.currentUser && auth.currentUser.uid),
+                propietarioNombre: miNombreAdmin || 'Tú',
+                propietarioWhatsapp: WHATSAPP_NUMBER,
+                clicsCompra: 0,
+                creado: { toDate: () => new Date() }
+            };
+            // Lo insertamos temporalmente para reutilizar el modal de detalle real
+            productos.push(productoPreview);
+            verDetalleProducto('__preview__');
+            mostrarAviso('Vista previa — así lo verá el cliente. Ciérrala y publica cuando estés conforme.');
+            setTimeout(() => {
+                const i = productos.findIndex(p => p.id === '__preview__');
+                if (i >= 0) productos.splice(i, 1);
+            }, 500);
         }
 
         function togglePausarProducto(id, pausar) {
@@ -12312,6 +12393,24 @@
             if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'a') {
                 e.preventDefault();
                 toggleAdmin();
+            }
+        });
+
+        // Atajos de teclado del panel admin (solo en escritorio y fuera de campos de texto)
+        document.addEventListener('keydown', (e) => {
+            const modalAdmin = document.getElementById('admin-modal');
+            if (!modalAdmin || modalAdmin.classList.contains('hidden')) return;
+            const enCampo = ['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target.tagName || '').toUpperCase()) || e.target.isContentEditable;
+            if (enCampo || e.ctrlKey || e.metaKey || e.altKey) return;
+            const tecla = e.key.toLowerCase();
+            if (tecla === 'n') { e.preventDefault(); cambiarTabAdmin('agregar'); }
+            else if (tecla === 'v') { e.preventDefault(); cambiarTabAdmin('ventas'); }
+            else if (tecla === 'p') { e.preventDefault(); cambiarTabAdmin('productos'); }
+            else if (tecla === 'r') { e.preventDefault(); cambiarTabAdmin('resumen'); }
+            else if (tecla === '/') {
+                e.preventDefault();
+                cambiarTabAdmin('productos');
+                setTimeout(() => { const b = document.getElementById('buscador-productos-admin'); if (b) b.focus(); }, 60);
             }
         });
 
